@@ -20,6 +20,12 @@ parts/
 sdist/
 var/
 wheels/
+
+# Data images
+images/
+*.png
+*.jpg
+
 share/python-wheels/
 *.egg-info/
 .installed.cfg
