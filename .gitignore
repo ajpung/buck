@@ -23,8 +23,9 @@ wheels/
 
 # Data images
 images/
-*.png
-*.jpg
+images/*.png
+images/*.jpg
+
 
 share/python-wheels/
 *.egg-info/
