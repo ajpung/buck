@@ -11,8 +11,10 @@ authors = [
 description = "Tool for Antenna Data Analysis"
 readme = "README.md"
 dependencies = [
+    "keras",
     "numpy",
     "pandas",
+    "opencv-python",
     "plotly==5.18.0",
     "pydantic==2.4.2",
     "pydantic_core==2.10.1",
