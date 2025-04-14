@@ -37,6 +37,13 @@ This is the method we will use in this project BUCK (Biological Understanding
 via Computer Knowledge). Images of the deer were taken from the NDA website and
 the ratings were taken from the NDA's "Age This!" articles.
 
+To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
+features from the images. The CNN is a type of deep learning model that is
+particularly well-suited for image classification tasks. The model is trained on
+a dataset of images and their corresponding age ratings, and learns to
+recognize patterns in the images that are indicative of age. Once trained, the
+model can be used to predict the age of new images of deer.
+
 Images gathered from the website were sized and cropped, making sure to include the
 full deer's body; for non-square images, padding was added to the top or bottom of
 the image to make it square. The images were then resized to 224x224 pixels and
