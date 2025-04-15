@@ -82,4 +82,4 @@ jobs:
 
       - name: Run Tests
         run: |
-          python -m pytest tests/sw_tests/**
+          python -m pytest tests/**
