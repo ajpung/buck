@@ -16,7 +16,6 @@ def make_bw_square(file: str) -> np.ndarray[tuple[int, ...], Any]:
     px, py, pz = image.shape
     # Find minimum value between X and Y dimensions
     min_dim = min(px, py)
-    print(px, py, pz)
     # If data are 3D, flatten to black and white
     if pz > 2:
         new_image = image[:, :, 0]
