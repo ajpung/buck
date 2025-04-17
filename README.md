@@ -51,3 +51,15 @@ normalized to a range of 0-1. The images were then split into training and test
 sets, with 80% of the images used for training and 20% for testing. The training
 set was then augmented using random rotations, flips, and brightness adjustments
 to increase the size of the training set and improve the model's performance.
+
+# Installation
+```
+# Create a virtual environment
+python -m venv buck-env
+d# Activate the virtual environment
+.\buck-env\Scripts\activate
+# Install the package in editable mode
+python -m pip install -e .
+# Install the environment in Jupyter
+python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
+```

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "generic"
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 authors = [
     {name = "Aaron Pung", email = "aaron.pung@gmail.com"},
 ]
@@ -14,14 +14,16 @@ dependencies = [
     "keras",
     "numpy",
     "pandas",
+    "ipykernel",
     "matplotlib",
     "tensorflow",
+    "scikit-learn",
     "opencv-python",
 ]
 dynamic = ["version"]
 
 [tool.setuptools.package-data]
-gneeric = ["py.typed"]
+generic = ["py.typed"]
 
 [project.optional-dependencies]
 dev = [
@@ -59,3 +61,25 @@ version_toml = [
     "pyproject.toml:version",
 ]
 tag_format = "{version}"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | env
+  | venv
+  | buck-env  # Add your specific virtual environment name here
+)/
+'''
