@@ -11,7 +11,7 @@
 
 # Introduction
 A tool for predicting the age of male deer based on National Deer Association
-(NDA)-provided images and professional ratings.
+(NDA)-provided images and professional ratings. Specifically, this analysis follows the textbook. "Deep Learning for Vision Systems", by M. Elgendy.
 
 # Buck aging
 ## Introduction
