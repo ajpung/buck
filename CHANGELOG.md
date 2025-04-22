@@ -2,6 +2,47 @@
 
 
 
+## v0.1.0 (2025-04-22)
+
+### Chore
+
+* chore: building initial model ([`7df7cf1`](https://github.com/ajpung/buck/commit/7df7cf10295fde1b02ea3beb51f0edddd2c4cab4))
+
+* chore: migrating code to notebook ([`155bdf1`](https://github.com/ajpung/buck/commit/155bdf138c452e1e140793f830d839475c47689a))
+
+* chore: building a jupyter notebook, but changes still needed. Other optimization made to repo files for format checking, etc. ([`3a8f845`](https://github.com/ajpung/buck/commit/3a8f8457e80ba047377d52b10d097d6366a08270))
+
+* chore: standing up infrastructure for CNN ([`11cf798`](https://github.com/ajpung/buck/commit/11cf7980aeadc43da12704900a344e9bbfe66d2a))
+
+### Feature
+
+* feat: first CNN stood up! ([`38452b7`](https://github.com/ajpung/buck/commit/38452b725450ab12fe747b82bed20b5ec11c150d))
+
+### Unknown
+
+* Merge pull request #16 from ajpung/build-cnn
+
+feat: first CNN stood up! ([`26da3e4`](https://github.com/ajpung/buck/commit/26da3e47444b52128f80e4799ac7b773475fbfd2))
+
+* Merge pull request #15 from ajpung/build-model
+
+chore: building initial model ([`4cbd772`](https://github.com/ajpung/buck/commit/4cbd7727739c679b608908aa5cb632a9bad75a58))
+
+* Update README.md ([`7fd3be6`](https://github.com/ajpung/buck/commit/7fd3be6c75e9ff6e5bee3017d9cfb9db1e2b804d))
+
+* Merge pull request #14 from ajpung/build-notebook
+
+chore: migrating code to notebook ([`643aa3d`](https://github.com/ajpung/buck/commit/643aa3d03f71f7937e8e0515d8e7bfeb78304674))
+
+* Merge pull request #13 from ajpung/build-notebook
+
+chore: building a jupyter notebook, but changes still needed. Other … ([`8c7ad7e`](https://github.com/ajpung/buck/commit/8c7ad7e0719e9b5e0d3d8f7c3f3eb9e4dc05246a))
+
+* Merge pull request #11 from ajpung/build-model
+
+chore: standing up infrastructure for CNN ([`d59b21d`](https://github.com/ajpung/buck/commit/d59b21dff58ed95785118f2730e4917b62fa7a7e))
+
+
 ## v0.0.0 (2025-04-15)
 
 ### Chore
