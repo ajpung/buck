@@ -26,16 +26,30 @@ def ingest_resize_stack(files: list) -> list[np.ndarray[Any, Any]]:
     return images
 
 
-def extract_labels(files: list) -> list:
+def extract_labels(
+    files: list,
+) -> tuple[list[Any], list[Any], list[Any], list[float], list[Any]]:
     """
     Extracts labels from file names.
     :param files: List of file paths
     :return labels: List of labels
     """
-    labels = []
+    found = []  # Date the data was acquired
+    taken = []  # Date the image was taken
+    state = []  # State the image was taken in
+    ages = []  # Age of the deer
+    provider = []  # Image provider
     for file in files:
-        label = float(
-            file.split("\\")[-1].split(".")[0].split("_")[-1].replace("p", ".")
+        cfound = file.split("\\")[-1].split(".")[0].split("_")[0]
+        found.append(cfound)
+        ctaken = file.split("\\")[-1].split(".")[0].split("_")[1]
+        taken.append(ctaken)
+        cstate = file.split("\\")[-1].split(".")[0].split("_")[2]
+        state.append(cstate)
+        curage = float(
+            file.split("\\")[-1].split(".")[0].split("_")[3].replace("p", ".")
         )
-        labels.append(label)
-    return labels
+        ages.append(curage)
+        cprovider = file.split("\\")[-1].split(".")[0].split("_")[4]
+        provider.append(cprovider)
+    return found, taken, state, ages, provider
