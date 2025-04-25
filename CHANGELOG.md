@@ -2,6 +2,33 @@
 
 
 
+## v0.2.0 (2025-04-25)
+
+### Chore
+
+* chore: upgrading data label structure &amp; extraction ([`dd8a349`](https://github.com/ajpung/buck/commit/dd8a349089e95e9f2f971eec7e54b04037df9098))
+
+* chore: standing up data augmentation ([`ad4228d`](https://github.com/ajpung/buck/commit/ad4228d5809fdd7dc3668b8019bcbe8093d93667))
+
+### Feature
+
+* feat: now adding augmented data ([`c2372e1`](https://github.com/ajpung/buck/commit/c2372e12dc70df19a7f509f083aa4f4702eaad20))
+
+### Unknown
+
+* Merge pull request #19 from ajpung/aug-data
+
+feat: now adding augmented data ([`55186ce`](https://github.com/ajpung/buck/commit/55186ce6e6c04e861de0591309aeeb12c5bd12ea))
+
+* Merge pull request #18 from ajpung/data-add
+
+chore: upgrading data label structure &amp; extraction ([`ddf5ef6`](https://github.com/ajpung/buck/commit/ddf5ef6fc1faee2eae56beabfc58d29cd1f5a0aa))
+
+* Merge pull request #17 from ajpung/augment-data
+
+chore: standing up data augmentation ([`1702b88`](https://github.com/ajpung/buck/commit/1702b88aa377a41029ae1540ae8acfc5662a3e79))
+
+
 ## v0.1.0 (2025-04-22)
 
 ### Chore
