@@ -33,8 +33,8 @@ circumference, and tine length, but these suffer from the same issues as mass.
 Alternatively, the NDA has provided a set of images and ratings for a number of
 deer, which can be used to train a model to predict age based on images alone.
 This is the method we will use in this project BUCK (Biological Understanding
-via Computer Knowledge). Images of the deer were taken from the NDA website and
-the ratings were taken from the NDA's "Age This!" articles.
+via Computer Knowledge). Images of the deer were taken from numerous websites
+and publications, including the NDA, Mississippi State University, and BuckScore.
 
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
 features from the images. The CNN is a type of deep learning model that is
