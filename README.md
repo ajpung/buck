@@ -5,7 +5,7 @@
     BUCK
 </h1>
 <h2 align="center">
-    Biological Understanding via Computer Knowledge
+    Biological Unpacking of Cervid Kontours
 </h2>
 
 
