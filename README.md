@@ -5,7 +5,7 @@
     BUCK
 </h1>
 <h2 align="center">
-    Biological Unpacking of Cervid Kontours
+    Biometric Utilization of Cervid Kontours
 </h2>
 
 
