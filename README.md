@@ -16,8 +16,7 @@ A tool for predicting the age of male deer based on professionally analyzed trai
 ## Introduction
 There are many ways to predict age on a male deer. The most common method is to
 look at the teeth, but this requires a professional to examine the animal. Other
-techniques have been deeply investigated by Lindsay Thomas Jr. of the National
-Deer Association (NDA) including antler characteristics (mass, size, etc.) as
+techniques have been deeply investigated including antler characteristics (mass, size, etc.) as
 well as body proportions.
 
 ## Antler characteristics
