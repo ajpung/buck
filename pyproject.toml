@@ -1,71 +1,66 @@
-[build-system]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "generic"
+name = "buck"
+description = "Tool for estimating deer age from trail cam images"
+readme = "README.md"
 requires-python = ">=3.9,<3.13"
 authors = [
     {name = "Aaron Pung", email = "aaron.pung@gmail.com"},
 ]
-description = "Tool for Antenna Data Analysis"
-readme = "README.md"
 dependencies = [
-    "keras",
-    "numpy",
-    "pandas",
-    "seaborn",
+    "black",
+    "black[jupyter]",
     "ipykernel",
+    "jupyter",
+    "jupyter_client",
+    "keras",
     "matplotlib",
-    "tensorflow",
-    "scikit-learn",
+    "mypy",
+    "notebook",
+    "numpy",
     "opencv-python",
+    "pandas",
+    "python-dateutil",
+    "pyzmq",
+    "scikit-learn",
+    "seaborn",
+    "setuptools",
+    "setuptools-scm",
+    "tensorflow",
+    "wheel",
 ]
 dynamic = ["version"]
 
-[tool.setuptools.package-data]
-generic = ["py.typed"]
-
 [project.optional-dependencies]
 dev = [
-    "pytest",
     "black",
+    "jupyter_client",
+    "kaleido",
     "mypy",
-    "kaleido"
+    "pytest",
 ]
 docs = [
-    "sphinx",
-    "sphinx_rtd_theme",
-    "myst_parser",
     "autodoc_pydantic",
     "furo",
+    "myst_parser",
+    "sphinx",
+    "sphinx_rtd_theme",
 ]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 plugins = "numpy.typing.mypy_plugin"
 
-
-[[tool.mypy.overrides]]
-module = [
-    "astropy.*",
-]
-ignore_missing_imports = true
-
 [tool.setuptools_scm]
 
 [tool.semantic_release]
-version_toml = [
-    "pyproject.toml:version",
-]
 tag_format = "{version}"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py312']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -81,6 +76,6 @@ exclude = '''
   | dist
   | env
   | venv
-  | buck-env  # Add your specific virtual environment name here
+  | buck-env
 )/
 '''

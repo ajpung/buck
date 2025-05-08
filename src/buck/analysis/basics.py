@@ -3,7 +3,7 @@ import numpy as np
 from glob import glob
 from typing import Any
 from sklearn.model_selection import train_test_split
-from generic.data.image_processing import make_bw_square, resize_image
+from buck.data.image_processing import make_bw_square, resize_image
 
 # Find/ingest files in folder; force square & b/w
 files = glob("..\\..\\..\\images\\squared\\*.png")

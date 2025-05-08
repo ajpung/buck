@@ -53,12 +53,24 @@ to increase the size of the training set and improve the model's performance. At
 
 # Installation
 ```
-# Create a virtual environment
+# Create a new virtual environment
 python -m venv buck-env
-d# Activate the virtual environment
+
+# Activate the virtual environment
 .\buck-env\Scripts\activate
-# Install the package in editable mode
+
+# Upgrade pip first
+python -m pip install --upgrade pip
+
+# Install setuptools explicitly first
+python -m pip install setuptools wheel
+
+# Install numpy explicitly (using a wheel)
+python -m pip install numpy
+
+# Then install your package
 python -m pip install -e .
+
 # Install the environment in Jupyter
 python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
 ```
