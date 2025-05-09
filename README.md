@@ -31,10 +31,25 @@ circumference, and tine length, but these suffer from the same issues as mass.
 ### BUCK
 Alternatively, the NDA has provided a set of images and ratings for a number of
 deer, which can be used to train a model to predict age based on images alone.
-This is the method we will use in this project BUCK (Biological Understanding
-via Computer Knowledge). Images of the deer were taken from numerous websites
-and publications, including the NDA, Mississippi State University, and BuckScore.
+This is the method we will use in this project BUCK (Biometric Utilization of
+Cervid Kontours). Images of the deer were taken from numerous websites,
+publications, blog posts, videos, and tutorials from a multitude of 
+institutions.
 
+BUCK is working with a small but growing dataset. Because of this, different models
+are built, compared, and optimized to find the best model for the task. The models
+include canned classifiers (e.g. NaiveBayes, RandomForest, etc.), but also include
+convolution neural networks (CNNs) and transfer learning. Each of these is built,
+executed, and illustrated in separate Jupyter notebooks. The goal is to find the
+best model for the task, and to provide a framework for future work in this area.
+
+There is a statistical aspect, as well. Even though we desire to build an age
+prediction model with the highest possible accuracy, we also want to sanity check
+our output compared to the expectations from normal people in the field. This is
+achieved by statistically comparing the age estimates from informed hunters compared
+with the model's "truth", which is determined by institutions mentioned above.
+
+#### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
 features from the images. The CNN is a type of deep learning model that is
 particularly well-suited for image classification tasks. The model is trained on
