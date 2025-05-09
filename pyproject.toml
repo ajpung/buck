@@ -6,6 +6,7 @@ requires-python = ">=3.9,<3.13"
 authors = [
     {name = "Aaron Pung", email = "aaron.pung@gmail.com"},
 ]
+
 dependencies = [
     "black",
     "black[jupyter]",
