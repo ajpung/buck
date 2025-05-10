@@ -10,7 +10,7 @@
 
 
 # Introduction
-A tool for predicting the age of male deer based on professionally analyzed trail camera images. Specifically, this analysis follows the textbook. "Deep Learning for Vision Systems", by M. Elgendy.
+A tool for predicting the age of male whitetail deer based on trail camera images.
 
 # Buck aging
 ## Introduction
