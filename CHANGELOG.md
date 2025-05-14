@@ -2,6 +2,51 @@
 
 
 
+## v0.4.0 (2025-05-14)
+
+### Chore
+
+* chore: standing up optimization for random forest parameters ([`39f0fa5`](https://github.com/ajpung/buck/commit/39f0fa57e7c28ad64c8f99fe33f8eea44c1506e3))
+
+* chore: adding data, rerunning model ([`ae41a23`](https://github.com/ajpung/buck/commit/ae41a2343ad75fb528d5e3b44bf0b4246c6010d5))
+
+* chore: more data adding, updated README and pyproject.toml to include updated pip ([`1243a49`](https://github.com/ajpung/buck/commit/1243a49260d671b8425672fad8c7c73f498d5e1b))
+
+### Feature
+
+* feat: adding auto-optimizers for classifiers ([`5a5b138`](https://github.com/ajpung/buck/commit/5a5b13814100f839f2e7322bd036b28759210a70))
+
+### Unknown
+
+* Merge pull request #39 from ajpung/add-optims
+
+feat: adding auto-optimizers for classifiers ([`109ce74`](https://github.com/ajpung/buck/commit/109ce74b38a8f08c2d889756d2feb70460532340))
+
+* Merge pull request #30 from ajpung/optimize-rf
+
+chore: standing up optimization for random forest parameters ([`f00d901`](https://github.com/ajpung/buck/commit/f00d901402999eed13a080ac34b0546618f0c7e4))
+
+* Merge pull request #29 from ajpung/build-funcs
+
+Migrating code to functions for cleaner runtime and debugging ([`e165aff`](https://github.com/ajpung/buck/commit/e165aff45a2d83ec18ff83c14dc6cadfca0b55eb))
+
+* Migrating code to functions for cleaner runtime and debugging ([`222001a`](https://github.com/ajpung/buck/commit/222001a420cf3efb9d3f02c0fb3680497685eaab))
+
+* Merge pull request #28 from ajpung/add-data
+
+chore: adding data, rerunning model ([`7dbf327`](https://github.com/ajpung/buck/commit/7dbf327bc3a1ac745d118b12f467a3ec709a05f1))
+
+* Update README.md ([`91d7d12`](https://github.com/ajpung/buck/commit/91d7d12a2de17d306c0cf40a8641a5670b9ea67a))
+
+* Merge pull request #27 from ajpung/readme
+
+chore: more data adding, updated README and pyproject.toml to include… ([`6c2cafd`](https://github.com/ajpung/buck/commit/6c2cafd27a3c7ef2e1da5dac1a0935a763fddd15))
+
+* . ([`521ed0f`](https://github.com/ajpung/buck/commit/521ed0f19923f4e49dec245ecbc9068e0e385839))
+
+* . ([`4565b32`](https://github.com/ajpung/buck/commit/4565b32e9dcaa55af6413200c5dd36a7093f2b83))
+
+
 ## v0.3.0 (2025-05-09)
 
 ### Chore
