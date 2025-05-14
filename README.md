@@ -66,6 +66,7 @@ set was then augmented using random rotations, flips, and brightness adjustments
 to increase the size of the training set and improve the model's performance. At the end of the analysis, transfer learning is also consider to enhance model accuracy. 
 
 # Installation
+*BUILT USING PYTHON 3.11.9*
 ```
 # Create a new virtual environment
 python -m venv buck-env

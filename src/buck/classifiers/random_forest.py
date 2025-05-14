@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Any
+
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score
 
@@ -10,6 +11,25 @@ def _optimize_rs(
     y_train_flat,
     X_test_pca,
     y_true,
+    random_state=42,
+    n_estimators=140,
+    max_depth=5,
+    criterion="gini",
+    class_weight="balanced",
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the random state for a Random Forest classifier.
@@ -17,8 +37,6 @@ def _optimize_rs(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     """
     # Initialize variables
     print("Optimizing random state...")
@@ -44,7 +62,7 @@ def _optimize_rs(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -72,7 +90,29 @@ def _optimize_rs(
 
 
 def _optimize_nest(
-    X_train_pca, y_train_flat, X_test_pca, y_true, random_state
+    X_train_pca,
+    y_train_flat,
+    X_test_pca,
+    y_true,
+    random_state=42,
+    n_estimators=140,
+    max_depth=5,
+    criterion="gini",
+    class_weight="balanced",
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the number of estimators for a Random Forest classifier.
@@ -80,8 +120,6 @@ def _optimize_nest(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     :param random_state: Random state for reproducibility
     """
     print("Optimizing # estimators...")
@@ -112,7 +150,7 @@ def _optimize_nest(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -141,7 +179,29 @@ def _optimize_nest(
 
 
 def _optimize_max_d(
-    X_train_pca, y_train_flat, X_test_pca, y_true, random_state, n_estimators
+    X_train_pca,
+    y_train_flat,
+    X_test_pca,
+    y_true,
+    random_state=42,
+    n_estimators=140,
+    max_depth=5,
+    criterion="gini",
+    class_weight="balanced",
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the maximum depth for a Random Forest classifier.
@@ -149,8 +209,6 @@ def _optimize_max_d(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     :param random_state: Random state for reproducibility
     """
     print("Optimizing max depth...")
@@ -161,6 +219,7 @@ def _optimize_max_d(
     max_acc = -np.inf
     max_idx = -1
     variable_array = np.arange(1, 15)
+    variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -181,7 +240,7 @@ def _optimize_max_d(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -209,7 +268,29 @@ def _optimize_max_d(
 
 
 def _optimize_crit(
-    X_train_pca, y_train_flat, X_test_pca, y_true, random_state, n_estimators, max_depth
+    X_train_pca,
+    y_train_flat,
+    X_test_pca,
+    y_true,
+    random_state,
+    n_estimators,
+    max_depth,
+    criterion="gini",
+    class_weight="balanced",
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[str, float]:
     """
     Optimizes the criterion for a Random Forest classifier.
@@ -217,8 +298,6 @@ def _optimize_crit(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     :param random_state: Random state for reproducibility
     """
     print("Optimizing criterion...")
@@ -249,7 +328,7 @@ def _optimize_crit(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -285,6 +364,21 @@ def _optimize_cw(
     n_estimators,
     max_depth,
     criterion,
+    class_weight="balanced",
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ):
     """
     Optimizes the class weight for a Random Forest classifier.
@@ -292,8 +386,6 @@ def _optimize_cw(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     :param random_state: Random state for reproducibility
     """
     print("Optimizing class weight...")
@@ -324,7 +416,7 @@ def _optimize_cw(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -361,6 +453,20 @@ def _optimize_mss(
     max_depth,
     criterion,
     class_weight,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the minimum samples split for a Random Forest classifier.
@@ -377,7 +483,7 @@ def _optimize_mss(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(2, 20)
+    variable_array = np.arange(2, 30)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -398,7 +504,7 @@ def _optimize_mss(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -436,6 +542,19 @@ def _optimize_msl(
     criterion,
     class_weight,
     min_samples_split,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the minimum samples leaf for a Random Forest classifier.
@@ -473,7 +592,7 @@ def _optimize_msl(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -512,6 +631,18 @@ def _optimize_mwfl(
     class_weight,
     min_samples_split,
     min_samples_leaf,
+    min_weight_fraction_leaf=0.0,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the minimum weight fraction leaf for a Random Forest classifier.
@@ -528,7 +659,7 @@ def _optimize_mwfl(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(0.0, 1, 0.05)
+    variable_array = np.arange(0.0, 0.5, 0.01)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -549,7 +680,7 @@ def _optimize_mwfl(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -589,6 +720,17 @@ def _optimize_mfeat(
     min_samples_split,
     min_samples_leaf,
     min_weight_fraction_leaf,
+    max_features="sqrt",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ):
     """
     Optimizes the maximum features for a Random Forest classifier.
@@ -626,7 +768,7 @@ def _optimize_mfeat(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -667,6 +809,16 @@ def _optimize_mln(
     min_samples_leaf,
     min_weight_fraction_leaf,
     max_features,
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the maximum leaf nodes for a Random Forest classifier.
@@ -674,8 +826,6 @@ def _optimize_mln(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     :param random_state: Random state for reproducibility
     """
     print("Optimizing max leaf nodes...")
@@ -686,6 +836,7 @@ def _optimize_mln(
     max_acc = -np.inf
     max_idx = -1
     variable_array = np.arange(2, 20)
+    variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -706,7 +857,7 @@ def _optimize_mln(
             min_impurity_decrease=0.0,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -748,6 +899,15 @@ def _optimize_mid(
     min_weight_fraction_leaf,
     max_features,
     max_leaf_nodes,
+    min_impurity_decrease=0.0,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=-1,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    monotonic_cst=None,
 ) -> tuple[Any, float]:
     """
     Optimizes the minimum impurity decrease for a Random Forest classifier.
@@ -755,8 +915,6 @@ def _optimize_mid(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     :param random_state: Random state for reproducibility
     """
     print("Optimizing min impurity decrease...")
@@ -766,7 +924,7 @@ def _optimize_mid(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(0.0, 0.5, 0.01)
+    variable_array = np.arange(0.0, 1.0, 0.01)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -787,7 +945,7 @@ def _optimize_mid(
             min_impurity_decrease=v,
             bootstrap=True,
             oob_score=False,
-            n_jobs=None,
+            n_jobs=-1,
             verbose=0,
             warm_start=False,
             ccp_alpha=0.0,
@@ -826,8 +984,6 @@ def optimize_random_forest(
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
     :param y_true: True labels for the test data
-    :param num_classes: Number of classes in the dataset
-    :param label_mapping: Mapping of labels to class names
     """
     # Shorten parameters
     Xtr_pca = X_train_pca
@@ -837,22 +993,56 @@ def optimize_random_forest(
     # Optimize hyperparameters
     r_state, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true)
     print("Accuracy: ", ma)
-    n_est, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, r_state)
+    n_est, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=r_state)
     print("Accuracy: ", ma)
-    max_d, ma = _optimize_max_d(Xtr_pca, ytr_flat, Xte_pca, y_true, r_state, n_est)
+    max_d, ma = _optimize_max_d(
+        Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=r_state, n_estimators=n_est
+    )
     print("Accuracy: ", ma)
-    crit, ma = _optimize_crit(Xtr_pca, ytr_flat, Xte_pca, y_true, r_state, n_est, max_d)
+    crit, ma = _optimize_crit(
+        Xtr_pca,
+        ytr_flat,
+        Xte_pca,
+        y_true,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+    )
     print("Accuracy: ", ma)
     c_wt, ma = _optimize_cw(
-        Xtr_pca, ytr_flat, Xte_pca, y_true, r_state, n_est, max_d, crit
+        Xtr_pca,
+        ytr_flat,
+        Xte_pca,
+        y_true,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
     )
     print("Accuracy: ", ma)
     m_spl, ma = _optimize_mss(
-        Xtr_pca, ytr_flat, Xte_pca, y_true, r_state, n_est, max_d, crit, c_wt
+        Xtr_pca,
+        ytr_flat,
+        Xte_pca,
+        y_true,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
     )
     print("Accuracy: ", ma)
     m_sl, ma = _optimize_msl(
-        Xtr_pca, ytr_flat, Xte_pca, y_true, r_state, n_est, max_d, crit, c_wt, m_spl
+        Xtr_pca,
+        ytr_flat,
+        Xte_pca,
+        y_true,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
     )
     print("Accuracy: ", ma)
     m_wfl, ma = _optimize_mwfl(
@@ -860,13 +1050,13 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        r_state,
-        n_est,
-        max_d,
-        crit,
-        c_wt,
-        m_spl,
-        m_sl,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
+        min_samples_leaf=m_sl,
     )
     print("Accuracy: ", ma)
     m_feat, ma = _optimize_mfeat(
@@ -874,14 +1064,14 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        r_state,
-        n_est,
-        max_d,
-        crit,
-        c_wt,
-        m_spl,
-        m_sl,
-        m_wfl,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
+        min_samples_leaf=m_sl,
+        min_weight_fraction_leaf=m_wfl,
     )
     print("Accuracy: ", ma)
     m_ln, ma = _optimize_mln(
@@ -889,15 +1079,15 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        r_state,
-        n_est,
-        max_d,
-        crit,
-        c_wt,
-        m_spl,
-        m_sl,
-        m_wfl,
-        m_feat,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
+        min_samples_leaf=m_sl,
+        min_weight_fraction_leaf=m_wfl,
+        max_features=m_feat,
     )
     print("Accuracy: ", ma)
     m_id, ma = _optimize_mid(
@@ -905,15 +1095,33 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        r_state,
-        n_est,
-        max_d,
-        crit,
-        c_wt,
-        m_spl,
-        m_sl,
-        m_wfl,
-        m_feat,
-        m_ln,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
+        min_samples_leaf=m_sl,
+        min_weight_fraction_leaf=m_wfl,
+        max_features=m_feat,
+        max_leaf_nodes=m_ln,
+    )
+    print("Accuracy: ", ma)
+
+    r_state, ma = _optimize_rs(
+        Xtr_pca,
+        ytr_flat,
+        Xte_pca,
+        y_true,
+        random_state=r_state,
+        n_estimators=n_est,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
+        min_samples_leaf=m_sl,
+        min_weight_fraction_leaf=m_wfl,
+        max_features=m_feat,
+        max_leaf_nodes=m_ln,
     )
     print("Accuracy: ", ma)

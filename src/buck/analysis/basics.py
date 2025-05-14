@@ -63,7 +63,7 @@ def extract_labels(
     return found, taken, state, ages, provider
 
 
-def ingest_images(fpath: str) -> tuple[ndarray[Any, Any], list[float]]:  # type: ignore
+def ingest_images(fpath: str):  # type: ignore
     """
     Ingests images from a given file path, resizes them to square, and extracts labels.
 
