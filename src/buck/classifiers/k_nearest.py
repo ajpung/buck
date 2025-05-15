@@ -11,24 +11,11 @@ def _optimize_nn(
     y_train_flat,
     X_test_pca,
     y_true,
-    n_neighbors=5,
-    weights="uniform",
-    algorithm="auto",
-    leaf_size=30,
-    p=2,
-    metric="minkowski",
-    metric_params=None,
-    n_jobs=-1,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the random state for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing neighbors...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -39,13 +26,13 @@ def _optimize_nn(
         # Define classifiers to test
         classifier = KNeighborsClassifier(
             n_neighbors=v,
-            weights="uniform",
-            algorithm="auto",
-            leaf_size=30,
-            p=2,
-            metric="minkowski",
-            metric_params=None,
-            n_jobs=None,
+            weights=opts["weights"],
+            algorithm=opts["algorithm"],
+            leaf_size=opts["leaf_size"],
+            p=opts["p"],
+            metric=opts["metric"],
+            metric_params=opts["metric_params"],
+            n_jobs=opts["n_jobs"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -62,9 +49,9 @@ def _optimize_nn(
             best_val = v
 
     # Store best value
-    n_neighbors = best_val
+    opts["n_neighbors"] = best_val
 
-    return n_neighbors, max_acc
+    return opts, max_acc
 
 
 def _optimize_wt(
@@ -72,24 +59,11 @@ def _optimize_wt(
     y_train_flat,
     X_test_pca,
     y_true,
-    n_neighbors,
-    weights="uniform",
-    algorithm="auto",
-    leaf_size=30,
-    p=2,
-    metric="minkowski",
-    metric_params=None,
-    n_jobs=-1,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the weights for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing weights...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -101,14 +75,14 @@ def _optimize_wt(
         v = variable_array[i]
         # Define classifiers to test
         classifier = KNeighborsClassifier(
-            n_neighbors=n_neighbors,
+            n_neighbors=opts["n_neighbors"],
             weights=v,
-            algorithm="auto",
-            leaf_size=30,
-            p=2,
-            metric="minkowski",
-            metric_params=None,
-            n_jobs=None,
+            algorithm=opts["algorithm"],
+            leaf_size=opts["leaf_size"],
+            p=opts["p"],
+            metric=opts["metric"],
+            metric_params=opts["metric_params"],
+            n_jobs=opts["n_jobs"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -125,9 +99,9 @@ def _optimize_wt(
             best_val = v
 
     # Store best value
-    weights = best_val
+    opts["weights"] = best_val
 
-    return weights, max_acc
+    return opts, max_acc
 
 
 def _optimize_algo(
@@ -135,24 +109,11 @@ def _optimize_algo(
     y_train_flat,
     X_test_pca,
     y_true,
-    n_neighbors,
-    weights,
-    algorithm="auto",
-    leaf_size=30,
-    p=2,
-    metric="minkowski",
-    metric_params=None,
-    n_jobs=-1,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the algorithm for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing algorithm...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -164,14 +125,14 @@ def _optimize_algo(
         v = variable_array[i]
         # Define classifiers to test
         classifier = KNeighborsClassifier(
-            n_neighbors=n_neighbors,
-            weights=weights,
+            n_neighbors=opts["n_neighbors"],
+            weights=opts["weights"],
             algorithm=v,
-            leaf_size=30,
-            p=2,
-            metric="minkowski",
-            metric_params=None,
-            n_jobs=None,
+            leaf_size=opts["leaf_size"],
+            p=opts["p"],
+            metric=opts["metric"],
+            metric_params=opts["metric_params"],
+            n_jobs=opts["n_jobs"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -188,9 +149,9 @@ def _optimize_algo(
             best_val = v
 
     # Store best value
-    algorithm = best_val
+    opts["algorithm"] = best_val
 
-    return algorithm, max_acc
+    return opts, max_acc
 
 
 def _optimize_ls(
@@ -198,24 +159,11 @@ def _optimize_ls(
     y_train_flat,
     X_test_pca,
     y_true,
-    n_neighbors,
-    weights,
-    algorithm,
-    leaf_size=30,
-    p=2,
-    metric="minkowski",
-    metric_params=None,
-    n_jobs=-1,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the leaf size for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing leaf size...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -227,14 +175,14 @@ def _optimize_ls(
         v = variable_array[i]
         # Define classifiers to test
         classifier = KNeighborsClassifier(
-            n_neighbors=n_neighbors,
-            weights=weights,
-            algorithm=algorithm,
+            n_neighbors=opts["n_neighbors"],
+            weights=opts["weights"],
+            algorithm=opts["algorithm"],
             leaf_size=v,
-            p=2,
-            metric="minkowski",
-            metric_params=None,
-            n_jobs=None,
+            p=opts["p"],
+            metric=opts["metric"],
+            metric_params=opts["metric_params"],
+            n_jobs=opts["n_jobs"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -251,9 +199,9 @@ def _optimize_ls(
             best_val = v
 
     # Store best value
-    leaf_size = best_val
+    opts["leaf_size"] = best_val
 
-    return leaf_size, max_acc
+    return opts, max_acc
 
 
 def _optimize_p(
@@ -261,24 +209,11 @@ def _optimize_p(
     y_train_flat,
     X_test_pca,
     y_true,
-    n_neighbors,
-    weights,
-    algorithm,
-    leaf_size,
-    p=2,
-    metric="minkowski",
-    metric_params=None,
-    n_jobs=-1,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the p for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing p...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -290,14 +225,14 @@ def _optimize_p(
         v = variable_array[i]
         # Define classifiers to test
         classifier = KNeighborsClassifier(
-            n_neighbors=n_neighbors,
-            weights=weights,
-            algorithm=algorithm,
-            leaf_size=leaf_size,
+            n_neighbors=opts["n_neighbors"],
+            weights=opts["weights"],
+            algorithm=opts["algorithm"],
+            leaf_size=opts["leaf_size"],
             p=v,
-            metric="minkowski",
-            metric_params=None,
-            n_jobs=None,
+            metric=opts["metric"],
+            metric_params=opts["metric_params"],
+            n_jobs=opts["n_jobs"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -314,9 +249,9 @@ def _optimize_p(
             best_val = v
 
     # Store best value
-    p = best_val
+    opts["p"] = best_val
 
-    return p, max_acc
+    return opts, max_acc
 
 
 def _optimize_metric(
@@ -324,24 +259,11 @@ def _optimize_metric(
     y_train_flat,
     X_test_pca,
     y_true,
-    n_neighbors,
-    weights,
-    algorithm,
-    leaf_size,
-    p,
-    metric="minkowski",
-    metric_params=None,
-    n_jobs=-1,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the metric for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing metric...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -376,14 +298,14 @@ def _optimize_metric(
         v = variable_array[i]
         # Define classifiers to test
         classifier = KNeighborsClassifier(
-            n_neighbors=n_neighbors,
-            weights=weights,
-            algorithm=algorithm,
-            leaf_size=leaf_size,
-            p=p,
+            n_neighbors=opts["n_neighbors"],
+            weights=opts["weights"],
+            algorithm=opts["algorithm"],
+            leaf_size=opts["leaf_size"],
+            p=opts["p"],
             metric=v,
-            metric_params=None,
-            n_jobs=None,
+            metric_params=opts["metric_params"],
+            n_jobs=opts["n_jobs"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -400,9 +322,9 @@ def _optimize_metric(
             best_val = v
 
     # Store best value
-    metric = best_val
+    opts["metric"] = best_val
 
-    return metric, max_acc
+    return opts, max_acc
 
 
 def optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true):
@@ -418,18 +340,35 @@ def optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true):
     ytr_flat = y_train_flat
     Xte_pca = X_test_pca
 
+    # Store optimals
+    opts = {
+        "n_neighbors": 5,
+        "weights": "uniform",
+        "algorithm": "auto",
+        "leaf_size": 30,
+        "p": 2,
+        "metric": "minkowski",
+        "metric_params": None,
+        "n_jobs": None,
+    }
+
     # Optimize hyperparameters
-    nn, max_acc = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true)
-    wt, max_acc = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, nn)
-    algo, max_acc = _optimize_algo(Xtr_pca, ytr_flat, Xte_pca, y_true, nn, wt)
-    ls, max_acc = _optimize_ls(Xtr_pca, ytr_flat, Xte_pca, y_true, nn, wt, algo)
-    p, max_acc = _optimize_p(Xtr_pca, ytr_flat, Xte_pca, y_true, nn, wt, algo, ls)
-    mt, max_acc = _optimize_metric(
-        Xtr_pca, ytr_flat, Xte_pca, y_true, nn, wt, algo, ls, p
-    )
-    nn, max_acc = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, nn, wt, algo, ls, p)
-    wt, max_acc = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, nn, wt, algo, ls, p)
+    opts, ma = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_algo(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_ls(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_p(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_metric(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+    opts, ma = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+    print(ma)
+
     print(f"Best accuracy: {max_acc}")
-    print(
-        f"Best parameters: n_neighbors={nn}, weights={wt}, algorithm={algo}, leaf_size={ls}, p={p}, metric={mt}"
-    )
+    return opts, max_acc

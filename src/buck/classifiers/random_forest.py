@@ -11,35 +11,11 @@ def _optimize_rs(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state=42,
-    n_estimators=140,
-    max_depth=5,
-    criterion="gini",
-    class_weight="balanced",
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the random state for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    """
-    # Initialize variables
+
     print("Optimizing random state...")
+
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -50,24 +26,24 @@ def _optimize_rs(
         # Define classifiers to test
         classifier = RandomForestClassifier(
             random_state=v,
-            n_estimators=140,
-            max_depth=5,
-            criterion="gini",
-            class_weight="balanced",
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -84,9 +60,9 @@ def _optimize_rs(
             best_val = v
 
     # Store best value
-    random_state = best_val
+    opts["random_state"] = best_val
 
-    return random_state, max_acc
+    return opts, max_acc
 
 
 def _optimize_nest(
@@ -94,34 +70,9 @@ def _optimize_nest(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state=42,
-    n_estimators=140,
-    max_depth=5,
-    criterion="gini",
-    class_weight="balanced",
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the number of estimators for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing # estimators...")
 
     # Initialize variables
@@ -137,25 +88,25 @@ def _optimize_nest(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
+            random_state=opts["random_state"],
             n_estimators=v,
-            max_depth=5,
-            criterion="gini",
-            class_weight="balanced",
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -173,9 +124,9 @@ def _optimize_nest(
             best_val = v
 
     # Store best value
-    n_estimators = best_val
+    opts["n_estimators"] = best_val
 
-    return n_estimators, max_acc
+    return opts, max_acc
 
 
 def _optimize_max_d(
@@ -183,34 +134,9 @@ def _optimize_max_d(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state=42,
-    n_estimators=140,
-    max_depth=5,
-    criterion="gini",
-    class_weight="balanced",
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the maximum depth for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing max depth...")
 
     # Initialize variables
@@ -227,25 +153,25 @@ def _optimize_max_d(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
             max_depth=v,
-            criterion="gini",
-            class_weight="balanced",
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -262,9 +188,9 @@ def _optimize_max_d(
             best_val = v
 
     # Store best value
-    max_depth = best_val
+    opts["max_depth"] = best_val
 
-    return max_depth, max_acc
+    return opts, max_acc
 
 
 def _optimize_crit(
@@ -272,34 +198,9 @@ def _optimize_crit(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion="gini",
-    class_weight="balanced",
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[str, float]:
-    """
-    Optimizes the criterion for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing criterion...")
 
     # Initialize variables
@@ -315,25 +216,25 @@ def _optimize_crit(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
             criterion=v,
-            class_weight="balanced",
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -350,9 +251,9 @@ def _optimize_crit(
             best_val = v
 
     # Store best value
-    criterion = best_val
+    opts["criterion"] = best_val
 
-    return criterion, max_acc
+    return opts, max_acc
 
 
 def _optimize_cw(
@@ -360,34 +261,9 @@ def _optimize_cw(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight="balanced",
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ):
-    """
-    Optimizes the class weight for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing class weight...")
 
     # Initialize variables
@@ -403,25 +279,25 @@ def _optimize_cw(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
             class_weight=v,
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -438,9 +314,9 @@ def _optimize_cw(
             best_val = v
 
     # Store best value
-    class_weight = best_val
+    opts["class_weight"] = best_val
 
-    return class_weight, max_acc
+    return opts, max_acc
 
 
 def _optimize_mss(
@@ -448,34 +324,9 @@ def _optimize_mss(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight,
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the minimum samples split for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing min samples split...")
 
     # Initialize variables
@@ -491,25 +342,25 @@ def _optimize_mss(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
-            class_weight=class_weight,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
             min_samples_split=v,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -526,9 +377,9 @@ def _optimize_mss(
             best_val = v
 
     # Store best value
-    min_samples_split = best_val
+    opts["min_samples_split"] = best_val
 
-    return min_samples_split, max_acc
+    return opts, max_acc
 
 
 def _optimize_msl(
@@ -536,34 +387,9 @@ def _optimize_msl(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight,
-    min_samples_split,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the minimum samples leaf for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing min samples leaf...")
 
     # Initialize variables
@@ -579,25 +405,25 @@ def _optimize_msl(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
-            class_weight=class_weight,
-            min_samples_split=min_samples_split,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
             min_samples_leaf=v,
-            min_weight_fraction_leaf=0.0,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -614,9 +440,9 @@ def _optimize_msl(
             best_val = v
 
     # Store best value
-    min_samples_leaf = best_val
+    opts["min_samples_leaf"] = best_val
 
-    return min_samples_leaf, max_acc
+    return opts, max_acc
 
 
 def _optimize_mwfl(
@@ -624,34 +450,9 @@ def _optimize_mwfl(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight,
-    min_samples_split,
-    min_samples_leaf,
-    min_weight_fraction_leaf=0.0,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the minimum weight fraction leaf for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing min weight fraction leaf...")
 
     # Initialize variables
@@ -667,25 +468,25 @@ def _optimize_mwfl(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
-            class_weight=class_weight,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
             min_weight_fraction_leaf=v,
-            max_features="sqrt",
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -702,44 +503,19 @@ def _optimize_mwfl(
             best_val = v
 
     # Store best value
-    min_weight_fraction_leaf = best_val
+    opts["min_weight_fraction_leaf"] = best_val
 
-    return min_weight_fraction_leaf, max_acc
+    return opts, max_acc
 
 
-def _optimize_mfeat(
+def _optimize_mf(
     X_train_pca,
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight,
-    min_samples_split,
-    min_samples_leaf,
-    min_weight_fraction_leaf,
-    max_features="sqrt",
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ):
-    """
-    Optimizes the maximum features for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing max features...")
 
     # Initialize variables
@@ -755,25 +531,25 @@ def _optimize_mfeat(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
-            class_weight=class_weight,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            min_weight_fraction_leaf=min_weight_fraction_leaf,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
             max_features=v,
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            max_leaf_nodes=opts["max_leaf_nodes"],
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -790,9 +566,9 @@ def _optimize_mfeat(
             best_val = v
 
     # Store best value
-    max_features = best_val
+    opts["max_features"] = best_val
 
-    return max_features, max_acc
+    return opts, max_acc
 
 
 def _optimize_mln(
@@ -800,34 +576,9 @@ def _optimize_mln(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight,
-    min_samples_split,
-    min_samples_leaf,
-    min_weight_fraction_leaf,
-    max_features,
-    max_leaf_nodes=None,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the maximum leaf nodes for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing max leaf nodes...")
 
     # Initialize variables
@@ -844,25 +595,25 @@ def _optimize_mln(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
-            class_weight=class_weight,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_features=max_features,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
             max_leaf_nodes=v,
-            min_impurity_decrease=0.0,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            min_impurity_decrease=opts["min_impurity_decrease"],
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -879,9 +630,9 @@ def _optimize_mln(
             best_val = v
 
     # Store best value
-    max_leaf_nodes = best_val
+    opts["max_leaf_nodes"] = best_val
 
-    return max_leaf_nodes, max_acc
+    return opts, max_acc
 
 
 def _optimize_mid(
@@ -889,34 +640,9 @@ def _optimize_mid(
     y_train_flat,
     X_test_pca,
     y_true,
-    random_state,
-    n_estimators,
-    max_depth,
-    criterion,
-    class_weight,
-    min_samples_split,
-    min_samples_leaf,
-    min_weight_fraction_leaf,
-    max_features,
-    max_leaf_nodes,
-    min_impurity_decrease=0.0,
-    bootstrap=True,
-    oob_score=False,
-    n_jobs=-1,
-    verbose=0,
-    warm_start=False,
-    ccp_alpha=0.0,
-    max_samples=None,
-    monotonic_cst=None,
+    opts,
 ) -> tuple[Any, float]:
-    """
-    Optimizes the minimum impurity decrease for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
-    :param y_true: True labels for the test data
-    :param random_state: Random state for reproducibility
-    """
+
     print("Optimizing min impurity decrease...")
 
     # Initialize variables
@@ -932,25 +658,25 @@ def _optimize_mid(
         v = variable_array[i]
         # Define classifiers to test
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            criterion=criterion,
-            class_weight=class_weight,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_features=max_features,
-            max_leaf_nodes=max_leaf_nodes,
+            random_state=opts["random_state"],
+            n_estimators=opts["n_estimators"],
+            max_depth=opts["max_depth"],
+            criterion=opts["criterion"],
+            class_weight=opts["class_weight"],
+            min_samples_split=opts["min_samples_split"],
+            min_samples_leaf=opts["min_samples_leaf"],
+            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
+            max_features=opts["max_features"],
+            max_leaf_nodes=opts["max_leaf_nodes"],
             min_impurity_decrease=v,
-            bootstrap=True,
-            oob_score=False,
-            n_jobs=-1,
-            verbose=0,
-            warm_start=False,
-            ccp_alpha=0.0,
-            max_samples=None,
-            monotonic_cst=None,
+            bootstrap=opts["bootstrap"],
+            oob_score=opts["oob_score"],
+            n_jobs=opts["n_jobs"],
+            verbose=opts["verbose"],
+            warm_start=opts["warm_start"],
+            ccp_alpha=opts["ccp_alpha"],
+            max_samples=opts["max_samples"],
+            monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
         classifier.fit(X_train_pca, y_train_flat)
@@ -967,9 +693,9 @@ def _optimize_mid(
             best_val = v
 
     # Store best value
-    min_impurity_decrease = best_val
+    opts["min_impurity_decrease"] = best_val
 
-    return min_impurity_decrease, max_acc
+    return opts, max_acc
 
 
 def optimize_random_forest(
@@ -977,7 +703,7 @@ def optimize_random_forest(
     y_train_flat,
     X_test_pca,
     y_true,
-) -> None:
+) -> tuple[dict, float]:
     """
     Optimizes the hyperparameters for a Random Forest classifier.
     :param X_train_pca: PCA transformed training data
@@ -990,156 +716,53 @@ def optimize_random_forest(
     ytr_flat = y_train_flat
     Xte_pca = X_test_pca
 
+    opts = {
+        "n_estimators": 100,
+        "criterion": "gini",
+        "max_depth": None,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "min_weight_fraction_leaf": 0.0,
+        "max_features": "sqrt",
+        "max_leaf_nodes": None,
+        "min_impurity_decrease": 0.0,
+        "bootstrap": True,
+        "oob_score": False,
+        "n_jobs": -1,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": False,
+        "class_weight": None,
+        "ccp_alpha": 0.0,
+        "max_samples": None,
+        "monotonic_cst": None,
+    }
+
     # Optimize hyperparameters
-    rs, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true)
+    opts, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    n_est, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=rs)
+    opts, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    max_d, ma = _optimize_max_d(
-        Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=rs, n_estimators=n_est
-    )
+    opts, ma = _optimize_max_d(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    crit, ma = _optimize_crit(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-    )
+    opts, ma = _optimize_crit(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)  # type: ignore
     print("Accuracy: ", ma)
-    c_wt, ma = _optimize_cw(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-    )
+    opts, ma = _optimize_cw(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    m_spl, ma = _optimize_mss(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-    )
+    opts, ma = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    m_sl, ma = _optimize_msl(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-    )
+    opts, ma = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    m_wfl, ma = _optimize_mwfl(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-        min_samples_leaf=m_sl,
-    )
+    opts, ma = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    m_feat, ma = _optimize_mfeat(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-        min_samples_leaf=m_sl,
-        min_weight_fraction_leaf=m_wfl,
-    )
+    opts, ma = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    m_ln, ma = _optimize_mln(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-        min_samples_leaf=m_sl,
-        min_weight_fraction_leaf=m_wfl,
-        max_features=m_feat,
-    )
+    opts, ma = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-    m_id, ma = _optimize_mid(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-        min_samples_leaf=m_sl,
-        min_weight_fraction_leaf=m_wfl,
-        max_features=m_feat,
-        max_leaf_nodes=m_ln,
-    )
+    opts, ma = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-
-    rs, ma = _optimize_rs(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        n_estimators=n_est,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-        min_samples_leaf=m_sl,
-        min_weight_fraction_leaf=m_wfl,
-        max_features=m_feat,
-        max_leaf_nodes=m_ln,
-        min_impurity_decrease=m_id,
-    )
+    opts, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
-
-    n_est, ma = _optimize_nest(
-        Xtr_pca,
-        ytr_flat,
-        Xte_pca,
-        y_true,
-        random_state=rs,
-        max_depth=max_d,
-        criterion=crit,
-        class_weight=c_wt,
-        min_samples_split=m_spl,
-        min_samples_leaf=m_sl,
-        min_weight_fraction_leaf=m_wfl,
-        max_features=m_feat,
-        max_leaf_nodes=m_ln,
-        min_impurity_decrease=m_id,
-    )
+    opts, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
     print("Accuracy: ", ma)
+    return opts, ma
