@@ -991,12 +991,12 @@ def optimize_random_forest(
     Xte_pca = X_test_pca
 
     # Optimize hyperparameters
-    r_state, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true)
+    rs, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true)
     print("Accuracy: ", ma)
-    n_est, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=r_state)
+    n_est, ma = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=rs)
     print("Accuracy: ", ma)
     max_d, ma = _optimize_max_d(
-        Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=r_state, n_estimators=n_est
+        Xtr_pca, ytr_flat, Xte_pca, y_true, random_state=rs, n_estimators=n_est
     )
     print("Accuracy: ", ma)
     crit, ma = _optimize_crit(
@@ -1004,7 +1004,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
     )
@@ -1014,7 +1014,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1025,7 +1025,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1037,7 +1037,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1050,7 +1050,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1064,7 +1064,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1079,7 +1079,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1095,7 +1095,7 @@ def optimize_random_forest(
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
+        random_state=rs,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1108,12 +1108,11 @@ def optimize_random_forest(
     )
     print("Accuracy: ", ma)
 
-    r_state, ma = _optimize_rs(
+    rs, ma = _optimize_rs(
         Xtr_pca,
         ytr_flat,
         Xte_pca,
         y_true,
-        random_state=r_state,
         n_estimators=n_est,
         max_depth=max_d,
         criterion=crit,
@@ -1123,5 +1122,24 @@ def optimize_random_forest(
         min_weight_fraction_leaf=m_wfl,
         max_features=m_feat,
         max_leaf_nodes=m_ln,
+        min_impurity_decrease=m_id,
+    )
+    print("Accuracy: ", ma)
+
+    n_est, ma = _optimize_nest(
+        Xtr_pca,
+        ytr_flat,
+        Xte_pca,
+        y_true,
+        random_state=rs,
+        max_depth=max_d,
+        criterion=crit,
+        class_weight=c_wt,
+        min_samples_split=m_spl,
+        min_samples_leaf=m_sl,
+        min_weight_fraction_leaf=m_wfl,
+        max_features=m_feat,
+        max_leaf_nodes=m_ln,
+        min_impurity_decrease=m_id,
     )
     print("Accuracy: ", ma)
