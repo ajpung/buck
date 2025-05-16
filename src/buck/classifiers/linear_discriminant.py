@@ -1,7 +1,7 @@
 from typing import Any
 
 import numpy as np
-from sklearn.disciminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import accuracy_score, f1_score
 
 
@@ -169,7 +169,6 @@ def _optimize_linear_discriminant(
     # Optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
         opts, _ = _optimize_sl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_sh(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, ma = _optimize_nc(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)

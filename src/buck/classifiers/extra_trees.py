@@ -704,7 +704,6 @@ def _optimize_extra_trees(
     # Optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_max_d(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
