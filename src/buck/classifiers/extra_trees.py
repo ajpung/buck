@@ -1,11 +1,10 @@
 from typing import Any
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.metrics import accuracy_score, f1_score
 
 
-# ----------------- RANDOM STATE -----------------
 def _optimize_rs(
     X_train_pca,
     y_train_flat,
@@ -21,7 +20,7 @@ def _optimize_rs(
     best_val = variable_array[0]
     for v in variable_array:
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=v,
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -81,7 +80,7 @@ def _optimize_nest(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=v,
             max_depth=opts["max_depth"],
@@ -143,7 +142,7 @@ def _optimize_max_d(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=v,
@@ -203,7 +202,7 @@ def _optimize_crit(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -263,7 +262,7 @@ def _optimize_cw(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -323,7 +322,7 @@ def _optimize_mss(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -383,7 +382,7 @@ def _optimize_msl(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -443,7 +442,7 @@ def _optimize_mwfl(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -503,7 +502,7 @@ def _optimize_mf(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -564,7 +563,7 @@ def _optimize_mln(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -624,7 +623,7 @@ def _optimize_mid(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = RandomForestClassifier(
+        classifier = ExtraTreesClassifier(
             random_state=opts["random_state"],
             n_estimators=opts["n_estimators"],
             max_depth=opts["max_depth"],
@@ -665,11 +664,11 @@ def _optimize_mid(
     return opts, max_acc
 
 
-def _optimize_random_forest(
+def _optimize_extra_trees(
     X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2
-) -> tuple[dict, float]:
+) -> tuple[dict[str, object], list[float]]:
     """
-    Optimizes the hyperparameters for a Random Forest classifier.
+    Optimizes the hyperparameters for the Extra Trees classifier.
     :param X_train_pca: PCA transformed training data
     :param y_train_flat: Flattened training labels
     :param X_test_pca: PCA transformed test data
@@ -719,4 +718,4 @@ def _optimize_random_forest(
         opts, ma = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
 
-    return opts, ma_vec  # type: ignore
+    return opts, ma_vec

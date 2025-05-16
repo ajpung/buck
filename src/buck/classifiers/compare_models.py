@@ -4,27 +4,45 @@ import numpy as np
 import pandas as pd
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import (
+    BaggingClassifier,
+    StackingClassifier,
+    VotingClassifier,
     RandomForestClassifier,
     GradientBoostingClassifier,
     ExtraTreesClassifier,
     AdaBoostClassifier,
 )
-from sklearn.linear_model import LogisticRegression
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.linear_model import (
+    LogisticRegression,
+    PassiveAggressiveClassifier,
+    RidgeClassifier,
+    SGDClassifier,
+)
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.semi_supervised import SelfTrainingClassifier
 
 
 def compare_models(
     X_train_pca, y_train_flat, X_test_pca, y_true, num_classes, label_mapping, cores=6
-) -> None:
+):
     # Define number of cores to use
     os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
 
     # Define classifiers to test
     classifiers = {
+        "Passive Aggressive": PassiveAggressiveClassifier(),
+        "Ridge Classifier": RidgeClassifier(),
+        "SGD Classifier": SGDClassifier(),
+        "Self Training": SelfTrainingClassifier(),
+        "Bagging": BaggingClassifier(random_state=42),
+        "Stacking": StackingClassifier(random_state=42),
+        "Voting": VotingClassifier(random_state=42),
+        "Gaussian Process": GaussianProcessClassifier(),
         "K-Nearest Neighbors": KNeighborsClassifier(
             n_neighbors=min(8, len(X_train_pca)), weights="distance"
         ),
@@ -142,3 +160,4 @@ def compare_models(
     # Show detailed classification report for best classifier
     print(f"\nDetailed Classification Report for {best_classifier['Classifier']}:")
     print(classification_reports[best_classifier["Classifier"]])
+    return best_classifier["Classifier"]

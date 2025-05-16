@@ -1,8 +1,8 @@
 from typing import Any
 
 import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.neighbors import KNeighborsClassifier
 
 
 # ----------------- RANDOM STATE -----------------
@@ -13,14 +13,11 @@ def _optimize_nn(
     y_true,
     opts,
 ) -> tuple[Any, float]:
-
-    print("Optimizing neighbors...")
-
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(150)
+    variable_array = np.arange(1, 200)
     best_val = variable_array[0]
     for v in variable_array:
         # Define classifiers to test
@@ -61,9 +58,6 @@ def _optimize_wt(
     y_true,
     opts,
 ) -> tuple[Any, float]:
-
-    print("Optimizing weights...")
-
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -111,9 +105,6 @@ def _optimize_algo(
     y_true,
     opts,
 ) -> tuple[Any, float]:
-
-    print("Optimizing algorithm...")
-
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -161,9 +152,6 @@ def _optimize_ls(
     y_true,
     opts,
 ) -> tuple[Any, float]:
-
-    print("Optimizing leaf size...")
-
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -211,9 +199,6 @@ def _optimize_p(
     y_true,
     opts,
 ) -> tuple[Any, float]:
-
-    print("Optimizing p...")
-
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -261,36 +246,36 @@ def _optimize_metric(
     y_true,
     opts,
 ) -> tuple[Any, float]:
-
-    print("Optimizing metric...")
-
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
+
+    "nan_euclidean",
+    "p",
+    "sqeuclidean",
+    "russellrao",
+    "l1",
+    "l2"
+
     variable_array = [
-        "minkowski",
-        "euclidean",
-        "manhattan",
-        "chebyshev",
-        "hamming",
-        "cityblock",
         "braycurtis",
         "canberra",
+        "chebyshev",
+        "cityblock",
         "correlation",
         "cosine",
-        "mahalanobis",
-        "seuclidean",
-        "sqeuclidean",
-        "wminkowski",
-        "yule",
-        "matching",
-        "jaccard",
         "dice",
-        "kulsinski",
+        "euclidean",
+        "hamming",
+        "jaccard",
+        "manhattan",
+        "minkowski",
         "rogerstanimoto",
+        "russellrao",
         "sokalmichener",
         "sokalsneath",
+        "yule",
     ]
     best_val = variable_array[0]
     for i in np.arange(len(variable_array)):
@@ -327,7 +312,7 @@ def _optimize_metric(
     return opts, max_acc
 
 
-def optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true):
+def _optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     """
     Optimizes the hyperparameters for a Random Forest classifier.
     :param X_train_pca: PCA transformed training data
@@ -353,22 +338,15 @@ def optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true):
     }
 
     # Optimize hyperparameters
-    opts, ma = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_algo(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_ls(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_p(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_metric(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
-    opts, ma = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-    print(ma)
+    ma_vec = []
+    for c in np.arange(cycles):
+        print(f"Cycle {c + 1} of {cycles}")
+        opts, _ = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _ = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _ = _optimize_algo(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _ = _optimize_ls(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _ = _optimize_p(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma = _optimize_metric(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        ma_vec.append(ma)
 
-    print(f"Best accuracy: {max_acc}")
-    return opts, max_acc
+    return opts, ma_vec
