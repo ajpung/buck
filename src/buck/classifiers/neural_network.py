@@ -1029,7 +1029,6 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
     # Cyclically optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_hl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_act(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)

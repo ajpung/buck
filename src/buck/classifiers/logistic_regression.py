@@ -679,7 +679,6 @@ def _optimize_logistic_regression(
     # Cyclically optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_pn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_dl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
