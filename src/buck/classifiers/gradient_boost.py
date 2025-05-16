@@ -1,7 +1,7 @@
 from typing import Any
 
 import numpy as np
-from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, f1_score
 
 
@@ -19,7 +19,7 @@ def _optimize_rs(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=v,
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -76,7 +76,7 @@ def _optimize_loss(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=v,
             learning_rate=opts["learning_rate"],
@@ -134,7 +134,7 @@ def _optimize_lr(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=v,
@@ -192,7 +192,7 @@ def _optimize_nest(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
     # Define classifiers to test
-    classifier = AdaBoostClassifier(
+    classifier = GradientBoostingClassifier(
         random_state=opts["random_state"],
         loss=opts["loss"],
         learning_rate=opts["learning_rate"],
@@ -250,7 +250,7 @@ def _optimize_ss(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -308,7 +308,7 @@ def _optimize_cr(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -366,7 +366,7 @@ def _optimize_mss(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -424,7 +424,7 @@ def _optimize_msl(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -482,7 +482,7 @@ def _optimize_mwfl(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -541,7 +541,7 @@ def _optimize_md(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -599,7 +599,7 @@ def _optimize_mid(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -657,7 +657,7 @@ def _optimize_init(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -716,7 +716,7 @@ def _optimize_mf(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
@@ -775,7 +775,7 @@ def _optimize_mln(
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
         # Define classifiers to test
-        classifier = AdaBoostClassifier(
+        classifier = GradientBoostingClassifier(
             random_state=opts["random_state"],
             loss=opts["loss"],
             learning_rate=opts["learning_rate"],
