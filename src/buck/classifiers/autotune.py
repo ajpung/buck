@@ -25,6 +25,7 @@ def garbage_collect():
 def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=5):
     results = {}
     print("Optimizing")
+    """
     print("...adaboost")
     optimals, accuracy = _optimize_ada_boost(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
@@ -43,10 +44,12 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=5):
     )
     results["Extra Trees"] = accuracy
     gc.collect()
+    """
     print("...gradient boost")
     optimals, accuracy = _optimize_gradient_boost(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
+
     results["Gradient Boosting"] = accuracy
     gc.collect()
     print("...KNN")
