@@ -61,64 +61,6 @@ def _optimize_rs(
     return opts, max_acc
 
 
-def _optimize_loss(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = ["log_loss", "exponential"]
-    best_val = variable_array[0]
-
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = GradientBoostingClassifier(
-            random_state=opts["random_state"],
-            loss=v,
-            learning_rate=opts["learning_rate"],
-            n_estimators=opts["n_estimators"],
-            subsample=opts["subsample"],
-            criterion=opts["criterion"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_depth=opts["max_depth"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            init=opts["init"],
-            max_features=opts["max_features"],
-            verbose=opts["verbose"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            warm_start=opts["warm_start"],
-            validation_fraction=opts["validation_fraction"],
-            n_iter_no_change=opts["n_iter_no_change"],
-            tol=opts["tol"],
-            ccp_alpha=opts["ccp_alpha"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            best_val = v
-
-    # Store best value
-    opts["loss"] = best_val
-
-    return opts, max_acc
-
-
 def _optimize_lr(
     X_train_pca, y_train_flat, X_test_pca, y_true, opts
 ) -> tuple[Any, float]:
@@ -185,7 +127,7 @@ def _optimize_nest(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 200, 1)
+    variable_array = np.arange(1, 100, 1)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -243,7 +185,7 @@ def _optimize_ss(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(0.0, 1.0, 0.1)
+    variable_array = np.arange(0.01, 1.0, 0.01)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -650,7 +592,7 @@ def _optimize_init(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = [0, None]
+    variable_array = ["zero", None]
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -852,19 +794,31 @@ def _optimize_gradient_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
     # Cyclically optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
+        print("Optimizing random state...")
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_loss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing learning rate...")
         opts, _ = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing n_estimators...")
         opts, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing subsample...")
         opts, _ = _optimize_ss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing criterion...")
         opts, _ = _optimize_cr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing min_samples_split...")
         opts, _ = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing min_samples_leaf...")
         opts, _ = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing min_weight_fraction_leaf...")
         opts, _ = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing max_depth...")
         opts, _ = _optimize_md(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing min_impurity_decrease...")
         opts, _ = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing init...")
         opts, _ = _optimize_init(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing max_features...")
         opts, _ = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Optimizing max_leaf_nodes...")
         opts, ma = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
 
