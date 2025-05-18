@@ -61,10 +61,11 @@ def _optimize_sh(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(0, 1.1, 0.1)
+    variable_array = np.arange(0.0, 1.0, 0.1)
     variable_array = np.append(variable_array.astype(object), ["auto", None])  # type: ignore
     best_val = variable_array[0]
-    for v in variable_array:
+    for i in np.arange(len(variable_array)):
+        v = variable_array[i]
         # Define classifiers to test
         classifier = LinearDiscriminantAnalysis(
             solver=opts["solver"],
@@ -106,16 +107,16 @@ def _optimize_nc(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 20, 1)
+    variable_array = np.arange(1, 4, 1)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
     for v in variable_array:
         # Define classifiers to test
         classifier = LinearDiscriminantAnalysis(
             solver=opts["solver"],
-            shrinkage=v,
+            shrinkage=opts["shrinkage"],
             priors=opts["priors"],
-            n_components=opts["n_components"],
+            n_components=v,
             store_covariance=opts["store_covariance"],
             tol=opts["tol"],
             covariance_estimator=opts["covariance_estimator"],

@@ -69,7 +69,7 @@ def _optimize_pn(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = ["l1", "l2", "elasticnet", "none"]
+    variable_array = ["l2", None]
     best_val = variable_array[0]
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
@@ -107,59 +107,6 @@ def _optimize_pn(
 
     # Store best value
     opts["penalty"] = best_val
-
-    return opts, max_acc
-
-
-def _optimize_dl(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-) -> tuple[Any, float]:
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = [True, False]
-    best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = LogisticRegression(
-            random_state=opts["random_state"],
-            penalty=opts["penalty"],
-            dual=v,
-            tol=opts["tol"],
-            C=opts["C"],
-            fit_intercept=opts["fit_intercept"],
-            intercept_scaling=opts["intercept_scaling"],
-            class_weight=opts["class_weight"],
-            solver="lbfgs",
-            max_iter=opts["max_iter"],
-            multi_class=opts["multi_class"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            n_jobs=opts["n_jobs"],
-            l1_ratio=opts["l1_ratio"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            best_val = v
-
-    # Store best value
-    opts["dual"] = best_val
 
     return opts, max_acc
 
@@ -681,7 +628,6 @@ def _optimize_logistic_regression(
     for c in np.arange(cycles):
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_pn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_dl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_tol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_c(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_fi(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
