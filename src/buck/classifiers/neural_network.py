@@ -71,7 +71,7 @@ def _optimize_hl(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(150)
+    variable_array = np.arange(1, 150, 1)
     best_val = variable_array[0]
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
@@ -1009,7 +1009,7 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
         "learning_rate": "constant",
         "learning_rate_init": 0.001,
         "power_t": 0.5,
-        "max_iter": 200,
+        "max_iter": 20000,
         "shuffle": True,
         "random_state": None,
         "tol": 0.0001,
@@ -1029,6 +1029,7 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
     # Cyclically optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
+        print(f"Cycle {c + 1} of {cycles}")
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_hl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_act(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
@@ -1037,7 +1038,6 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
         opts, _ = _optimize_batch(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_power(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mi(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_tol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_shuffle(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, _ = _optimize_momentum(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
@@ -1047,5 +1047,7 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
         opts, _ = _optimize_beta2(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         opts, ma = _optimize_eps(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        print(f"Best accuracy: {ma}")
+        print(f"Best parameters: {opts}")
 
     return opts, ma_vec

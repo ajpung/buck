@@ -794,6 +794,7 @@ def _optimize_gradient_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
     # Cyclically optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
+        print(f"Cycle {c + 1} of {cycles}")
         print("Optimizing random state...")
         opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         print("Optimizing learning rate...")
