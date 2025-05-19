@@ -192,6 +192,8 @@ def split_data(images: List, ages: List) -> Tuple:
         random_state=42,
         stratify=np.argmax(y_train_val_onehot, axis=1),  # Stratify by class
     )
+    print(X_train_orig.shape, X_valid.shape, X_test.shape)
+
     return (
         X_train_orig,
         y_train_orig,

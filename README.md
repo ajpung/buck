@@ -65,27 +65,8 @@ sets, with 80% of the images used for training and 20% for testing. The training
 set was then augmented using random rotations, flips, and brightness adjustments
 to increase the size of the training set and improve the model's performance. At the end of the analysis, transfer learning is also consider to enhance model accuracy. 
 
-# Installation
+# Installation![img.png](img.png)
 *BUILT USING PYTHON 3.11.9*
 ```
-# Create a new virtual environment
-python -m venv buck-env
 
-# Activate the virtual environment
-.\buck-env\Scripts\activate
-
-# Upgrade pip first
-python -m pip install --upgrade pip
-
-# Install setuptools explicitly first
-python -m pip install setuptools wheel
-
-# Install numpy explicitly (using a wheel)
-python -m pip install numpy
-
-# Then install your package
-python -m pip install -e .
-
-# Install the environment in Jupyter
-python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
 ```

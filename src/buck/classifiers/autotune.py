@@ -22,7 +22,7 @@ def garbage_collect():
     gc.collect()
 
 
-def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=5):
+def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     results = {}
     print("Optimizing")
     """
@@ -73,16 +73,7 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=5):
     print(optimals)
     print(results,'\n')
     gc.collect()
-    """
-    # ------------------ LOGISTIC REGRESSION ------------------
-    print("...logistic regression")
-    optimals, accuracy = _optimize_logistic_regression(
-        X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
-    )
-    results["Logistic Regression"] = accuracy
-    print(optimals)
-    print(results, "\n")
-    gc.collect()
+
     # ---------------------- NAIVE BAYES ----------------------
     print("...naive bayes")
     optimals, accuracy = _optimize_naive_bayes(
@@ -92,6 +83,8 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=5):
     print(optimals)
     print(results, "\n")
     gc.collect()
+    """
+
     # --------------------- NEURAL NETWORK --------------------
     print("...neural network")
     optimals, accuracy = _optimize_neural_network(
@@ -121,3 +114,12 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=5):
     print(results, "\n")
     gc.collect()
     return results
+    # ------------------ LOGISTIC REGRESSION ------------------
+    print("...logistic regression")
+    optimals, accuracy = _optimize_logistic_regression(
+        X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
+    )
+    results["Logistic Regression"] = accuracy
+    print(optimals)
+    print(results, "\n")
+    gc.collect()
