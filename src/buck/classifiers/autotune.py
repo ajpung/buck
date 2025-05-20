@@ -25,7 +25,6 @@ def garbage_collect():
 def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     results = {}
     print("Optimizing")
-    """
     # ------------------------ ADABOOST -----------------------
     print("...adaboost")
     optimals, accuracy = _optimize_ada_boost(
@@ -33,7 +32,7 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     )
     results["Adaboost"] = accuracy
     print(optimals)
-    print(results,'\n')
+    print(results, "\n")
     gc.collect()
     # -------------------- DECISION TREES ---------------------
     print("...decision tree")
@@ -42,7 +41,7 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     )
     results["Decision Tree"] = accuracy
     print(optimals)
-    print(results,'\n')
+    print(results, "\n")
     gc.collect()
     # ---------------------- EXTRA TREES ----------------------
     print("...extra trees")
@@ -51,9 +50,8 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     )
     results["Extra Trees"] = accuracy
     print(optimals)
-    print(results,'\n')
+    print(results, "\n")
     gc.collect()
-
     # -------------------------- KNN --------------------------
     print("...KNN")
     optimals, accuracy = _optimize_knn(
@@ -61,9 +59,8 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     )
     results["KNN"] = accuracy
     print(optimals)
-    print(results,'\n')
+    print(results, "\n")
     gc.collect()
-
     # ------------------ LINEAR DISCRIMINANT ------------------
     print("...linear discriminant")
     optimals, accuracy = _optimize_linear_discriminant(
@@ -71,9 +68,8 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     )
     results["Linear Discriminant"] = accuracy
     print(optimals)
-    print(results,'\n')
+    print(results, "\n")
     gc.collect()
-
     # ---------------------- NAIVE BAYES ----------------------
     print("...naive bayes")
     optimals, accuracy = _optimize_naive_bayes(
@@ -83,8 +79,6 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     print(optimals)
     print(results, "\n")
     gc.collect()
-    """
-
     # --------------------- NEURAL NETWORK --------------------
     print("...neural network")
     optimals, accuracy = _optimize_neural_network(

@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, f1_score
 # ----------------- RANDOM STATE -----------------
 def _optimize_rs(
     X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
 
     ac_vec = []
     f1_vec = []
@@ -42,12 +42,12 @@ def _optimize_rs(
     # Store best value
     opts["random_state"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_nest(
     X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -84,7 +84,7 @@ def _optimize_nest(
     # Store best value
     opts["n_estimators"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
@@ -124,7 +124,7 @@ def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Store best value
     opts["learning_rate"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_ada_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
@@ -145,9 +145,9 @@ def _optimize_ada_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2)
     # Cyclically optimize hyperparameters
     ma_vec = []
     for c in np.arange(cycles):
-        opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, ab_rs = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, ab_ne = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, ab_lr = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
 
     return opts, ma_vec

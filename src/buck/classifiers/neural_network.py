@@ -1012,7 +1012,7 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
         "max_iter": 20000,
         "shuffle": True,
         "random_state": None,
-        "tol": 0.0001,
+        "tol": 0.01,
         "verbose": False,
         "warm_start": False,
         "momentum": 0.9,
@@ -1030,22 +1030,33 @@ def _optimize_neural_network(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
     ma_vec = []
     for c in np.arange(cycles):
         print(f"Cycle {c + 1} of {cycles}")
-        opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_hl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_act(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_solver(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_alpha(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_batch(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_power(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_tol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_shuffle(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_momentum(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_nesterovs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_vf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_beta1(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_beta2(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma = _optimize_eps(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Random state optimized, accuracy:", ma)
+        opts, ma = _optimize_hl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Hidden layer optimized, accuracy:", ma)
+        opts, ma = _optimize_act(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("Activation optimized, accuracy:", ma)
+        opts, ma = _optimize_solver(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("solver optimized, accuracy:", ma)
+        opts, ma = _optimize_alpha(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        print("alpha optimized, accuracy:", ma)
+        # opts, _ = _optimize_batch(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_power(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_shuffle(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_momentum(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_nesterovs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_vf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+
+        # opts, _ = _optimize_beta1(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        # opts, _ = _optimize_beta2(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        # opts, ma = _optimize_eps(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
         print(f"Best accuracy: {ma}")
         print(f"Best parameters: {opts}")
