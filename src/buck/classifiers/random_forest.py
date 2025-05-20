@@ -12,12 +12,12 @@ def _optimize_rs(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(150)
+    variable_array = np.arange(500)
     best_val = variable_array[0]
     for v in variable_array:
         # Define classifiers to test
@@ -59,7 +59,7 @@ def _optimize_rs(
     # Store best value
     opts["random_state"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_nest(
@@ -68,7 +68,7 @@ def _optimize_nest(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -120,7 +120,7 @@ def _optimize_nest(
     # Store best value
     opts["n_estimators"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_max_d(
@@ -129,13 +129,13 @@ def _optimize_max_d(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 15)
+    variable_array = np.arange(1, 200, 1)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
 
@@ -181,7 +181,7 @@ def _optimize_max_d(
     # Store best value
     opts["max_depth"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_crit(
@@ -190,7 +190,7 @@ def _optimize_crit(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[str, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -241,7 +241,7 @@ def _optimize_crit(
     # Store best value
     opts["criterion"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_cw(
@@ -250,7 +250,7 @@ def _optimize_cw(
     X_test_pca,
     y_true,
     opts,
-):
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -301,7 +301,7 @@ def _optimize_cw(
     # Store best value
     opts["class_weight"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_mss(
@@ -310,7 +310,7 @@ def _optimize_mss(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -361,7 +361,7 @@ def _optimize_mss(
     # Store best value
     opts["min_samples_split"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_msl(
@@ -370,7 +370,7 @@ def _optimize_msl(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -421,7 +421,7 @@ def _optimize_msl(
     # Store best value
     opts["min_samples_leaf"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_mwfl(
@@ -430,7 +430,7 @@ def _optimize_mwfl(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -481,7 +481,7 @@ def _optimize_mwfl(
     # Store best value
     opts["min_weight_fraction_leaf"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_mf(
@@ -490,7 +490,7 @@ def _optimize_mf(
     X_test_pca,
     y_true,
     opts,
-):
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -541,7 +541,7 @@ def _optimize_mf(
     # Store best value
     opts["max_features"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_mln(
@@ -550,13 +550,13 @@ def _optimize_mln(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(2, 20)
+    variable_array = np.arange(2, 300)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
 
@@ -602,7 +602,7 @@ def _optimize_mln(
     # Store best value
     opts["max_leaf_nodes"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_mid(
@@ -611,7 +611,7 @@ def _optimize_mid(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+) -> tuple[Any, float, list[Any]]:
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -662,7 +662,7 @@ def _optimize_mid(
     # Store best value
     opts["min_impurity_decrease"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, ac_vec
 
 
 def _optimize_random_forest(
@@ -706,17 +706,17 @@ def _optimize_random_forest(
     ma_vec = []
     for c in np.arange(cycles):
         print(f"Cycle {c + 1} of {cycles}")
-        opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_max_d(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_crit(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)  # type: ignore
-        opts, _ = _optimize_cw(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_rs = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_ne = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_md = _optimize_max_d(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_cr = _optimize_crit(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)  # type: ignore
+        opts, _, rf_cw = _optimize_cw(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_mss = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_msl = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_mwfl = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_mf = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, rf_mln = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, rf_mid = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
 
     return opts, ma_vec  # type: ignore

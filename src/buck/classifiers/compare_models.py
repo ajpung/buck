@@ -25,6 +25,14 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.semi_supervised import SelfTrainingClassifier
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.ensemble import StackingClassifier
 
 
 def compare_models(
@@ -34,14 +42,32 @@ def compare_models(
     os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
 
     # Define classifiers to test
+    # Stacking classifier
+    stack_estimators = [
+        ("rf", RandomForestClassifier(n_estimators=10, random_state=42)),
+        ("svr", make_pipeline(StandardScaler(), LinearSVC(random_state=42))),
+    ]
+    # Voting classifier
+    vlf1 = LogisticRegression(random_state=1)
+    vlf2 = RandomForestClassifier(n_estimators=50, random_state=1)
+    vlf3 = GaussianNB()
+    # SelfTraining classifier
+    svc = RandomForestClassifier(
+        n_estimators=100, max_depth=5, class_weight="balanced", random_state=42
+    )
+
     classifiers = {
         "Passive Aggressive": PassiveAggressiveClassifier(),
         "Ridge Classifier": RidgeClassifier(),
         "SGD Classifier": SGDClassifier(),
-        "Self Training": SelfTrainingClassifier(),
-        "Bagging": BaggingClassifier(random_state=42),
-        "Stacking": StackingClassifier(random_state=42),
-        "Voting": VotingClassifier(random_state=42),
+        "Self Training": SelfTrainingClassifier(svc),
+        "Bagging": BaggingClassifier(),
+        "Stacking": StackingClassifier(
+            estimators=stack_estimators, final_estimator=LogisticRegression()
+        ),
+        "Voting": VotingClassifier(
+            estimators=[("lr", vlf1), ("rf", vlf2), ("gnb", vlf3)], voting="hard"
+        ),
         "Gaussian Process": GaussianProcessClassifier(),
         "K-Nearest Neighbors": KNeighborsClassifier(
             n_neighbors=min(8, len(X_train_pca)), weights="distance"
