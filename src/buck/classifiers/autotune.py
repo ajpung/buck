@@ -27,93 +27,113 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     print("Optimizing")
     # ------------------------ ADABOOST -----------------------
     print("...adaboost")
-    optimals, accuracy = _optimize_ada_boost(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_ada_boost(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Adaboost"] = accuracy
-    print(optimals)
+    results["Adaboost"]["Accuracy"] = ma
+    results["Adaboost"]["f1-score"] = ma
+    results["Adaboost"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # -------------------- DECISION TREES ---------------------
     print("...decision tree")
-    optimals, accuracy = _optimize_decision_tree(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_decision_tree(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Decision Tree"] = accuracy
-    print(optimals)
+    results["Decision Tree"]["Accuracy"] = ma
+    results["Decision Tree"]["f1-score"] = f1
+    results["Decision Tree"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # ---------------------- EXTRA TREES ----------------------
     print("...extra trees")
-    optimals, accuracy = _optimize_extra_trees(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_extra_trees(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Extra Trees"] = accuracy
-    print(optimals)
+    results["Extra Trees"]["Accuracy"] = ma
+    results["Extra Trees"]["f1-score"] = f1
+    results["Extra Trees"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # -------------------------- KNN --------------------------
     print("...KNN")
-    optimals, accuracy = _optimize_knn(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_knn(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["KNN"] = accuracy
-    print(optimals)
+    results["KNN"]["Accuracy"] = ma
+    results["KNN"]["f1-score"] = f1
+    results["KNN"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # ------------------ LINEAR DISCRIMINANT ------------------
     print("...linear discriminant")
-    optimals, accuracy = _optimize_linear_discriminant(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_linear_discriminant(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Linear Discriminant"] = accuracy
-    print(optimals)
+    results["Linear Discriminant"]["Accuracy"] = ma
+    results["Linear Discriminant"]["f1-score"] = f1
+    results["Linear Discriminant"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # ---------------------- NAIVE BAYES ----------------------
     print("...naive bayes")
-    optimals, accuracy = _optimize_naive_bayes(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_naive_bayes(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Naive Bayes"] = accuracy
-    print(optimals)
+    results["Naive Bayes"]["Accuracy"] = ma
+    results["Naive Bayes"]["f1-score"] = f1
+    results["Naive Bayes"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # --------------------- NEURAL NETWORK --------------------
     print("...neural network")
-    optimals, accuracy = _optimize_neural_network(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_neural_network(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Neural Network"] = accuracy
-    print(optimals)
+    results["Neural Network"]["Accuracy"] = ma
+    results["Neural Network"]["f1-score"] = f1
+    results["Neural Network"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # --------------------- RANDOM FOREST ---------------------
     print("...random forest")
     print(results, "\n")
-    optimals, accuracy = _optimize_random_forest(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_random_forest(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Random Forest"] = accuracy
-    print(optimals)
+    results["Random Forest"]["Accuracy"] = ma
+    results["Random Forest"]["f1-score"] = f1
+    results["Random Forest"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     # -------------------- GRADIENT BOOST ---------------------
     print("...gradient boost")
-    optimals, accuracy = _optimize_gradient_boost(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_gradient_boost(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Gradient Boosting"] = accuracy
-    print(optimals)
+    results["Gradient Boost"]["Accuracy"] = ma
+    results["Gradient Boost"]["f1-score"] = f1
+    results["Gradient Boost"]["optimals"] = opts
     print(results, "\n")
     gc.collect()
     return results
     # ------------------ LOGISTIC REGRESSION ------------------
     print("...logistic regression")
-    optimals, accuracy = _optimize_logistic_regression(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_logistic_regression(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    results["Logistic Regression"] = accuracy
-    print(optimals)
+    results["Logistic Regression"]["Accuracy"] = ma
+    results["Logistic Regression"]["f1-score"] = f1
+    results["Logistic Regression"]["optimals"] = opts
+    print(results, "\n")
+    gc.collect()
+    # ------------------- BAGGING CLASSIFIER ------------------
+    print("...bagging classifier")
+    opts, ma, f1, ma_vec, f1_vec = _optimize_bagging_classifier(
+        X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
+    )
+    results["Bagging Classifier"]["Accuracy"] = ma
+    results["Bagging Classifier"]["f1-score"] = f1
+    results["Bagging Classifier"]["optimals"] = opts
     print(results, "\n")
     gc.collect()

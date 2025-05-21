@@ -11,7 +11,7 @@ def _optimize_rs(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -50,12 +50,13 @@ def _optimize_rs(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["random_state"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_tol(
@@ -64,7 +65,7 @@ def _optimize_tol(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -103,12 +104,13 @@ def _optimize_tol(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["tol"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_c(
@@ -117,7 +119,7 @@ def _optimize_c(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -156,12 +158,13 @@ def _optimize_c(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["C"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_fi(
@@ -170,7 +173,7 @@ def _optimize_fi(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -209,12 +212,13 @@ def _optimize_fi(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["fit_intercept"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_is(
@@ -223,7 +227,7 @@ def _optimize_is(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -262,12 +266,13 @@ def _optimize_is(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["intercept_scaling"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_cw(
@@ -276,7 +281,7 @@ def _optimize_cw(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -315,12 +320,13 @@ def _optimize_cw(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["class_weight"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_sol(
@@ -329,7 +335,7 @@ def _optimize_sol(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -375,12 +381,13 @@ def _optimize_sol(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["solver"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_mi(
@@ -389,7 +396,7 @@ def _optimize_mi(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -428,12 +435,13 @@ def _optimize_mi(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
         # Store best value
     opts["max_iter"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_mc(
@@ -442,7 +450,7 @@ def _optimize_mc(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -481,12 +489,13 @@ def _optimize_mc(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["multi_class"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_l1r(
@@ -495,7 +504,7 @@ def _optimize_l1r(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -534,12 +543,13 @@ def _optimize_l1r(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["l1_ratio"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_logistic_regression(
@@ -571,18 +581,20 @@ def _optimize_logistic_regression(
 
     # Cyclically optimize hyperparameters
     ma_vec = []
+    f1_vec = []
     for c in np.arange(cycles):
         print(f"Cycle {c + 1} of {cycles}")
-        opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_tol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_c(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_fi(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_is(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_cw(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_sol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mi(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_mc(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma = _optimize_l1r(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_tol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_c(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_fi(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_is(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_cw(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_sol(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_mi(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_mc(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, f1 = _optimize_l1r(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        f1_vec.append(f1)
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec

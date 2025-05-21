@@ -6,9 +6,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 # ----------------- RANDOM STATE -----------------
-def _optimize_rs(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -53,17 +51,16 @@ def _optimize_rs(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["random_state"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_lr(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -111,17 +108,16 @@ def _optimize_lr(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["learning_rate"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_nest(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_nest(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -169,17 +165,16 @@ def _optimize_nest(
     # Return index
     if accuracy >= max_acc:
         max_acc = accuracy
-    best_val = v
+        f1s = f1
+        best_val = v
 
     # Store best value
     opts["n_estimators"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_ss(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_ss(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -227,17 +222,16 @@ def _optimize_ss(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["subsample"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_cr(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_cr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -285,17 +279,16 @@ def _optimize_cr(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["criterion"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_mss(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_mss(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -343,17 +336,16 @@ def _optimize_mss(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["min_samples_split"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_msl(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_msl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -401,17 +393,16 @@ def _optimize_msl(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["min_samples_leaf"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_mwfl(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_mwfl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -459,17 +450,16 @@ def _optimize_mwfl(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["min_weight_fraction_leaf"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_md(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_md(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -518,17 +508,16 @@ def _optimize_md(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["max_depth"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_mid(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_mid(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -576,17 +565,16 @@ def _optimize_mid(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["min_impurity_decrease"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_init(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_init(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -634,17 +622,16 @@ def _optimize_init(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["init"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_mf(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_mf(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -693,17 +680,16 @@ def _optimize_mf(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["max_features"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
-def _optimize_mln(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float]:
+def _optimize_mln(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -752,12 +738,13 @@ def _optimize_mln(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["max_leaf_nodes"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_gradient_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
@@ -793,34 +780,22 @@ def _optimize_gradient_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycl
 
     # Cyclically optimize hyperparameters
     ma_vec = []
+    f1_vec = []
     for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
-        print("Optimizing random state...")
-        opts, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing learning rate...")
-        opts, _ = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing n_estimators...")
-        opts, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing subsample...")
-        opts, _ = _optimize_ss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing criterion...")
-        opts, _ = _optimize_cr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing min_samples_split...")
-        opts, _ = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing min_samples_leaf...")
-        opts, _ = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing min_weight_fraction_leaf...")
-        opts, _ = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing max_depth...")
-        opts, _ = _optimize_md(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing min_impurity_decrease...")
-        opts, _ = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing init...")
-        opts, _ = _optimize_init(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing max_features...")
-        opts, _ = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        print("Optimizing max_leaf_nodes...")
-        opts, ma = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_ss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_cr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_md(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_init(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, f1 = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        f1_vec.append(f1)
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec

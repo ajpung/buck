@@ -21,9 +21,11 @@ def _optimize_naive_bayes(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=
     y_pred = clf.predict(Xte_pca)
 
     # Calculate metrics
-    accuracy = accuracy_score(y_true, y_pred)
+    ma = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
 
     # Cyclically optimize hyperparameters
-    ma_vec = [accuracy]
+    ma_vec = [ma]
+    f1_vec = [f1]
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec

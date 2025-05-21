@@ -10,6 +10,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Literature
+literature/
+
 # Distribution / packaging
 .Python
 build/
