@@ -12,7 +12,7 @@ def _optimize_sl(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -42,12 +42,13 @@ def _optimize_sl(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["solver"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_sh(
@@ -56,7 +57,7 @@ def _optimize_sh(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -88,12 +89,13 @@ def _optimize_sh(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["shrinkage"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_nc(
@@ -102,7 +104,7 @@ def _optimize_nc(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -133,17 +135,18 @@ def _optimize_nc(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["n_components"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_linear_discriminant(
     X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2
-) -> tuple[dict[str, float | bool | str | None], list[float]]:
+):
     """
     Optimizes the hyperparameters for a Random Forest classifier.
     :param X_train_pca: PCA transformed training data
@@ -169,11 +172,13 @@ def _optimize_linear_discriminant(
 
     # Optimize hyperparameters
     ma_vec = []
+    f1_vec = []
     for c in np.arange(cycles):
         print(f"Cycle {c + 1} of {cycles}")
-        opts, _ = _optimize_sl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_sh(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma = _optimize_nc(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_sl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_sh(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, f1 = _optimize_nc(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        f1_vec.append(f1)
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec

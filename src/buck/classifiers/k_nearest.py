@@ -12,7 +12,7 @@ def _optimize_nn(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -43,12 +43,13 @@ def _optimize_nn(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["n_neighbors"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_wt(
@@ -57,7 +58,7 @@ def _optimize_wt(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -90,12 +91,13 @@ def _optimize_wt(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["weights"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_algo(
@@ -104,7 +106,7 @@ def _optimize_algo(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -137,12 +139,13 @@ def _optimize_algo(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["algorithm"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_ls(
@@ -151,7 +154,7 @@ def _optimize_ls(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -184,12 +187,13 @@ def _optimize_ls(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["leaf_size"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_p(
@@ -198,7 +202,7 @@ def _optimize_p(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -231,12 +235,13 @@ def _optimize_p(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["p"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_metric(
@@ -245,7 +250,7 @@ def _optimize_metric(
     X_test_pca,
     y_true,
     opts,
-) -> tuple[Any, float]:
+):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -304,12 +309,13 @@ def _optimize_metric(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["metric"] = best_val
 
-    return opts, max_acc
+    return opts, max_acc, f1s
 
 
 def _optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
@@ -339,13 +345,15 @@ def _optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
 
     # Optimize hyperparameters
     ma_vec = []
+    f1_vec = []
     for c in np.arange(cycles):
-        opts, _ = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_algo(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_ls(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _ = _optimize_p(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma = _optimize_metric(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_nn(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_wt(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_algo(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_ls(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_p(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, f1 = _optimize_metric(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        f1_vec.append(f1)
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec

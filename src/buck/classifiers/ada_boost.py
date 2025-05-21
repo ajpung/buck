@@ -6,9 +6,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 # ----------------- RANDOM STATE -----------------
-def _optimize_rs(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
 
     ac_vec = []
     f1_vec = []
@@ -38,16 +36,15 @@ def _optimize_rs(
         if accuracy >= max_acc:
             max_acc = accuracy
             best_val = v
+            f1s = f1
 
     # Store best value
     opts["random_state"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_nest(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_nest(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -80,11 +77,12 @@ def _optimize_nest(
         if accuracy >= max_acc:
             max_acc = accuracy
             best_val = v
+            f1s = f1
 
     # Store best value
     opts["n_estimators"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
 def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
@@ -119,12 +117,13 @@ def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["learning_rate"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
 def _optimize_ada_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
@@ -144,10 +143,12 @@ def _optimize_ada_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2)
 
     # Cyclically optimize hyperparameters
     ma_vec = []
+    f1_vec = []
     for c in np.arange(cycles):
-        opts, ma, ab_rs = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_ne = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_lr = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, f1 = _optimize_lr(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        f1_vec.append(f1)
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec

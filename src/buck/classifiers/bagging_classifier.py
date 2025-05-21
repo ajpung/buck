@@ -8,10 +8,7 @@ from sklearn.svm import SVC
 
 
 # ----------------- RANDOM STATE -----------------
-def _optimize_rs(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
-
+def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -46,17 +43,16 @@ def _optimize_rs(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["random_state"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_est(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_est(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -91,17 +87,16 @@ def _optimize_est(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["estimator"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_nest(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_nest(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -139,17 +134,16 @@ def _optimize_nest(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["n_estimators"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_maxs(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_maxs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -187,17 +181,16 @@ def _optimize_maxs(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["max_samples"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_maxf(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_maxf(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -235,17 +228,16 @@ def _optimize_maxf(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["max_features"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_boot(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_boot(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -283,17 +275,16 @@ def _optimize_boot(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["bootstrap"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_bootf(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_bootf(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -331,17 +322,16 @@ def _optimize_bootf(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["bootstrap_features"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_oob(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_oob(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -379,17 +369,16 @@ def _optimize_oob(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["oob_score"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
-def _optimize_warm(
-    X_train_pca, y_train_flat, X_test_pca, y_true, opts
-) -> tuple[Any, float, list[Any]]:
+def _optimize_warm(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -427,12 +416,13 @@ def _optimize_warm(
         # Return index
         if accuracy >= max_acc:
             max_acc = accuracy
+            f1s = f1
             best_val = v
 
     # Store best value
     opts["warm_start"] = best_val
 
-    return opts, max_acc, ac_vec
+    return opts, max_acc, f1s
 
 
 def _optimize_bagging(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
@@ -459,16 +449,18 @@ def _optimize_bagging(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
 
     # Cyclically optimize hyperparameters
     ma_vec = []
+    f1_vec = []
     for c in np.arange(cycles):
-        opts, ma, ab_rs = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_est = _optimize_est(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_nest = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_maxs = _optimize_maxs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_maxf = _optimize_maxf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_boot = _optimize_boot(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_bootf = _optimize_bootf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_oob = _optimize_oob(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, ab_warm = _optimize_warm(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_est(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_maxs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_maxf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_boot(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_bootf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, _, _ = _optimize_oob(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
+        opts, ma, f1 = _optimize_warm(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
         ma_vec.append(ma)
+        f1_vec.append(f1)
 
-    return opts, ma_vec
+    return opts, ma, f1, ma_vec, f1_vec
