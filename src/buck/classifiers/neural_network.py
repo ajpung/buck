@@ -354,7 +354,7 @@ def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(0.0001, 0.1, 0.0001)
+    variable_array = ["constant", "adaptive", "invscaling"]
     best_val = variable_array[0]
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
