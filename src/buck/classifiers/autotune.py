@@ -32,15 +32,14 @@ def write_to_nested_dict(data, keys, value):
 def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     results = {}
     print("Optimizing")
-    """
     # ------------------------ ADABOOST -----------------------
     print("...adaboost")
     opts, ma, f1, ma_vec, f1_vec = _optimize_ada_boost(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["Adaboost","Accuracy"], ma)
-    write_to_nested_dict(results, ["Adaboost","f1-score"], f1)
-    write_to_nested_dict(results, ["Adaboost","optimals"], opts)
+    write_to_nested_dict(results, ["Adaboost", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Adaboost", "f1-score"], f1)
+    write_to_nested_dict(results, ["Adaboost", "optimals"], opts)
     print(results, "\n")
     gc.collect()
     # -------------------- DECISION TREES ---------------------
@@ -48,9 +47,9 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     opts, ma, f1, ma_vec, f1_vec = _optimize_decision_tree(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["Decision Tree","Accuracy"], ma)
-    write_to_nested_dict(results, ["Decision Tree","f1-score"], f1)
-    write_to_nested_dict(results, ["Decision Tree","optimals"], opts)
+    write_to_nested_dict(results, ["Decision Tree", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Decision Tree", "f1-score"], f1)
+    write_to_nested_dict(results, ["Decision Tree", "optimals"], opts)
     print(results, "\n")
     gc.collect()
     # ---------------------- EXTRA TREES ----------------------
@@ -58,9 +57,9 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     opts, ma, f1, ma_vec, f1_vec = _optimize_extra_trees(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["Extra Trees","Accuracy"], ma)
-    write_to_nested_dict(results, ["Extra Trees","f1-score"], f1)
-    write_to_nested_dict(results, ["Extra Trees","optimals"], opts)
+    write_to_nested_dict(results, ["Extra Trees", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Extra Trees", "f1-score"], f1)
+    write_to_nested_dict(results, ["Extra Trees", "optimals"], opts)
     print(results, "\n")
     gc.collect()
     # -------------------------- KNN --------------------------
@@ -68,9 +67,9 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     opts, ma, f1, ma_vec, f1_vec = _optimize_knn(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["KNN","Accuracy"], ma)
-    write_to_nested_dict(results, ["KNN","f1-score"], f1)
-    write_to_nested_dict(results, ["KNN","optimals"], opts)
+    write_to_nested_dict(results, ["KNN", "Accuracy"], ma)
+    write_to_nested_dict(results, ["KNN", "f1-score"], f1)
+    write_to_nested_dict(results, ["KNN", "optimals"], opts)
     print(results, "\n")
     gc.collect()
     # ------------------ LINEAR DISCRIMINANT ------------------
@@ -78,9 +77,9 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     opts, ma, f1, ma_vec, f1_vec = _optimize_linear_discriminant(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["Linear Discriminant","Accuracy"], ma)
-    write_to_nested_dict(results, ["Linear Discriminant","f1-score"], f1)
-    write_to_nested_dict(results, ["Linear Discriminant","optimals"], opts)
+    write_to_nested_dict(results, ["Linear Discriminant", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Linear Discriminant", "f1-score"], f1)
+    write_to_nested_dict(results, ["Linear Discriminant", "optimals"], opts)
     print(results, "\n")
     gc.collect()
     # ---------------------- NAIVE BAYES ----------------------
@@ -88,9 +87,9 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     opts, ma, f1, ma_vec, f1_vec = _optimize_naive_bayes(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["Naive Bayes","Accuracy"], ma)
-    write_to_nested_dict(results, ["Naive Bayes","f1-score"], f1)
-    write_to_nested_dict(results, ["Naive Bayes","optimals"], opts)
+    write_to_nested_dict(results, ["Naive Bayes", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Naive Bayes", "f1-score"], f1)
+    write_to_nested_dict(results, ["Naive Bayes", "optimals"], opts)
     print(results, "\n")
     gc.collect()
     # --------------------- NEURAL NETWORK --------------------
@@ -98,12 +97,11 @@ def optimize_all(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
     opts, ma, f1, ma_vec, f1_vec = _optimize_neural_network(
         X_train_pca, y_train_flat, X_test_pca, y_true, cycles=cycles
     )
-    write_to_nested_dict(results, ["Neural Network","Accuracy"], ma)
-    write_to_nested_dict(results, ["Neural Network","f1-score"], f1)
-    write_to_nested_dict(results, ["Neural Network","optimals"], opts)
+    write_to_nested_dict(results, ["Neural Network", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Neural Network", "f1-score"], f1)
+    write_to_nested_dict(results, ["Neural Network", "optimals"], opts)
     print(results, "\n")
     gc.collect()
-    """
     # --------------------- RANDOM FOREST ---------------------
     print("...random forest")
     print(results, "\n")
