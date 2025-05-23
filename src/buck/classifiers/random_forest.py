@@ -17,7 +17,7 @@ def _optimize_rs(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(500)
+    variable_array = np.arange(800)
     best_val = variable_array[0]
     for v in variable_array:
         # Define classifiers to test
@@ -75,7 +75,7 @@ def _optimize_nest(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 150, 1)
+    variable_array = np.arange(1, 800)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -137,7 +137,7 @@ def _optimize_max_d(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 200, 1)
+    variable_array = np.arange(5, 25, 1)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
 
@@ -315,7 +315,7 @@ def _optimize_mss(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(2, 30)
+    variable_array = np.arange(2, 100)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -376,7 +376,7 @@ def _optimize_msl(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 20)
+    variable_array = np.arange(1, 50)
     best_val = variable_array[0]
 
     # Iterate through variables
@@ -559,7 +559,7 @@ def _optimize_mln(
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(2, 300)
+    variable_array = np.arange(50, 1000)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
 
