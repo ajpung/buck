@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 # ----------------- RANDOM STATE -----------------
-def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_rs(X_train, y_train, X_test, y_true, opts):
 
     ac_vec = []
     f1_vec = []
@@ -24,9 +24,9 @@ def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             learning_rate=opts["learning_rate"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -44,7 +44,7 @@ def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_nest(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_nest(X_train, y_train, X_test, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -64,9 +64,9 @@ def _optimize_nest(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             learning_rate=opts["learning_rate"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -85,7 +85,7 @@ def _optimize_nest(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_lr(X_train, y_train, X_test, y_true, opts):
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -105,9 +105,9 @@ def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             learning_rate=v,
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -126,12 +126,12 @@ def _optimize_lr(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_ada_boost(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
+def _optimize_ada_boost(X_train, y_train, X_test, y_true, cycles=2):
 
     # Shorten parameters
-    Xtr_pca = X_train_pca
-    ytr_flat = y_train_flat
-    Xte_pca = X_test_pca
+    Xtr_pca = X_train
+    ytr_flat = y_train
+    Xte_pca = X_test
 
     # Define optimals
     opts = {

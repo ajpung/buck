@@ -6,9 +6,9 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 def _optimize_rs(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -42,9 +42,9 @@ def _optimize_rs(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -63,9 +63,9 @@ def _optimize_rs(
 
 
 def _optimize_nest(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -103,9 +103,9 @@ def _optimize_nest(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -125,9 +125,9 @@ def _optimize_nest(
 
 
 def _optimize_max_d(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -166,9 +166,9 @@ def _optimize_max_d(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -187,9 +187,9 @@ def _optimize_max_d(
 
 
 def _optimize_crit(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -227,9 +227,9 @@ def _optimize_crit(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -248,9 +248,9 @@ def _optimize_crit(
 
 
 def _optimize_cw(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -288,9 +288,9 @@ def _optimize_cw(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -309,9 +309,9 @@ def _optimize_cw(
 
 
 def _optimize_mss(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -349,9 +349,9 @@ def _optimize_mss(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -370,9 +370,9 @@ def _optimize_mss(
 
 
 def _optimize_msl(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -410,9 +410,9 @@ def _optimize_msl(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -431,9 +431,9 @@ def _optimize_msl(
 
 
 def _optimize_mwfl(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -471,9 +471,9 @@ def _optimize_mwfl(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -492,9 +492,9 @@ def _optimize_mwfl(
 
 
 def _optimize_mf(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -532,9 +532,9 @@ def _optimize_mf(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -553,9 +553,9 @@ def _optimize_mf(
 
 
 def _optimize_mln(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -594,9 +594,9 @@ def _optimize_mln(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -615,9 +615,9 @@ def _optimize_mln(
 
 
 def _optimize_mid(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -655,9 +655,9 @@ def _optimize_mid(
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -675,18 +675,18 @@ def _optimize_mid(
     return opts, max_acc, f1s
 
 
-def _optimize_extra_trees(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
+def _optimize_extra_trees(X_train, y_train, X_test, y_true, cycles=2):
     """
     Optimizes the hyperparameters for the Extra Trees classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
+    :param X_train: PCA transformed training data
+    :param y_train: Flattened training labels
+    :param X_test: PCA transformed test data
     :param y_true: True labels for the test data
     """
     # Shorten parameters
-    Xtr_pca = X_train_pca
-    ytr_flat = y_train_flat
-    Xte_pca = X_test_pca
+    Xtr_pca = X_train
+    ytr_flat = y_train
+    Xte_pca = X_test
 
     opts = {
         "n_estimators": 100,
