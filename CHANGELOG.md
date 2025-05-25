@@ -2,6 +2,105 @@
 
 
 
+## v0.5.0 (2025-05-25)
+
+### Chore
+
+* chore: removing harmful PCA from image flattening ([`31899a1`](https://github.com/ajpung/buck/commit/31899a1204aa6e68f2767742787eaf6bd4b09d17))
+
+* chore: standing up CNN and Transfer Learning algorithms ([`b2ef294`](https://github.com/ajpung/buck/commit/b2ef294af1866bd065a5d22e1a126a8578209bcb))
+
+* chore: standing up script to auto-analyze human data and produce correct plots ([`e02f3cc`](https://github.com/ajpung/buck/commit/e02f3cc2dbe045c76643ffb36ae19908ab8fc84d))
+
+* chore: adding bagging optimizer ([`97d07db`](https://github.com/ajpung/buck/commit/97d07db505a7251fd10aee2ba633ee52695d08a3))
+
+* chore: standing up bagging optimization algorithm ([`a48c305`](https://github.com/ajpung/buck/commit/a48c3059b237165c0ef759f38de3550fa13bcee2))
+
+* chore: updating and fixing output from tests ([`881d063`](https://github.com/ajpung/buck/commit/881d06333990f9bfb305101d9ad179e3992960b0))
+
+* chore: fixing logistic regression and others ([`abea8c8`](https://github.com/ajpung/buck/commit/abea8c849952d59fdfcab95eaa46de7f77220a23))
+
+* chore: correcting params on optimizers ([`f42bca6`](https://github.com/ajpung/buck/commit/f42bca6748748cf05326c262f81ed1b9be48bc33))
+
+* chore: building in more optimizers for classifiers; identified more classifiers to use ([`d830cf2`](https://github.com/ajpung/buck/commit/d830cf22b11f9983098481367b9c5a126ccfaa5a))
+
+* chore: combining all optimizers into single function ([`cb8c7ac`](https://github.com/ajpung/buck/commit/cb8c7ac8dabcaed6fe07635c8801bbd7077f129d))
+
+* chore: adding additional classifiers and optimizers ([`9760739`](https://github.com/ajpung/buck/commit/9760739371c8da0a98da85616a25fddf71dfb6b2))
+
+* chore: adding Adaboost optimizer ([`4068282`](https://github.com/ajpung/buck/commit/4068282ab5d7b7abdd014a3193d14cc6c76f2ca6))
+
+* chore: fixing random forest auto-tuner ([`816b851`](https://github.com/ajpung/buck/commit/816b8513a96b98530139e29ceea3ac5ef6895040))
+
+### Feature
+
+* feat: all 18 classifiers built into optimizers ([`09ff1dd`](https://github.com/ajpung/buck/commit/09ff1dd0cc7151a629954ee0e786379fd723e77e))
+
+### Unknown
+
+* Merge pull request #53 from ajpung/finish-optims
+
+feat: all 18 classifiers built into optimizers ([`68d5b12`](https://github.com/ajpung/buck/commit/68d5b12e2089a8335d34c274ab0aa16f30735f5f))
+
+* . ([`201c183`](https://github.com/ajpung/buck/commit/201c18307a2d6c7cb11a080fe58ae510ca90eb3c))
+
+* . ([`85e2742`](https://github.com/ajpung/buck/commit/85e27422fd4a2ba3b47116fc39ac736ed2127d85))
+
+* . ([`835d04a`](https://github.com/ajpung/buck/commit/835d04a0635fc16c5f48df72ae258df454228cd5))
+
+* Merge pull request #52 from ajpung/remove-pca
+
+chore: removing harmful PCA from image flattening ([`f7a9c0b`](https://github.com/ajpung/buck/commit/f7a9c0bed5bb1cde19aa58b9f4beda278b14afdd))
+
+* Merge pull request #51 from ajpung/CNN-and_xfer
+
+chore: standing up CNN and Transfer Learning algorithms ([`ddf3205`](https://github.com/ajpung/buck/commit/ddf32051840d6540d82448c7864b68f6ef9ce129))
+
+* Merge pull request #50 from ajpung/human-vision
+
+chore: standing up script to auto-analyze human data and produce corr… ([`6126960`](https://github.com/ajpung/buck/commit/612696041e63e6408d1e69ed0572359637404a8f))
+
+* Merge pull request #49 from ajpung/add-bagging
+
+chore: adding bagging optimizer ([`4f87d9a`](https://github.com/ajpung/buck/commit/4f87d9ae967e1a7f93dd9a1c5553213b7782f575))
+
+* Merge pull request #48 from ajpung/build-bagging
+
+chore: standing up bagging optimization algorithm ([`5e813de`](https://github.com/ajpung/buck/commit/5e813defa6392c632a876503bb2daec6422250ba))
+
+* Merge pull request #47 from ajpung/fix-nn
+
+chore: updating and fixing output from tests ([`c597145`](https://github.com/ajpung/buck/commit/c597145418816ff683759198cd9fb854e5b27e24))
+
+* Merge pull request #46 from ajpung/fix-logreg
+
+chore: fixing logistic regression and others ([`7e4d341`](https://github.com/ajpung/buck/commit/7e4d3414910f6a867b6c174461c89dabdae0115b))
+
+* Merge pull request #45 from ajpung/correct-optims
+
+chore: correcting params on optimizers ([`7c71bbc`](https://github.com/ajpung/buck/commit/7c71bbc3e036a2cc2d6945796798fe95a492ab20))
+
+* Merge pull request #44 from ajpung/optimize-all
+
+chore: building in more optimizers for classifiers; identified more c… ([`064d03a`](https://github.com/ajpung/buck/commit/064d03aec973341bd11c1281548c7d2cdb7bcaf1))
+
+* Merge pull request #43 from ajpung/brute_force
+
+chore: combining all optimizers into single function ([`ef76575`](https://github.com/ajpung/buck/commit/ef7657529619923c31c6dbe8f0a2840bb642867b))
+
+* Merge pull request #42 from ajpung/add-optimizers
+
+chore: adding additional classifiers and optimizers ([`f95b184`](https://github.com/ajpung/buck/commit/f95b18442d2eed0d22ae1cd54129f392e54f7038))
+
+* Merge pull request #41 from ajpung/opt-ada
+
+chore: adding Adaboost optimizer ([`be05573`](https://github.com/ajpung/buck/commit/be05573cd5e07dd6c89fb38cfbe4cd0db1e2e43c))
+
+* Merge pull request #40 from ajpung/fix-rf
+
+chore: fixing random forest auto-tuner ([`a1e72d3`](https://github.com/ajpung/buck/commit/a1e72d31a827028bdf42db655b40de44fe0b0a5a))
+
+
 ## v0.4.0 (2025-05-14)
 
 ### Chore
