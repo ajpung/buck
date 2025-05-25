@@ -425,12 +425,12 @@ def _optimize_warm(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_bagging(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
+def _optimize_bagging(X_train, y_train, X_test, y_true, cycles=2):
 
     # Shorten parameters
-    Xtr_pca = X_train_pca
-    ytr_flat = y_train_flat
-    Xte_pca = X_test_pca
+    Xtr_pca = X_train
+    ytr_flat = y_train
+    Xte_pca = X_test
 
     # Define optimals
     opts = {
