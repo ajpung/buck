@@ -276,14 +276,12 @@ def homogenize_data(
     del X_train_flat, X_test_flat
     gc.collect()
 
-    # Apply PCA for dimensionality reduction
-    n_components = min(20, X_train_scaled.shape[0] - 5, X_train_scaled.shape[1])
-    pca = PCA(n_components=n_components, random_state=42)
-    X_train_pca = pca.fit_transform(X_train_scaled)
-    X_test_pca = pca.transform(X_test_scaled)
+    # Flatten images
+    X_train_flat = X_train_scaled.reshape(X_train_scaled.shape[0], -1)
+    X_test_flat = X_test_scaled.reshape(X_test_scaled.shape[0], -1)
 
     # Free up memory
     del X_train_scaled, X_test_scaled
     gc.collect()
 
-    return X_train_pca, y_train_flat, X_test_pca, y_true, label_mapping, num_classes
+    return X_train_flat, y_train_flat, X_test_flat, y_true, label_mapping, num_classes
