@@ -7,9 +7,9 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # ----------------- RANDOM STATE -----------------
 def _optimize_nn(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -32,9 +32,9 @@ def _optimize_nn(
             n_jobs=opts["n_jobs"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -53,9 +53,9 @@ def _optimize_nn(
 
 
 def _optimize_wt(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -80,9 +80,9 @@ def _optimize_wt(
             n_jobs=opts["n_jobs"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -101,9 +101,9 @@ def _optimize_wt(
 
 
 def _optimize_algo(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -128,9 +128,9 @@ def _optimize_algo(
             n_jobs=opts["n_jobs"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -149,9 +149,9 @@ def _optimize_algo(
 
 
 def _optimize_ls(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -176,9 +176,9 @@ def _optimize_ls(
             n_jobs=opts["n_jobs"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -197,9 +197,9 @@ def _optimize_ls(
 
 
 def _optimize_p(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -224,9 +224,9 @@ def _optimize_p(
             n_jobs=opts["n_jobs"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -245,9 +245,9 @@ def _optimize_p(
 
 
 def _optimize_metric(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
+    X_train,
+    y_train,
+    X_test,
     y_true,
     opts,
 ):
@@ -298,9 +298,9 @@ def _optimize_metric(
             n_jobs=opts["n_jobs"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -318,18 +318,18 @@ def _optimize_metric(
     return opts, max_acc, f1s
 
 
-def _optimize_knn(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
+def _optimize_knn(X_train, y_train, X_test, y_true, cycles=2):
     """
     Optimizes the hyperparameters for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
+    :param X_train: PCA transformed training data
+    :param y_train: Flattened training labels
+    :param X_test: PCA transformed test data
     :param y_true: True labels for the test data
     """
     # Shorten parameters
-    Xtr_pca = X_train_pca
-    ytr_flat = y_train_flat
-    Xte_pca = X_test_pca
+    Xtr_pca = X_train
+    ytr_flat = y_train
+    Xte_pca = X_test
 
     # Store optimals
     opts = {

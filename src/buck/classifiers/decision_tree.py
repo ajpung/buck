@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 # ----------------- RANDOM STATE -----------------
-def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_rs(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -33,9 +33,9 @@ def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -53,7 +53,7 @@ def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_ct(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_ct(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -79,9 +79,9 @@ def _optimize_ct(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -99,7 +99,7 @@ def _optimize_ct(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_sp(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_sp(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -125,9 +125,9 @@ def _optimize_sp(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -145,7 +145,7 @@ def _optimize_sp(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_md(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_md(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -172,9 +172,9 @@ def _optimize_md(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -192,7 +192,7 @@ def _optimize_md(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_mss(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_mss(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -218,9 +218,9 @@ def _optimize_mss(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -238,7 +238,7 @@ def _optimize_mss(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_msl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_msl(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -264,9 +264,9 @@ def _optimize_msl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -284,7 +284,7 @@ def _optimize_msl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_mwfl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_mwfl(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -310,9 +310,9 @@ def _optimize_mwfl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -330,7 +330,7 @@ def _optimize_mwfl(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_mf(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_mf(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -357,9 +357,9 @@ def _optimize_mf(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -377,7 +377,7 @@ def _optimize_mf(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_mln(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_mln(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -404,9 +404,9 @@ def _optimize_mln(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -424,7 +424,7 @@ def _optimize_mln(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_mid(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_mid(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -450,9 +450,9 @@ def _optimize_mid(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -470,7 +470,7 @@ def _optimize_mid(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_cw(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_cw(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -496,9 +496,9 @@ def _optimize_cw(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             monotonic_cst=opts["monotonic_cst"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -516,12 +516,12 @@ def _optimize_cw(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_decision_tree(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
+def _optimize_decision_tree(X_train, y_train, X_test, y_true, cycles=2):
 
     # Shorten parameters
-    Xtr_pca = X_train_pca
-    ytr_flat = y_train_flat
-    Xte_pca = X_test_pca
+    Xtr_pca = X_train
+    ytr_flat = y_train
+    Xte_pca = X_test
 
     # Define optimals
     opts = {

@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 
 
 # ----------------- RANDOM STATE -----------------
-def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_rs(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -32,9 +32,9 @@ def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             verbose=opts["verbose"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
@@ -52,7 +52,7 @@ def _optimize_rs(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
     return opts, max_acc, f1s
 
 
-def _optimize_est(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
+def _optimize_est(X_train, y_train, X_test, y_true, opts):
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -76,9 +76,9 @@ def _optimize_est(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
             verbose=opts["verbose"],
         )
         # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
+        classifier.fit(X_train, y_train)
         # Make predictions
-        y_pred = classifier.predict(X_test_pca)
+        y_pred = classifier.predict(X_test)
         # Calculate metrics
         accuracy = accuracy_score(y_true, y_pred)
         ac_vec.append(accuracy)
