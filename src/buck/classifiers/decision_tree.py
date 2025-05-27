@@ -1,5 +1,5 @@
 from typing import Any
-
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score
@@ -14,7 +14,7 @@ def _optimize_rs(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = np.arange(150)
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array)), desc="Optimizing random state"):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -60,7 +60,7 @@ def _optimize_ct(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = ["gini", "entropy", "log_loss"]
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array)), desc="Optimizing criterion"):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -106,7 +106,7 @@ def _optimize_sp(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = ["best", "random"]
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing splitter")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -153,7 +153,7 @@ def _optimize_md(X_train, y_train, X_test, y_true, opts):
     variable_array = np.arange(1, 20)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing max_depth")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -199,7 +199,7 @@ def _optimize_mss(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = np.arange(2, 20)
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing min_samples_split")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -245,7 +245,7 @@ def _optimize_msl(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = np.arange(1, 20)
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing min_samples_leaf")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -291,7 +291,7 @@ def _optimize_mwfl(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = np.arange(0, 0.5, 0.01)
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing MWFL")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -335,10 +335,9 @@ def _optimize_mf(X_train, y_train, X_test, y_true, opts):
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(1, 20)
     variable_array = np.append(variable_array.astype(object), ["sqrt", "log2", None])  # type: ignore
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing max_features")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -385,7 +384,7 @@ def _optimize_mln(X_train, y_train, X_test, y_true, opts):
     variable_array = np.arange(2, 50, 1)
     variable_array = np.append(variable_array.astype(object), None)  # type: ignore
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing max_leaf_nodes")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -431,7 +430,9 @@ def _optimize_mid(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = np.arange(0, 1, 0.02)
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(
+        np.arange(len(variable_array), desc="Optimizing min_impurity_decrease")
+    ):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(
@@ -477,7 +478,7 @@ def _optimize_cw(X_train, y_train, X_test, y_true, opts):
     max_idx = -1
     variable_array = ["balanced", None]
     best_val = variable_array[0]
-    for i in np.arange(len(variable_array)):
+    for i in tqdm(np.arange(len(variable_array), desc="Optimizing class_weight")):
         v = variable_array[i]
         # Define classifiers to test
         classifier = DecisionTreeClassifier(

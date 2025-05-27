@@ -40,186 +40,186 @@ def write_to_nested_dict(data, keys, value):
 def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     results = {}
     print("Optimizing")
-    # ------------------------ ADABOOST -----------------------
-    print("...adaboost")
-    opts, ma, f1, ma_vec, f1_vec = _optimize_ada_boost(
-        X_train, y_train, X_test, y_true, cycles=cycles
-    )
-    write_to_nested_dict(results, ["Adaboost", "Accuracy"], ma)
-    write_to_nested_dict(results, ["Adaboost", "f1-score"], f1)
-    write_to_nested_dict(results, ["Adaboost", "optimals"], opts)
-    print(results, "\n")
-    gc.collect()
-    # ------------------- BAGGING CLASSIFIER ------------------
-    print("...bagging classifier")
-    opts, ma, f1, ma_vec, f1_vec = _optimize_bagging(
-        X_train, y_train, X_test, y_true, cycles=cycles
-    )
-    write_to_nested_dict(results, ["Bagging Classifier", "Accuracy"], ma)
-    write_to_nested_dict(results, ["Bagging Classifier", "f1-score"], f1)
-    write_to_nested_dict(results, ["Bagging Classifier", "optimals"], opts)
-    print(results, "\n")
-    gc.collect()
+    ## ------------------------ ADABOOST -----------------------
+    # print("\n...adaboost")
+    # opts, ma, f1, ma_vec, f1_vec = _optimize_ada_boost(
+    #    X_train, y_train, X_test, y_true, cycles=cycles
+    # )
+    # write_to_nested_dict(results, ["Adaboost", "Accuracy"], ma)
+    # write_to_nested_dict(results, ["Adaboost", "f1-score"], f1)
+    # write_to_nested_dict(results, ["Adaboost", "optimals"], opts)
+    # print(results["Adaboost"], "\n")
+    # gc.collect()
+    ## ------------------- BAGGING CLASSIFIER ------------------
+    # print("\n...bagging classifier")
+    # opts, ma, f1, ma_vec, f1_vec = _optimize_bagging(
+    #    X_train, y_train, X_test, y_true, cycles=cycles
+    # )
+    # write_to_nested_dict(results, ["Bagging Classifier", "Accuracy"], ma)
+    # write_to_nested_dict(results, ["Bagging Classifier", "f1-score"], f1)
+    # write_to_nested_dict(results, ["Bagging Classifier", "optimals"], opts)
+    # print(results["Bagging Classifier"], "\n")
+    # gc.collect()
     # -------------------- DECISION TREES ---------------------
-    print("...decision tree")
+    print("\n...decision tree")
     opts, ma, f1, ma_vec, f1_vec = _optimize_decision_tree(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Decision Tree", "Accuracy"], ma)
     write_to_nested_dict(results, ["Decision Tree", "f1-score"], f1)
     write_to_nested_dict(results, ["Decision Tree", "optimals"], opts)
-    print(results, "\n")
+    print(results["Decision Tree"], "\n")
     gc.collect()
+    """
     # ---------------------- EXTRA TREES ----------------------
-    print("...extra trees")
+    print("\n...extra trees")
     opts, ma, f1, ma_vec, f1_vec = _optimize_extra_trees(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Extra Trees", "Accuracy"], ma)
     write_to_nested_dict(results, ["Extra Trees", "f1-score"], f1)
     write_to_nested_dict(results, ["Extra Trees", "optimals"], opts)
-    print(results, "\n")
+    print(results["Extra Trees"], "\n")
     gc.collect()
     # -------------------- GRADIENT BOOST ---------------------
-    print("...gradient boost")
+    print("\n...gradient boost")
     opts, ma, f1, ma_vec, f1_vec = _optimize_gradient_boost(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Gradient Boost", "Accuracy"], ma)
     write_to_nested_dict(results, ["Gradient Boost", "f1-score"], f1)
     write_to_nested_dict(results, ["Gradient Boost", "optimals"], opts)
-    print(results, "\n")
+    print(results["Gradient Boost"], "\n")
     gc.collect()
     return results
     # --------------------- RANDOM FOREST ---------------------
-    print("...random forest")
-    print(results, "\n")
+    print("\n...random forest")
     opts, ma, f1, ma_vec, f1_vec = _optimize_random_forest(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Random Forest", "Accuracy"], ma)
     write_to_nested_dict(results, ["Random Forest", "f1-score"], f1)
     write_to_nested_dict(results, ["Random Forest", "optimals"], opts)
-    print(results, "\n")
+    print(results["Random Forest"], "\n")
     gc.collect()
     # ------------------ LINEAR DISCRIMINANT ------------------
-    print("...linear discriminant")
+    print("\n...linear discriminant")
     opts, ma, f1, ma_vec, f1_vec = _optimize_linear_discriminant(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Linear Discriminant", "Accuracy"], ma)
     write_to_nested_dict(results, ["Linear Discriminant", "f1-score"], f1)
     write_to_nested_dict(results, ["Linear Discriminant", "optimals"], opts)
-    print(results, "\n")
+    print(results["Linear Discriminant"], "\n")
     gc.collect()
     # ------------------ LOGISTIC REGRESSION ------------------
-    print("...logistic regression")
+    print("\n...logistic regression")
     opts, ma, f1, ma_vec, f1_vec = _optimize_logistic_regression(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Logistic Regression", "Accuracy"], ma)
     write_to_nested_dict(results, ["Logistic Regression", "f1-score"], f1)
     write_to_nested_dict(results, ["Logistic Regression", "optimals"], opts)
-    print(results, "\n")
+    print(results["Logistic Regression"], "\n")
     gc.collect()
     # ------------------ PASSIVE AGGRESSIVE -------------------
-    print("...passive aggressive")
+    print("\n...passive aggressive")
     opts, ma, f1, ma_vec, f1_vec = _optimize_passive_aggressive(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Passive Aggressive", "Accuracy"], ma)
     write_to_nested_dict(results, ["Passive Aggressive", "f1-score"], f1)
     write_to_nested_dict(results, ["Passive Aggressive", "optimals"], opts)
-    print(results, "\n")
+    print(results["Passive Aggressive"], "\n")
     gc.collect()
     # ------------------------ RIDGE --------------------------
-    print("...ridge")
+    print("\n...ridge")
     opts, ma, f1, ma_vec, f1_vec = _optimize_ridge(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Ridge", "Accuracy"], ma)
     write_to_nested_dict(results, ["Ridge", "f1-score"], f1)
     write_to_nested_dict(results, ["Ridge", "optimals"], opts)
-    print(results, "\n")
+    print(results["Ridge"], "\n")
     gc.collect()
     # ------------------------ VOTING -------------------------
-    print("...voting")
+    print("\n...voting")
     opts, ma, f1, ma_vec, f1_vec = _optimize_voting_classifier(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Voting Classifier", "Accuracy"], ma)
     write_to_nested_dict(results, ["Voting Classifier", "f1-score"], f1)
     write_to_nested_dict(results, ["Voting Classifier", "optimals"], opts)
-    print(results, "\n")
+    print(results["Voting Classifier"], "\n")
     gc.collect()
     # --------------------- SELF-TRAINING ---------------------
-    print("...self-training")
+    print("\n...self-training")
     opts, ma, f1, ma_vec, f1_vec = _optimize_self_training(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Naive Bayes", "Accuracy"], ma)
     write_to_nested_dict(results, ["Naive Bayes", "f1-score"], f1)
     write_to_nested_dict(results, ["Naive Bayes", "optimals"], opts)
-    print(results, "\n")
+    print(results["Naive Bayes"], "\n")
     gc.collect()
     # -------------- STOCHASTIC GRADIENT DESCENT --------------
-    print("...stochastic gradient descent")
+    print("\n...stochastic gradient descent")
     opts, ma, f1, ma_vec, f1_vec = _optimize_sgd_classifier(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Stochastic Gradient Descent", "Accuracy"], ma)
     write_to_nested_dict(results, ["Stochastic Gradient Descent", "f1-score"], f1)
     write_to_nested_dict(results, ["Stochastic Gradient Descent", "optimals"], opts)
-    print(results, "\n")
+    print(results["Stochastic Gradient Descent"], "\n")
     gc.collect()
     # ------------------------ STACKING -----------------------
-    print("...stacking")
+    print("\n...stacking")
     opts, ma, f1, ma_vec, f1_vec = _optimize_stacking_classifier(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Stacking Classifier", "Accuracy"], ma)
     write_to_nested_dict(results, ["Stacking Classifier", "f1-score"], f1)
     write_to_nested_dict(results, ["Stacking Classifier", "optimals"], opts)
-    print(results, "\n")
+    print(results["Stacking Classifier"], "\n")
     gc.collect()
     # ---------------------- NAIVE BAYES ----------------------
-    print("...naive bayes")
+    print("\n...naive bayes")
     opts, ma, f1, ma_vec, f1_vec = _optimize_naive_bayes(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Naive Bayes", "Accuracy"], ma)
     write_to_nested_dict(results, ["Naive Bayes", "f1-score"], f1)
     write_to_nested_dict(results, ["Naive Bayes", "optimals"], opts)
-    print(results, "\n")
+    print(results["Naive Bayes"], "\n")
     gc.collect()
     # -------------------------- KNN --------------------------
-    print("...KNN")
+    print("\n...KNN")
     opts, ma, f1, ma_vec, f1_vec = _optimize_knn(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["KNN", "Accuracy"], ma)
     write_to_nested_dict(results, ["KNN", "f1-score"], f1)
     write_to_nested_dict(results, ["KNN", "optimals"], opts)
-    print(results, "\n")
+    print(results["KNN"], "\n")
     gc.collect()
     # --------------------- NEURAL NETWORK --------------------
-    print("...multi-layer perceptron")
+    print("\n...multi-layer perceptron")
     opts, ma, f1, ma_vec, f1_vec = _optimize_neural_network(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Neural Network", "Accuracy"], ma)
     write_to_nested_dict(results, ["Neural Network", "f1-score"], f1)
     write_to_nested_dict(results, ["Neural Network", "optimals"], opts)
-    print(results, "\n")
+    print(results["Neural Network"], "\n")
     gc.collect()
-
     # ------------------- GAUSSIAN PROCESS --------------------
-    print("...Gaussian Process")
+    print("\n...Gaussian Process")
     opts, ma, f1, ma_vec, f1_vec = _optimize_gaussian_process(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Gaussian Process", "Accuracy"], ma)
     write_to_nested_dict(results, ["Gaussian Process", "f1-score"], f1)
     write_to_nested_dict(results, ["Gaussian Process", "optimals"], opts)
-    print(results, "\n")
+    print(results["Gaussian Process"], "\n")
     gc.collect()
+    """
