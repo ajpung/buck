@@ -10,6 +10,7 @@ authors = [
 dependencies = [
     "black",
     "black[jupyter]",
+    "catboost",
     "ipykernel",
     "jupyter",
     "jupyter_client",

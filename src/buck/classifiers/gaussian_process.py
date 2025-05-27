@@ -1,6 +1,7 @@
 from typing import Any
-
+import warnings
 import numpy as np
+from tqdm.auto import tqdm
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import (
     RBF,
@@ -12,11 +13,29 @@ from sklearn.gaussian_process.kernels import (
     ConstantKernel,
 )
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.exceptions import ConvergenceWarning
+
+# Suppress convergence warnings for cleaner progress bars
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
+
+
+def _safe_evaluate_model(X_train, y_train, X_test, y_true, opts):
+    """Safely evaluate a model configuration"""
+    try:
+        classifier = GaussianProcessClassifier(**opts)
+        classifier.fit(X_train, y_train)
+        y_pred = classifier.predict(X_test)
+        accuracy = accuracy_score(y_true, y_pred)
+        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+        return accuracy, f1, True
+    except Exception:
+        return 0.0, 0.0, False
 
 
 def _optimize_kernel_type(X_train, y_train, X_test, y_true, opts):
     """Optimize kernel type"""
     max_acc = -np.inf
+    best_f1 = 0.0
 
     # Define different kernel options
     kernels = {
@@ -31,212 +50,285 @@ def _optimize_kernel_type(X_train, y_train, X_test, y_true, opts):
     }
 
     best_kernel = "rbf"
+    kernel_items = list(kernels.items())
 
-    for kernel_name, kernel in kernels.items():
-        try:
-            opts["kernel"] = kernel
+    with tqdm(kernel_items, desc="Optimizing Kernel Type", leave=False) as pbar:
+        for kernel_name, kernel in pbar:
+            test_opts = opts.copy()
+            test_opts["kernel"] = kernel
 
-            classifier = GaussianProcessClassifier(**opts)
-            classifier.fit(X_train, y_train)
-            y_pred = classifier.predict(X_test)
-            accuracy = accuracy_score(y_true, y_pred)
-            f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-            if accuracy >= max_acc:
+            if success and accuracy >= max_acc:
                 max_acc = accuracy
-                f1s = f1
+                best_f1 = f1
                 best_kernel = kernel_name
                 opts["kernel"] = kernel
-        except:
-            # Skip problematic kernels
-            continue
 
-    return opts, max_acc, f1s
+            pbar.set_postfix(
+                {
+                    "current": kernel_name[:8],
+                    "best_acc": f"{max_acc:.4f}",
+                    "best": best_kernel[:8],
+                }
+            )
+
+    return opts, max_acc, best_f1
 
 
 def _optimize_kernel_length_scale(X_train, y_train, X_test, y_true, opts):
     """Optimize kernel length scale"""
     max_acc = -np.inf
-    variable_array = np.logspace(-2, 2, 8)  # From 0.01 to 100
-    best_val = variable_array[0]
-
-    # Get current kernel type to modify its length scale
+    best_f1 = 0.0
+    variable_array = np.logspace(-2, 2, 10)  # More granular search
     current_kernel = opts["kernel"]
 
-    for v in variable_array:
-        try:
-            # Create new kernel with updated length scale
-            if hasattr(current_kernel, "k1") and hasattr(
-                current_kernel.k1, "length_scale"
-            ):
-                # For composite kernels (with WhiteKernel)
-                if isinstance(current_kernel.k1, RBF):
-                    new_kernel = current_kernel.k1.get_params()["k2"].__class__(
-                        noise_level=current_kernel.k1.get_params()["k2"].noise_level
-                    ) + current_kernel.k1.get_params()["k1"].__class__(length_scale=v)
-                elif isinstance(current_kernel.k1, Matern):
-                    nu_val = current_kernel.k1.nu
-                    new_kernel = current_kernel.k1.get_params()["k2"].__class__(
-                        noise_level=current_kernel.k1.get_params()["k2"].noise_level
-                    ) + current_kernel.k1.__class__(length_scale=v, nu=nu_val)
-                else:
-                    continue
-            elif hasattr(current_kernel, "length_scale"):
-                # For simple kernels
-                if isinstance(current_kernel, RBF):
-                    new_kernel = RBF(length_scale=v)
-                elif isinstance(current_kernel, Matern):
-                    nu_val = current_kernel.nu
-                    new_kernel = Matern(length_scale=v, nu=nu_val)
-                elif isinstance(current_kernel, RationalQuadratic):
-                    alpha_val = current_kernel.alpha
-                    new_kernel = RationalQuadratic(length_scale=v, alpha=alpha_val)
-                else:
-                    continue
-            else:
+    with tqdm(
+        variable_array, desc="Optimizing Kernel Length Scale", leave=False
+    ) as pbar:
+        for length_scale in pbar:
+            new_kernel = _create_kernel_with_length_scale(current_kernel, length_scale)
+
+            if new_kernel is None:
+                pbar.set_postfix({"scale": f"{length_scale:.3f}", "status": "skipped"})
                 continue
 
-            opts["kernel"] = new_kernel
+            test_opts = opts.copy()
+            test_opts["kernel"] = new_kernel
 
-            classifier = GaussianProcessClassifier(**opts)
-            classifier.fit(X_train, y_train)
-            y_pred = classifier.predict(X_test)
-            accuracy = accuracy_score(y_true, y_pred)
-            f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-            if accuracy >= max_acc:
+            if success and accuracy >= max_acc:
                 max_acc = accuracy
-                f1s = f1
-                best_val = v
-        except:
-            continue
+                best_f1 = f1
+                opts["kernel"] = new_kernel
 
-    return opts, max_acc, f1s
+            pbar.set_postfix(
+                {
+                    "scale": f"{length_scale:.3f}",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best": f"{max_acc:.4f}",
+                }
+            )
+
+    return opts, max_acc, best_f1
+
+
+def _create_kernel_with_length_scale(kernel, length_scale):
+    """Create new kernel with updated length scale"""
+    try:
+        # Handle composite kernels (with WhiteKernel)
+        if hasattr(kernel, "k1") and hasattr(kernel, "k2"):
+            # Find the base kernel and noise kernel
+            if isinstance(kernel.k1, (RBF, Matern, RationalQuadratic)):
+                base_kernel = kernel.k1
+                noise_kernel = kernel.k2
+            elif isinstance(kernel.k2, (RBF, Matern, RationalQuadratic)):
+                base_kernel = kernel.k2
+                noise_kernel = kernel.k1
+            else:
+                return None
+
+            new_base = _create_simple_kernel_with_scale(base_kernel, length_scale)
+            return new_base + noise_kernel if new_base else None
+
+        # Handle simple kernels
+        return _create_simple_kernel_with_scale(kernel, length_scale)
+
+    except Exception:
+        return None
+
+
+def _create_simple_kernel_with_scale(kernel, length_scale):
+    """Create simple kernel with specified length scale"""
+    if isinstance(kernel, RBF):
+        return RBF(length_scale=length_scale)
+    elif isinstance(kernel, Matern):
+        return Matern(length_scale=length_scale, nu=kernel.nu)
+    elif isinstance(kernel, RationalQuadratic):
+        return RationalQuadratic(length_scale=length_scale, alpha=kernel.alpha)
+    return None
 
 
 def _optimize_n_restarts_optimizer(X_train, y_train, X_test, y_true, opts):
     """Optimize number of restarts for optimizer"""
     max_acc = -np.inf
+    best_f1 = 0.0
     variable_array = np.array([0, 1, 2, 5, 10])
     best_val = variable_array[0]
 
-    for v in variable_array:
-        opts["n_restarts_optimizer"] = v
+    with tqdm(
+        variable_array, desc="Optimizing Number of Restarts", leave=False
+    ) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["n_restarts_optimizer"] = v
 
-        classifier = GaussianProcessClassifier(**opts)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "restarts": v,
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
 
     opts["n_restarts_optimizer"] = best_val
-    return opts, max_acc, f1s
+    return opts, max_acc, best_f1
 
 
 def _optimize_max_iter_predict(X_train, y_train, X_test, y_true, opts):
     """Optimize maximum iterations for prediction"""
     max_acc = -np.inf
+    best_f1 = 0.0
     variable_array = np.array([100, 200, 500, 1000])
     best_val = variable_array[0]
 
-    for v in variable_array:
-        opts["max_iter_predict"] = v
+    with tqdm(
+        variable_array, desc="Optimizing Max Iterations Predict", leave=False
+    ) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["max_iter_predict"] = v
 
-        classifier = GaussianProcessClassifier(**opts)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "max_iter": v,
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
 
     opts["max_iter_predict"] = best_val
-    return opts, max_acc, f1s
+    return opts, max_acc, best_f1
 
 
 def _optimize_warm_start(X_train, y_train, X_test, y_true, opts):
     """Optimize warm start parameter"""
     max_acc = -np.inf
+    best_f1 = 0.0
     variable_array = [True, False]
     best_val = variable_array[0]
 
-    for v in variable_array:
-        opts["warm_start"] = v
+    with tqdm(variable_array, desc="Optimizing Warm Start", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["warm_start"] = v
 
-        classifier = GaussianProcessClassifier(**opts)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "warm_start": str(v),
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
 
     opts["warm_start"] = best_val
-    return opts, max_acc, f1s
+    return opts, max_acc, best_f1
 
 
 def _optimize_copy_X_train(X_train, y_train, X_test, y_true, opts):
     """Optimize copy_X_train parameter"""
     max_acc = -np.inf
+    best_f1 = 0.0
     variable_array = [True, False]
     best_val = variable_array[0]
 
-    for v in variable_array:
-        opts["copy_X_train"] = v
+    with tqdm(variable_array, desc="Optimizing Copy X Train", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["copy_X_train"] = v
 
-        classifier = GaussianProcessClassifier(**opts)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "copy_X": str(v),
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
 
     opts["copy_X_train"] = best_val
-    return opts, max_acc, f1s
+    return opts, max_acc, best_f1
 
 
 def _optimize_multi_class(X_train, y_train, X_test, y_true, opts):
     """Optimize multi-class strategy"""
     max_acc = -np.inf
+    best_f1 = 0.0
     variable_array = ["one_vs_rest", "one_vs_one"]
     best_val = variable_array[0]
 
-    for v in variable_array:
-        opts["multi_class"] = v
+    with tqdm(
+        variable_array, desc="Optimizing Multi-Class Strategy", leave=False
+    ) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["multi_class"] = v
 
-        classifier = GaussianProcessClassifier(**opts)
-        classifier.fit(X_train, y_train)
-        y_pred = classifier.predict(X_test)
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "strategy": v[:8],
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
 
     opts["multi_class"] = best_val
-    return opts, max_acc, f1s
+    return opts, max_acc, best_f1
 
 
 def _optimize_kernel_bounds(X_train, y_train, X_test, y_true, opts):
     """Optimize kernel hyperparameter bounds"""
     max_acc = -np.inf
+    best_f1 = 0.0
 
     # Different bound ranges to test
     bound_options = [
@@ -246,42 +338,80 @@ def _optimize_kernel_bounds(X_train, y_train, X_test, y_true, opts):
         (1e-4, 1e4),  # Medium-wide range
     ]
 
-    best_bounds = bound_options[0]
     current_kernel = opts["kernel"]
 
-    for bounds in bound_options:
-        try:
-            # Create new kernel with updated bounds
-            if isinstance(current_kernel, RBF):
-                new_kernel = RBF(length_scale=1.0, length_scale_bounds=bounds)
-            elif isinstance(current_kernel, Matern):
-                nu_val = getattr(current_kernel, "nu", 1.5)
-                new_kernel = Matern(
-                    length_scale=1.0, length_scale_bounds=bounds, nu=nu_val
+    with tqdm(bound_options, desc="Optimizing Kernel Bounds", leave=False) as pbar:
+        for bounds in pbar:
+            new_kernel = _create_kernel_with_bounds(current_kernel, bounds)
+
+            if new_kernel is None:
+                pbar.set_postfix(
+                    {"bounds": f"{bounds[0]:.0e}-{bounds[1]:.0e}", "status": "skipped"}
                 )
-            elif isinstance(current_kernel, RationalQuadratic):
-                new_kernel = RationalQuadratic(
-                    length_scale=1.0, length_scale_bounds=bounds, alpha=1.0
-                )
-            else:
                 continue
 
-            opts["kernel"] = new_kernel
+            test_opts = opts.copy()
+            test_opts["kernel"] = new_kernel
 
-            classifier = GaussianProcessClassifier(**opts)
-            classifier.fit(X_train, y_train)
-            y_pred = classifier.predict(X_test)
-            accuracy = accuracy_score(y_true, y_pred)
-            f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, test_opts
+            )
 
-            if accuracy >= max_acc:
+            if success and accuracy >= max_acc:
                 max_acc = accuracy
-                f1s = f1
-                best_bounds = bounds
-        except:
-            continue
+                best_f1 = f1
+                opts["kernel"] = new_kernel
 
-    return opts, max_acc, f1s
+            pbar.set_postfix(
+                {
+                    "bounds": f"{bounds[0]:.0e}-{bounds[1]:.0e}",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best": f"{max_acc:.4f}",
+                }
+            )
+
+    return opts, max_acc, best_f1
+
+
+def _create_kernel_with_bounds(kernel, bounds):
+    """Create kernel with specified bounds"""
+    try:
+        # Handle composite kernels
+        if hasattr(kernel, "k1") and hasattr(kernel, "k2"):
+            if isinstance(kernel.k1, (RBF, Matern, RationalQuadratic)):
+                base_kernel = kernel.k1
+                noise_kernel = kernel.k2
+            elif isinstance(kernel.k2, (RBF, Matern, RationalQuadratic)):
+                base_kernel = kernel.k2
+                noise_kernel = kernel.k1
+            else:
+                return None
+
+            new_base = _create_simple_kernel_with_bounds(base_kernel, bounds)
+            return new_base + noise_kernel if new_base else None
+
+        # Handle simple kernels
+        return _create_simple_kernel_with_bounds(kernel, bounds)
+
+    except Exception:
+        return None
+
+
+def _create_simple_kernel_with_bounds(kernel, bounds):
+    """Create simple kernel with specified bounds"""
+    if isinstance(kernel, RBF):
+        return RBF(length_scale=kernel.length_scale, length_scale_bounds=bounds)
+    elif isinstance(kernel, Matern):
+        return Matern(
+            length_scale=kernel.length_scale, length_scale_bounds=bounds, nu=kernel.nu
+        )
+    elif isinstance(kernel, RationalQuadratic):
+        return RationalQuadratic(
+            length_scale=kernel.length_scale,
+            length_scale_bounds=bounds,
+            alpha=kernel.alpha,
+        )
+    return None
 
 
 def _optimize_gaussian_process(X_train, y_train, X_test, y_true, cycles=2):
@@ -310,23 +440,37 @@ def _optimize_gaussian_process(X_train, y_train, X_test, y_true, cycles=2):
     ma_vec = []
     f1_vec = []
 
-    for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
+    # Main optimization loop with overall progress bar
+    with tqdm(range(cycles), desc="Optimization Cycles", position=0) as cycle_pbar:
+        for c in cycle_pbar:
+            cycle_pbar.set_description(f"Optimization Cycle {c + 1}/{cycles}")
 
-        opts, _, _ = _optimize_kernel_type(X_train, y_train, X_test, y_true, opts)
-        opts, _, _ = _optimize_kernel_length_scale(
-            X_train, y_train, X_test, y_true, opts
-        )
-        opts, _, _ = _optimize_n_restarts_optimizer(
-            X_train, y_train, X_test, y_true, opts
-        )
-        opts, _, _ = _optimize_max_iter_predict(X_train, y_train, X_test, y_true, opts)
-        opts, _, _ = _optimize_warm_start(X_train, y_train, X_test, y_true, opts)
-        opts, _, _ = _optimize_copy_X_train(X_train, y_train, X_test, y_true, opts)
-        opts, _, _ = _optimize_multi_class(X_train, y_train, X_test, y_true, opts)
-        opts, ma, f1 = _optimize_kernel_bounds(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_kernel_type(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_kernel_length_scale(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, _, _ = _optimize_n_restarts_optimizer(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, _, _ = _optimize_max_iter_predict(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, _, _ = _optimize_warm_start(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_copy_X_train(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_multi_class(X_train, y_train, X_test, y_true, opts)
+            opts, ma, f1 = _optimize_kernel_bounds(
+                X_train, y_train, X_test, y_true, opts
+            )
 
-        ma_vec.append(ma)
-        f1_vec.append(f1)
+            ma_vec.append(ma)
+            f1_vec.append(f1)
+
+            cycle_pbar.set_postfix(
+                {
+                    "accuracy": f"{ma:.4f}",
+                    "f1": f"{f1:.4f}",
+                    "best_overall": f"{max(ma_vec):.4f}",
+                }
+            )
 
     return opts, ma, f1, ma_vec, f1_vec

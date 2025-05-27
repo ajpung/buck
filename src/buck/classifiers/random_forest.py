@@ -1,688 +1,457 @@
 from typing import Any
-
+import warnings
 import numpy as np
+from tqdm.auto import tqdm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.exceptions import ConvergenceWarning
+
+# Suppress convergence warnings for cleaner progress bars
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
-# ----------------- RANDOM STATE -----------------
-def _optimize_rs(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(800)
-    best_val = variable_array[0]
-    for v in variable_array:
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=v,
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
+def _safe_evaluate_model(X_train, y_train, X_test, y_true, **kwargs):
+    """Safely evaluate a model configuration"""
+    try:
+        classifier = RandomForestClassifier(**kwargs)
+        classifier.fit(X_train, y_train)
+        y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
         f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+        return accuracy, f1, True
+    except Exception:
+        return 0.0, 0.0, False
 
-    # Store best value
+
+def _optimize_rs(X_train, y_train, X_test, y_true, opts):
+    """Optimize random state"""
+    max_acc = -np.inf
+    best_f1 = 0.0
+    variable_array = np.arange(30)  # Reduced from 800 to 30
+    best_val = variable_array[0]
+
+    with tqdm(variable_array, desc="Optimizing Random State", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["random_state"] = v
+
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "rs": v,
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
     opts["random_state"] = best_val
+    return opts, max_acc, best_f1
 
-    return opts, max_acc, f1s
 
-
-def _optimize_nest(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
+def _optimize_n_estimators(X_train, y_train, X_test, y_true, opts):
+    """Optimize number of estimators"""
     max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(1, 800)
+    best_f1 = 0.0
+    # Strategic values for Random Forest estimators
+    variable_array = [10, 25, 50, 100, 200, 300, 500, 800]
     best_val = variable_array[0]
 
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=v,
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
+    with tqdm(variable_array, desc="Optimizing N Estimators", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["n_estimators"] = v
 
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
 
-    # Store best value
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "n_est": v,
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
     opts["n_estimators"] = best_val
+    return opts, max_acc, best_f1
 
-    return opts, max_acc, f1s
 
-
-def _optimize_max_d(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
+def _optimize_max_depth(X_train, y_train, X_test, y_true, opts):
+    """Optimize max depth"""
     max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(5, 25, 1)
-    variable_array = np.append(variable_array.astype(object), None)  # type: ignore
+    best_f1 = 0.0
+    # Strategic depths for Random Forest
+    variable_array = [3, 5, 7, 10, 15, 20, 25, None]
     best_val = variable_array[0]
 
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=v,
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+    with tqdm(variable_array, desc="Optimizing Max Depth", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["max_depth"] = v
 
-    # Store best value
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "max_depth": str(v) if v is not None else "None",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
     opts["max_depth"] = best_val
+    return opts, max_acc, best_f1
 
-    return opts, max_acc, f1s
 
-
-def _optimize_crit(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
+def _optimize_max_features(X_train, y_train, X_test, y_true, opts):
+    """Optimize max features"""
     max_acc = -np.inf
-    max_idx = -1
+    best_f1 = 0.0
+    n_features = X_train.shape[1]
+
+    # Intelligent feature selection based on dataset size
+    if n_features <= 10:
+        feature_options = [1, 2, 3, "sqrt", "log2", None]
+    elif n_features <= 50:
+        feature_options = [5, 10, 20, "sqrt", "log2", None]
+    else:
+        feature_options = [10, 20, 50, n_features // 4, "sqrt", "log2", None]
+
+    # Remove duplicates and invalid options
+    variable_array = []
+    for opt in feature_options:
+        if isinstance(opt, int) and opt <= n_features and opt not in variable_array:
+            variable_array.append(opt)
+        elif isinstance(opt, str) and opt not in variable_array:
+            variable_array.append(opt)
+        elif opt is None and opt not in variable_array:
+            variable_array.append(opt)
+
+    best_val = variable_array[0]
+
+    with tqdm(variable_array, desc="Optimizing Max Features", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["max_features"] = v
+
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "max_feat": str(v) if not isinstance(v, int) else f"{v}",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
+    opts["max_features"] = best_val
+    return opts, max_acc, best_f1
+
+
+def _optimize_criterion(X_train, y_train, X_test, y_true, opts):
+    """Optimize splitting criterion"""
+    max_acc = -np.inf
+    best_f1 = 0.0
     variable_array = ["gini", "entropy", "log_loss"]
     best_val = variable_array[0]
 
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=v,
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+    with tqdm(variable_array, desc="Optimizing Criterion", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["criterion"] = v
 
-    # Store best value
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "criterion": v[:8],
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
     opts["criterion"] = best_val
+    return opts, max_acc, best_f1
 
-    return opts, max_acc, f1s
 
-
-def _optimize_cw(X_train_pca, y_train_flat, X_test_pca, y_true, opts):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
+def _optimize_min_samples_config(X_train, y_train, X_test, y_true, opts):
+    """Optimize min_samples_split and min_samples_leaf together"""
     max_acc = -np.inf
-    max_idx = -1
-    variable_array = ["balanced", "balanced_subsample", None]
+    best_f1 = 0.0
+
+    # Combined configurations for efficiency
+    configs = [
+        {"min_samples_split": 2, "min_samples_leaf": 1},
+        {"min_samples_split": 5, "min_samples_leaf": 1},
+        {"min_samples_split": 10, "min_samples_leaf": 1},
+        {"min_samples_split": 2, "min_samples_leaf": 2},
+        {"min_samples_split": 5, "min_samples_leaf": 2},
+        {"min_samples_split": 10, "min_samples_leaf": 2},
+        {"min_samples_split": 20, "min_samples_leaf": 5},
+        {"min_samples_split": 50, "min_samples_leaf": 10},
+    ]
+    best_config = configs[0]
+
+    with tqdm(configs, desc="Optimizing Min Samples Config", leave=False) as pbar:
+        for config in pbar:
+            test_opts = opts.copy()
+            test_opts.update(config)
+
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_config = config
+
+            pbar.set_postfix(
+                {
+                    "split": config["min_samples_split"],
+                    "leaf": config["min_samples_leaf"],
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
+    opts.update(best_config)
+    return opts, max_acc, best_f1
+
+
+def _optimize_regularization_params(X_train, y_train, X_test, y_true, opts):
+    """Optimize regularization parameters together"""
+    max_acc = -np.inf
+    best_f1 = 0.0
+
+    # Combined regularization configurations
+    configs = [
+        {
+            "min_weight_fraction_leaf": 0.0,
+            "min_impurity_decrease": 0.0,
+            "ccp_alpha": 0.0,
+        },
+        {
+            "min_weight_fraction_leaf": 0.01,
+            "min_impurity_decrease": 0.0,
+            "ccp_alpha": 0.0,
+        },
+        {
+            "min_weight_fraction_leaf": 0.0,
+            "min_impurity_decrease": 0.01,
+            "ccp_alpha": 0.0,
+        },
+        {
+            "min_weight_fraction_leaf": 0.0,
+            "min_impurity_decrease": 0.0,
+            "ccp_alpha": 0.01,
+        },
+        {
+            "min_weight_fraction_leaf": 0.05,
+            "min_impurity_decrease": 0.0,
+            "ccp_alpha": 0.0,
+        },
+        {
+            "min_weight_fraction_leaf": 0.0,
+            "min_impurity_decrease": 0.05,
+            "ccp_alpha": 0.0,
+        },
+        {
+            "min_weight_fraction_leaf": 0.0,
+            "min_impurity_decrease": 0.0,
+            "ccp_alpha": 0.05,
+        },
+    ]
+    best_config = configs[0]
+
+    with tqdm(configs, desc="Optimizing Regularization", leave=False) as pbar:
+        for config in pbar:
+            test_opts = opts.copy()
+            test_opts.update(config)
+
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_config = config
+
+            pbar.set_postfix(
+                {
+                    "wt_frac": f"{config['min_weight_fraction_leaf']:.2f}",
+                    "imp_dec": f"{config['min_impurity_decrease']:.2f}",
+                    "ccp": f"{config['ccp_alpha']:.2f}",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
+    opts.update(best_config)
+    return opts, max_acc, best_f1
+
+
+def _optimize_bootstrap_config(X_train, y_train, X_test, y_true, opts):
+    """Optimize bootstrap configuration"""
+    max_acc = -np.inf
+    best_f1 = 0.0
+
+    # Bootstrap configurations
+    configs = [
+        {"bootstrap": True, "oob_score": False, "max_samples": None},
+        {"bootstrap": True, "oob_score": True, "max_samples": None},
+        {"bootstrap": True, "oob_score": False, "max_samples": 0.8},
+        {"bootstrap": True, "oob_score": True, "max_samples": 0.8},
+        {"bootstrap": False, "oob_score": False, "max_samples": None},
+    ]
+    best_config = configs[0]
+
+    with tqdm(configs, desc="Optimizing Bootstrap Config", leave=False) as pbar:
+        for config in pbar:
+            test_opts = opts.copy()
+            test_opts.update(config)
+
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_config = config
+
+            pbar.set_postfix(
+                {
+                    "bootstrap": "Y" if config["bootstrap"] else "N",
+                    "oob": "Y" if config["oob_score"] else "N",
+                    "max_samp": (
+                        str(config["max_samples"])
+                        if config["max_samples"] is not None
+                        else "None"
+                    ),
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
+    opts.update(best_config)
+    return opts, max_acc, best_f1
+
+
+def _optimize_class_weight(X_train, y_train, X_test, y_true, opts):
+    """Optimize class weight"""
+    max_acc = -np.inf
+    best_f1 = 0.0
+    variable_array = [None, "balanced", "balanced_subsample"]
     best_val = variable_array[0]
 
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=v,
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+    with tqdm(variable_array, desc="Optimizing Class Weight", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["class_weight"] = v
 
-    # Store best value
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "class_wt": str(v) if v is not None else "None",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
     opts["class_weight"] = best_val
+    return opts, max_acc, best_f1
 
-    return opts, max_acc, f1s
 
-
-def _optimize_mss(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
+def _optimize_max_leaf_nodes(X_train, y_train, X_test, y_true, opts):
+    """Optimize max leaf nodes"""
     max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(2, 100)
+    best_f1 = 0.0
+    # Strategic leaf node values
+    variable_array = [10, 50, 100, 200, 500, 1000, None]
     best_val = variable_array[0]
 
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=v,
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
+    with tqdm(variable_array, desc="Optimizing Max Leaf Nodes", leave=False) as pbar:
+        for v in pbar:
+            test_opts = opts.copy()
+            test_opts["max_leaf_nodes"] = v
 
-    # Store best value
-    opts["min_samples_split"] = best_val
+            accuracy, f1, success = _safe_evaluate_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
 
-    return opts, max_acc, f1s
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
 
+            pbar.set_postfix(
+                {
+                    "max_leaf": str(v) if v is not None else "None",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
 
-def _optimize_msl(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(1, 50)
-    best_val = variable_array[0]
-
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=v,
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
-
-    # Store best value
-    opts["min_samples_leaf"] = best_val
-
-    return opts, max_acc, f1s
-
-
-def _optimize_mwfl(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(0.0, 0.5, 0.01)
-    best_val = variable_array[0]
-
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=v,
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
-
-    # Store best value
-    opts["min_weight_fraction_leaf"] = best_val
-
-    return opts, max_acc, f1s
-
-
-def _optimize_mf(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = ["sqrt", "log2", None]
-    best_val = variable_array[0]
-
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=v,
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
-
-    # Store best value
-    opts["max_features"] = best_val
-
-    return opts, max_acc, f1s
-
-
-def _optimize_mln(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(50, 1000)
-    variable_array = np.append(variable_array.astype(object), None)  # type: ignore
-    best_val = variable_array[0]
-
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=v,
-            min_impurity_decrease=opts["min_impurity_decrease"],
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
-
-    # Store best value
     opts["max_leaf_nodes"] = best_val
-
-    return opts, max_acc, f1s
-
-
-def _optimize_mid(
-    X_train_pca,
-    y_train_flat,
-    X_test_pca,
-    y_true,
-    opts,
-):
-    # Initialize variables
-    ac_vec = []
-    f1_vec = []
-    max_acc = -np.inf
-    max_idx = -1
-    variable_array = np.arange(0.0, 1.0, 0.01)
-    best_val = variable_array[0]
-
-    # Iterate through variables
-    for i in np.arange(len(variable_array)):
-        v = variable_array[i]
-        # Define classifiers to test
-        classifier = RandomForestClassifier(
-            random_state=opts["random_state"],
-            n_estimators=opts["n_estimators"],
-            max_depth=opts["max_depth"],
-            criterion=opts["criterion"],
-            class_weight=opts["class_weight"],
-            min_samples_split=opts["min_samples_split"],
-            min_samples_leaf=opts["min_samples_leaf"],
-            min_weight_fraction_leaf=opts["min_weight_fraction_leaf"],
-            max_features=opts["max_features"],
-            max_leaf_nodes=opts["max_leaf_nodes"],
-            min_impurity_decrease=v,
-            bootstrap=opts["bootstrap"],
-            oob_score=opts["oob_score"],
-            n_jobs=opts["n_jobs"],
-            verbose=opts["verbose"],
-            warm_start=opts["warm_start"],
-            ccp_alpha=opts["ccp_alpha"],
-            max_samples=opts["max_samples"],
-            monotonic_cst=opts["monotonic_cst"],
-        )
-        # Train the classifier
-        classifier.fit(X_train_pca, y_train_flat)
-        # Make predictions
-        y_pred = classifier.predict(X_test_pca)
-        # Calculate metrics
-        accuracy = accuracy_score(y_true, y_pred)
-        ac_vec.append(accuracy)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1_vec.append(f1)
-        # Return index
-        if accuracy >= max_acc:
-            max_acc = accuracy
-            f1s = f1
-            best_val = v
-
-    # Store best value
-    opts["min_impurity_decrease"] = best_val
-
-    return opts, max_acc, f1s
+    return opts, max_acc, best_f1
 
 
-def _optimize_random_forest(X_train_pca, y_train_flat, X_test_pca, y_true, cycles=2):
+def _optimize_random_forest(X_train, y_train, X_test, y_true, cycles=2):
     """
-    Optimizes the hyperparameters for a Random Forest classifier.
-    :param X_train_pca: PCA transformed training data
-    :param y_train_flat: Flattened training labels
-    :param X_test_pca: PCA transformed test data
+    Optimizes the hyperparameters for RandomForestClassifier.
+    :param X_train: Training data
+    :param y_train: Training labels
+    :param X_test: Test data
     :param y_true: True labels for the test data
+    :param cycles: Number of optimization cycles
     """
-    # Shorten parameters
-    Xtr_pca = X_train_pca
-    ytr_flat = y_train_flat
-    Xte_pca = X_test_pca
 
+    # Define initial parameters with better defaults
     opts = {
         "n_estimators": 100,
         "criterion": "gini",
@@ -705,23 +474,61 @@ def _optimize_random_forest(X_train_pca, y_train_flat, X_test_pca, y_true, cycle
         "monotonic_cst": None,
     }
 
-    # Optimize hyperparameters
+    # Track results
     ma_vec = []
     f1_vec = []
-    for c in np.arange(cycles):
-        print(f"Cycle {c + 1} of {cycles}")
-        opts, _, _ = _optimize_rs(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_nest(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_max_d(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_crit(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)  # type: ignore
-        opts, _, _ = _optimize_cw(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_mss(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_msl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_mwfl(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_mf(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, _, _ = _optimize_mln(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        opts, ma, f1 = _optimize_mid(Xtr_pca, ytr_flat, Xte_pca, y_true, opts)
-        ma_vec.append(ma)
-        f1_vec.append(f1)
+
+    # Main optimization loop with overall progress bar
+    with tqdm(
+        range(cycles), desc="Random Forest Optimization Cycles", position=0
+    ) as cycle_pbar:
+        for c in cycle_pbar:
+            cycle_pbar.set_description(f"Random Forest Cycle {c + 1}/{cycles}")
+
+            # Core hyperparameters (most impactful for Random Forest)
+            opts, _, _ = _optimize_rs(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_n_estimators(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_max_depth(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_max_features(X_train, y_train, X_test, y_true, opts)
+
+            # Tree structure parameters
+            opts, _, _ = _optimize_criterion(X_train, y_train, X_test, y_true, opts)
+            opts, _, _ = _optimize_min_samples_config(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, _, _ = _optimize_max_leaf_nodes(
+                X_train, y_train, X_test, y_true, opts
+            )
+
+            # Regularization and sampling
+            opts, _, _ = _optimize_regularization_params(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, _, _ = _optimize_bootstrap_config(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, ma, f1 = _optimize_class_weight(
+                X_train, y_train, X_test, y_true, opts
+            )
+
+            ma_vec.append(ma)
+            f1_vec.append(f1)
+
+            cycle_pbar.set_postfix(
+                {
+                    "accuracy": f"{ma:.4f}",
+                    "f1": f"{f1:.4f}",
+                    "best_overall": f"{max(ma_vec):.4f}",
+                    "n_est": opts["n_estimators"],
+                    "depth": (
+                        str(opts["max_depth"])
+                        if opts["max_depth"] is not None
+                        else "None"
+                    ),
+                    "features": str(opts["max_features"])[:6],
+                    "criterion": opts["criterion"][:4],
+                    "bootstrap": "Y" if opts["bootstrap"] else "N",
+                }
+            )
 
     return opts, ma, f1, ma_vec, f1_vec
