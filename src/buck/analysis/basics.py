@@ -17,6 +17,274 @@ from buck.data.image_processing import make_bw_square, resize_image
 files = glob("..\\..\\..\\images\\squared\\*.png")
 files = [s for s in files if "xpx" not in s]
 
+import numpy as np
+import cv2
+
+
+def extract_fast_numpy_features(X_images):
+    """
+    Ultra-fast multi-resolution using pure numpy (no cv2)
+    Works with any grayscale image format
+    """
+    # Handle different input shapes
+    if len(X_images.shape) == 4 and X_images.shape[-1] == 1:
+        # (N, H, W, 1) -> (N, H, W)
+        images_2d = X_images.squeeze(axis=-1)
+    else:
+        images_2d = X_images
+
+    # Pre-allocate output array
+    n_samples = len(images_2d)
+    features_64x64 = 64 * 64  # 4,096
+    features_32x32 = 32 * 32  # 1,024
+    total_features = features_64x64 + features_32x32  # 5,120
+
+    all_features = np.zeros((n_samples, total_features), dtype=np.float32)
+
+    # Process in batches for speed
+    batch_size = 100
+    for batch_start in range(0, n_samples, batch_size):
+        batch_end = min(batch_start + batch_size, n_samples)
+
+        for i in range(batch_start, batch_end):
+            img = images_2d[i]
+
+            # Simple downsampling using numpy (much faster than cv2)
+            # 288x288 -> 64x64 (every 4.5th pixel, roughly)
+            img_64 = img[::4, ::4]  # 72x72, then crop to 64x64
+            if img_64.shape[0] > 64:
+                img_64 = img_64[:64, :64]
+            elif img_64.shape[0] < 64:
+                # Pad if needed
+                pad_h = 64 - img_64.shape[0]
+                pad_w = 64 - img_64.shape[1]
+                img_64 = np.pad(img_64, ((0, pad_h), (0, pad_w)), mode="edge")
+
+            # 288x288 -> 32x32 (every 9th pixel)
+            img_32 = img[::9, ::9]  # 32x32
+            if img_32.shape[0] > 32:
+                img_32 = img_32[:32, :32]
+            elif img_32.shape[0] < 32:
+                pad_h = 32 - img_32.shape[0]
+                pad_w = 32 - img_32.shape[1]
+                img_32 = np.pad(img_32, ((0, pad_h), (0, pad_w)), mode="edge")
+
+            # Flatten and store
+            features_64 = img_64.flatten()  # 4,096 features
+            features_32 = img_32.flatten()  # 1,024 features
+
+            all_features[i] = np.concatenate([features_64, features_32])
+    return all_features
+
+
+def extract_multi_resolution_features_grayscale(X_images):
+    """
+    Extract multi-resolution features from square grayscale images
+    No cropping needed - uses full image at multiple scales
+
+    Args:
+        X_images: Grayscale image array of shape (N, H, W, 1)
+
+    Returns:
+        features: Multi-resolution feature array (N, total_features)
+    """
+
+    print(f"Extracting multi-resolution features from {X_images.shape}...")
+
+    all_features = []
+
+    for i, img in enumerate(X_images):
+        # Squeeze to 2D for cv2.resize
+        img_2d = np.squeeze(img, axis=-1)  # (288, 288, 1) -> (288, 288)
+
+        # Convert to uint8 if needed
+        if img_2d.dtype != np.uint8:
+            img_uint8 = (
+                (img_2d * 255).astype(np.uint8)
+                if img_2d.max() <= 1.0
+                else img_2d.astype(np.uint8)
+            )
+        else:
+            img_uint8 = img_2d
+
+        # RESOLUTION 1: High detail (96x96) - captures fine morphology
+        high_res = cv2.resize(img_uint8, (96, 96))
+        high_features = high_res.flatten()  # 96*96 = 9,216 features
+
+        # RESOLUTION 2: Medium detail (48x48) - overall body proportions
+        medium_res = cv2.resize(img_uint8, (48, 48))
+        medium_features = medium_res.flatten()  # 48*48 = 2,304 features
+
+        # RESOLUTION 3: Low detail (24x24) - general body shape
+        low_res = cv2.resize(img_uint8, (24, 24))
+        low_features = low_res.flatten()  # 24*24 = 576 features
+
+        # RESOLUTION 4: Very low detail (12x12) - basic proportions
+        context_res = cv2.resize(img_uint8, (12, 12))
+        context_features = context_res.flatten()  # 12*12 = 144 features
+
+        # Combine all resolution features
+        combined_features = np.concatenate(
+            [
+                high_features,  # Fine deer morphology details
+                medium_features,  # Body proportions and structure
+                low_features,  # General shape and pose
+                context_features,  # Basic size/proportion ratios
+            ]
+        )
+
+        all_features.append(combined_features)
+
+    # Convert to numpy array and normalize
+    feature_array = np.array(all_features, dtype=np.float32)
+    feature_array = feature_array / 255.0  # Normalize to 0-1
+
+    return feature_array
+
+
+def extract_multi_resolution_features(X_images):
+    """
+    Extract multi-resolution features from images for better deer morphology analysis
+
+    Args:
+        X_images: Image array of shape (N, H, W, C)
+
+    Returns:
+        features: Multi-resolution feature array (N, total_features)
+    """
+
+    print(f"Extracting multi-resolution features from {X_images.shape}...")
+
+    all_features = []
+
+    for i, img in enumerate(X_images):
+        # Convert to uint8 if needed for cv2.resize
+        if img.dtype != np.uint8:
+            img_uint8 = (
+                (img * 255).astype(np.uint8)
+                if img.max() <= 1.0
+                else img.astype(np.uint8)
+            )
+        else:
+            img_uint8 = img
+
+        # RESOLUTION 1: High-detail center crop (deer body focus)
+        # Extract center 144x144 region where deer body is usually located
+        h, w = img_uint8.shape[:2]
+        center_start_h = (h - 144) // 2
+        center_start_w = (w - 144) // 2
+        center_crop = img_uint8[
+            center_start_h : center_start_h + 144,
+            center_start_w : center_start_w + 144,
+            :,
+        ]
+
+        # Subsample center crop to 72x72 (good detail, manageable size)
+        center_resized = cv2.resize(center_crop, (72, 72))
+        center_features = center_resized.flatten()  # 72*72*3 = 15,552 features
+
+        # RESOLUTION 2: Medium resolution full image (overall proportions)
+        # Resize full image to 48x48 to capture overall body proportions
+        medium_resized = cv2.resize(img_uint8, (48, 48))
+        medium_features = medium_resized.flatten()  # 48*48*3 = 6,912 features
+
+        # RESOLUTION 3: Low resolution full image (general shape)
+        # Resize to 24x24 for overall deer shape and pose
+        low_resized = cv2.resize(img_uint8, (24, 24))
+        low_features = low_resized.flatten()  # 24*24*3 = 1,728 features
+
+        # RESOLUTION 4: Very low resolution for global context
+        # Resize to 12x12 for very basic shape information
+        context_resized = cv2.resize(img_uint8, (12, 12))
+        context_features = context_resized.flatten()  # 12*12*3 = 432 features
+
+        # Combine all resolution features
+        combined_features = np.concatenate(
+            [
+                center_features,  # Fine details of deer body
+                medium_features,  # Overall proportions
+                low_features,  # General shape
+                context_features,  # Global context
+            ]
+        )
+
+        all_features.append(combined_features)
+
+    # Convert to numpy array
+    feature_array = np.array(all_features, dtype=np.float32)
+
+    # Normalize to 0-1 range
+    feature_array = feature_array / 255.0
+
+    return feature_array
+
+
+def extract_fast_multi_resolution_features(X_images):
+    """
+    Faster version with fewer features but still multi-scale
+    """
+
+    print(f"Extracting FAST multi-resolution features from {X_images.shape}...")
+
+    all_features = []
+
+    for i, img in enumerate(X_images):
+
+        # Convert to uint8 if needed
+        if img.dtype != np.uint8:
+            img_uint8 = (
+                (img * 255).astype(np.uint8)
+                if img.max() <= 1.0
+                else img.astype(np.uint8)
+            )
+        else:
+            img_uint8 = img
+
+        # RESOLUTION 1: Center crop at medium resolution
+        h, w = img_uint8.shape[:2]
+        center_start_h = (h - 112) // 2
+        center_start_w = (w - 112) // 2
+        center_crop = img_uint8[
+            center_start_h : center_start_h + 112,
+            center_start_w : center_start_w + 112,
+            :,
+        ]
+        center_resized = cv2.resize(center_crop, (56, 56))  # 56*56*3 = 9,408
+        center_features = center_resized.flatten()
+
+        # RESOLUTION 2: Full image at low resolution
+        full_resized = cv2.resize(img_uint8, (28, 28))  # 28*28*3 = 2,352
+        full_features = full_resized.flatten()
+
+        # Combine features
+        combined_features = np.concatenate([center_features, full_features])
+        all_features.append(combined_features)
+
+    feature_array = np.array(all_features, dtype=np.float32) / 255.0
+
+    total_features = 9408 + 2352  # = 11,760 features
+
+    print(f"✅ Fast multi-resolution extraction complete!")
+    print(f"   Total features: {total_features:,}")
+    print(f"   Final shape: {feature_array.shape}")
+
+    return feature_array
+
+
+def prepare_optimal_deer_features(X_train, X_test):
+    """Optimal balance of accuracy and speed for deer morphology"""
+    print("Applying center crop + light subsample...")
+    # Focus on center 144x144 where deer body usually is
+    center_train = X_train[:, 40:184, 40:184, :]
+    center_test = X_test[:, 40:184, 40:184, :]
+    # Light subsample (every 2nd pixel) to 72x72
+    sub_train = center_train[:, ::2, ::2, :]
+    sub_test = center_test[:, ::2, ::2, :]
+    # Flatten
+    X_train_flat = sub_train.reshape(sub_train.shape[0], -1)
+    X_test_flat = sub_test.reshape(sub_test.shape[0], -1)
+    return X_train_flat, X_test_flat
+
 
 # Reshape / concatenate images
 def ingest_resize_stack(files: list) -> list[np.ndarray[Any, Any]]:
@@ -261,27 +529,18 @@ def homogenize_data(
     y_train_flat = np.argmax(y_train_augmented, axis=1)
     y_true = np.argmax(y_test_onehot, axis=1)
 
-    # Flatten the data - using full images
-    X_train_flat = X_train_augmented.reshape(X_train_augmented.shape[0], -1).astype(
-        np.float32
-    )
-    X_test_flat = X_test.reshape(X_test.shape[0], -1).astype(np.float32)
+    # USE THIS - should be very fast:
+    X_train_flat = extract_fast_numpy_features(X_train_augmented)
+    X_test_flat = extract_fast_numpy_features(X_test)
 
     # Apply standardization
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train_flat)
-    X_test_scaled = scaler.transform(X_test_flat)
+    X_train_final = scaler.fit_transform(X_train_flat)
+    X_test_final = scaler.transform(X_test_flat)
 
-    # Free up memory
+    # Free up memory (delete the unscaled versions)
     del X_train_flat, X_test_flat
     gc.collect()
 
-    # Flatten images
-    X_train_flat = X_train_scaled.reshape(X_train_scaled.shape[0], -1)
-    X_test_flat = X_test_scaled.reshape(X_test_scaled.shape[0], -1)
-
-    # Free up memory
-    del X_train_scaled, X_test_scaled
-    gc.collect()
-
-    return X_train_flat, y_train_flat, X_test_flat, y_true, label_mapping, num_classes
+    # Return the final scaled versions
+    return X_train_final, y_train_flat, X_test_final, y_true, label_mapping, num_classes
