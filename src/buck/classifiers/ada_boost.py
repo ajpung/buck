@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 # ----------------- RANDOM STATE -----------------
 def _optimize_rs(X_train, y_train, X_test, y_true, opts):
-
+    print("Optimizing random state...")
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
@@ -16,6 +16,7 @@ def _optimize_rs(X_train, y_train, X_test, y_true, opts):
     best_val = variable_array[0]
     for i in np.arange(len(variable_array)):
         v = variable_array[i]
+        print(v)
         # Define classifiers to test
         classifier = AdaBoostClassifier(
             random_state=v,
@@ -45,6 +46,7 @@ def _optimize_rs(X_train, y_train, X_test, y_true, opts):
 
 
 def _optimize_nest(X_train, y_train, X_test, y_true, opts):
+    print("Optimizing number of estimators...")
     # Initialize variables
     ac_vec = []
     f1_vec = []
@@ -86,12 +88,13 @@ def _optimize_nest(X_train, y_train, X_test, y_true, opts):
 
 
 def _optimize_lr(X_train, y_train, X_test, y_true, opts):
+    print("Optimizing learning rate...")
     # Initialize variables
     ac_vec = []
     f1_vec = []
     max_acc = -np.inf
     max_idx = -1
-    variable_array = np.arange(0.001, 20.0, 0.01)
+    variable_array = np.arange(0.001, 10.0, 0.5)
     best_val = variable_array[0]
 
     # Iterate through variables
