@@ -361,7 +361,7 @@ def _optimize_regularization(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_stacking_classifier(X_train, y_train, X_test, y_true, cycles=2):
+def _optimize_stacking(X_train, y_train, X_test, y_true, cycles=2):
     """
     Optimizes the hyperparameters for a StackingClassifier.
     :param X_train: Training data

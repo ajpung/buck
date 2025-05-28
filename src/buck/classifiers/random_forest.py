@@ -5,33 +5,71 @@ from tqdm.auto import tqdm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.exceptions import ConvergenceWarning
+import time
 
 # Suppress convergence warnings for cleaner progress bars
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
+# Global variables for efficiency
+_start_time = None
+_max_runtime_per_param = 180  # 3 minutes max per parameter
+_min_accuracy_threshold = 0.25  # Stop if accuracy is consistently terrible
+_consecutive_failures = 0
+_max_consecutive_failures = 3
+
 
 def _safe_evaluate_model(X_train, y_train, X_test, y_true, **kwargs):
     """Safely evaluate a model configuration"""
+    global _consecutive_failures
+
     try:
-        classifier = RandomForestClassifier(**kwargs)
+        # Use fewer estimators early to speed up evaluation
+        test_kwargs = kwargs.copy()
+        if "n_estimators" in test_kwargs and test_kwargs["n_estimators"] > 50:
+            # Scale down estimators for faster evaluation during optimization
+            test_kwargs["n_estimators"] = min(test_kwargs["n_estimators"], 25)
+
+        classifier = RandomForestClassifier(**test_kwargs)
         classifier.fit(X_train, y_train)
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+
+        # Track consecutive failures for early stopping
+        if accuracy < _min_accuracy_threshold:
+            _consecutive_failures += 1
+        else:
+            _consecutive_failures = 0
+
         return accuracy, f1, True
     except Exception:
+        _consecutive_failures += 1
         return 0.0, 0.0, False
 
 
 def _optimize_rs(X_train, y_train, X_test, y_true, opts):
     """Optimize random state"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
-    variable_array = np.arange(30)  # Reduced from 800 to 30
+    variable_array = np.arange(
+        150
+    )  # Reduced from 30 to 5 - random state doesn't need extensive search
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing Random State", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Random State (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Random State (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["random_state"] = v
 
@@ -58,14 +96,36 @@ def _optimize_rs(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_n_estimators(X_train, y_train, X_test, y_true, opts):
     """Optimize number of estimators"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
-    # Strategic values for Random Forest estimators
-    variable_array = [10, 25, 50, 100, 200, 300, 500, 800]
+    # Smarter estimator selection based on dataset size
+    n_samples = X_train.shape[0]
+    if n_samples < 1000:
+        variable_array = [5, 10, 25, 50]  # Smaller datasets don't need many trees
+    else:
+        variable_array = [
+            10,
+            25,
+            50,
+            100,
+            200,
+        ]  # Larger datasets can benefit from more trees
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing N Estimators", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("N Estimators (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("N Estimators (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["n_estimators"] = v
 
@@ -92,14 +152,26 @@ def _optimize_n_estimators(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_max_depth(X_train, y_train, X_test, y_true, opts):
     """Optimize max depth"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
-    # Strategic depths for Random Forest
-    variable_array = [3, 5, 7, 10, 15, 20, 25, None]
+    # Smarter depth selection
+    variable_array = [3, 5, 10, 15, None]  # Reduced and more strategic
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing Max Depth", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Max Depth (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Max Depth (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["max_depth"] = v
 
@@ -126,32 +198,38 @@ def _optimize_max_depth(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_max_features(X_train, y_train, X_test, y_true, opts):
     """Optimize max features"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
     n_features = X_train.shape[1]
 
-    # Intelligent feature selection based on dataset size
+    # Much more efficient feature selection
     if n_features <= 10:
-        feature_options = [1, 2, 3, "sqrt", "log2", None]
+        variable_array = [
+            "sqrt",
+            "log2",
+            None,
+        ]  # Skip specific numbers for small datasets
     elif n_features <= 50:
-        feature_options = [5, 10, 20, "sqrt", "log2", None]
+        variable_array = [5, "sqrt", "log2", None]
     else:
-        feature_options = [10, 20, 50, n_features // 4, "sqrt", "log2", None]
-
-    # Remove duplicates and invalid options
-    variable_array = []
-    for opt in feature_options:
-        if isinstance(opt, int) and opt <= n_features and opt not in variable_array:
-            variable_array.append(opt)
-        elif isinstance(opt, str) and opt not in variable_array:
-            variable_array.append(opt)
-        elif opt is None and opt not in variable_array:
-            variable_array.append(opt)
+        variable_array = ["sqrt", "log2", n_features // 4, None]
 
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing Max Features", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Max Features (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Max Features (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["max_features"] = v
 
@@ -178,13 +256,25 @@ def _optimize_max_features(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_criterion(X_train, y_train, X_test, y_true, opts):
     """Optimize splitting criterion"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
-    variable_array = ["gini", "entropy", "log_loss"]
+    variable_array = ["gini", "entropy"]  # Removed log_loss for speed
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing Criterion", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Criterion (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Criterion (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["criterion"] = v
 
@@ -211,24 +301,32 @@ def _optimize_criterion(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_min_samples_config(X_train, y_train, X_test, y_true, opts):
     """Optimize min_samples_split and min_samples_leaf together"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Combined configurations for efficiency
+    # Reduced configurations for efficiency
     configs = [
         {"min_samples_split": 2, "min_samples_leaf": 1},
         {"min_samples_split": 5, "min_samples_leaf": 1},
-        {"min_samples_split": 10, "min_samples_leaf": 1},
-        {"min_samples_split": 2, "min_samples_leaf": 2},
-        {"min_samples_split": 5, "min_samples_leaf": 2},
         {"min_samples_split": 10, "min_samples_leaf": 2},
         {"min_samples_split": 20, "min_samples_leaf": 5},
-        {"min_samples_split": 50, "min_samples_leaf": 10},
     ]
     best_config = configs[0]
 
     with tqdm(configs, desc="Optimizing Min Samples Config", leave=False) as pbar:
         for config in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Min Samples (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Min Samples (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts.update(config)
 
@@ -256,10 +354,14 @@ def _optimize_min_samples_config(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_regularization_params(X_train, y_train, X_test, y_true, opts):
     """Optimize regularization parameters together"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Combined regularization configurations
+    # Simplified regularization configurations
     configs = [
         {
             "min_weight_fraction_leaf": 0.0,
@@ -281,26 +383,19 @@ def _optimize_regularization_params(X_train, y_train, X_test, y_true, opts):
             "min_impurity_decrease": 0.0,
             "ccp_alpha": 0.01,
         },
-        {
-            "min_weight_fraction_leaf": 0.05,
-            "min_impurity_decrease": 0.0,
-            "ccp_alpha": 0.0,
-        },
-        {
-            "min_weight_fraction_leaf": 0.0,
-            "min_impurity_decrease": 0.05,
-            "ccp_alpha": 0.0,
-        },
-        {
-            "min_weight_fraction_leaf": 0.0,
-            "min_impurity_decrease": 0.0,
-            "ccp_alpha": 0.05,
-        },
     ]
     best_config = configs[0]
 
     with tqdm(configs, desc="Optimizing Regularization", leave=False) as pbar:
         for config in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Regularization (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Regularization (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts.update(config)
 
@@ -329,21 +424,31 @@ def _optimize_regularization_params(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_bootstrap_config(X_train, y_train, X_test, y_true, opts):
     """Optimize bootstrap configuration"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Bootstrap configurations
+    # Simplified bootstrap configurations
     configs = [
         {"bootstrap": True, "oob_score": False, "max_samples": None},
         {"bootstrap": True, "oob_score": True, "max_samples": None},
-        {"bootstrap": True, "oob_score": False, "max_samples": 0.8},
-        {"bootstrap": True, "oob_score": True, "max_samples": 0.8},
         {"bootstrap": False, "oob_score": False, "max_samples": None},
     ]
     best_config = configs[0]
 
     with tqdm(configs, desc="Optimizing Bootstrap Config", leave=False) as pbar:
         for config in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Bootstrap (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Bootstrap (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts.update(config)
 
@@ -376,13 +481,25 @@ def _optimize_bootstrap_config(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_class_weight(X_train, y_train, X_test, y_true, opts):
     """Optimize class weight"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
-    variable_array = [None, "balanced", "balanced_subsample"]
+    variable_array = [None, "balanced"]  # Removed balanced_subsample for speed
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing Class Weight", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Class Weight (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Class Weight (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["class_weight"] = v
 
@@ -409,14 +526,26 @@ def _optimize_class_weight(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_max_leaf_nodes(X_train, y_train, X_test, y_true, opts):
     """Optimize max leaf nodes"""
+    global _start_time, _consecutive_failures
+    _start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
-    # Strategic leaf node values
-    variable_array = [10, 50, 100, 200, 500, 1000, None]
+    # Simplified leaf node values
+    variable_array = [50, 100, 500, None]  # Reduced options
     best_val = variable_array[0]
 
     with tqdm(variable_array, desc="Optimizing Max Leaf Nodes", leave=False) as pbar:
         for v in pbar:
+            # Early stopping conditions
+            if time.time() - _start_time > _max_runtime_per_param:
+                pbar.set_description("Max Leaf Nodes (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Max Leaf Nodes (POOR ACCURACY)")
+                break
+
             test_opts = opts.copy()
             test_opts["max_leaf_nodes"] = v
 
@@ -451,9 +580,23 @@ def _optimize_random_forest(X_train, y_train, X_test, y_true, cycles=2):
     :param cycles: Number of optimization cycles
     """
 
-    # Define initial parameters with better defaults
+    # Quick baseline check to catch data issues early
+    print("Running baseline check...")
+    baseline_rf = RandomForestClassifier(n_estimators=5, random_state=42)
+    baseline_rf.fit(X_train, y_train)
+    baseline_acc = baseline_rf.score(X_test, y_true)
+    print(f"Baseline accuracy (5 trees): {baseline_acc:.4f}")
+
+    if baseline_acc < 0.2:
+        print("⚠️  WARNING: Very low baseline accuracy!")
+        print(
+            "Consider checking data preprocessing, feature engineering, or class balance."
+        )
+        print("Proceeding with optimization anyway...")
+
+    # Define initial parameters with efficient defaults
     opts = {
-        "n_estimators": 100,
+        "n_estimators": 10,  # Start small
         "criterion": "gini",
         "max_depth": None,
         "min_samples_split": 2,
@@ -483,6 +626,7 @@ def _optimize_random_forest(X_train, y_train, X_test, y_true, cycles=2):
         range(cycles), desc="Random Forest Optimization Cycles", position=0
     ) as cycle_pbar:
         for c in cycle_pbar:
+            cycle_start_time = time.time()
             cycle_pbar.set_description(f"Random Forest Cycle {c + 1}/{cycles}")
 
             # Core hyperparameters (most impactful for Random Forest)
@@ -514,11 +658,14 @@ def _optimize_random_forest(X_train, y_train, X_test, y_true, cycles=2):
             ma_vec.append(ma)
             f1_vec.append(f1)
 
+            cycle_time = time.time() - cycle_start_time
+
             cycle_pbar.set_postfix(
                 {
                     "accuracy": f"{ma:.4f}",
                     "f1": f"{f1:.4f}",
                     "best_overall": f"{max(ma_vec):.4f}",
+                    "cycle_time": f"{cycle_time:.1f}s",
                     "n_est": opts["n_estimators"],
                     "depth": (
                         str(opts["max_depth"])

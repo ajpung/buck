@@ -4,31 +4,31 @@ import numpy as np
 from tqdm.auto import tqdm
 from sklearn.metrics import accuracy_score, f1_score
 
-# Handle CatBoost import with fallback
+# Handle LightGBM import with fallback
 try:
-    from catboost import CatBoostClassifier
+    import lightgbm as lgb
 
-    CATBOOST_AVAILABLE = True
+    LIGHTGBM_AVAILABLE = True
 except ImportError:
-    CATBOOST_AVAILABLE = False
-    print("CatBoost not available. Install with: pip install catboost")
+    LIGHTGBM_AVAILABLE = False
+    print("LightGBM not available. Install with: pip install lightgbm")
 
 # Suppress warnings for cleaner progress bars
 warnings.filterwarnings("ignore")
 
 
 def _safe_evaluate_model(X_train, y_train, X_test, y_true, **kwargs):
-    """Safely evaluate a CatBoost model configuration"""
-    if not CATBOOST_AVAILABLE:
+    """Safely evaluate a LightGBM model configuration"""
+    if not LIGHTGBM_AVAILABLE:
         return 0.0, 0.0, False
 
     try:
-        # CatBoost specific parameters
-        catboost_params = kwargs.copy()
-        catboost_params["verbose"] = False  # Always suppress training output
-        catboost_params["allow_writing_files"] = False  # Don't write temp files
+        # LightGBM specific parameters
+        lgb_params = kwargs.copy()
+        lgb_params["verbose"] = -1  # Suppress output
+        lgb_params["force_col_wise"] = True  # Avoid data structure warnings
 
-        classifier = CatBoostClassifier(**catboost_params)
+        classifier = lgb.LGBMClassifier(**lgb_params)
         classifier.fit(X_train, y_train)
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
@@ -39,20 +39,20 @@ def _safe_evaluate_model(X_train, y_train, X_test, y_true, **kwargs):
 
 
 def _optimize_boosting_config(X_train, y_train, X_test, y_true, opts):
-    """Optimize boosting configuration (iterations + learning_rate together)"""
+    """Optimize boosting configuration (n_estimators + learning_rate together)"""
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Strategic boosting configurations for CatBoost
+    # Strategic boosting configurations for LightGBM
     configs = [
-        {"iterations": 500, "learning_rate": 0.1},  # Default balanced
-        {"iterations": 1000, "learning_rate": 0.05},  # Many trees, slower learning
-        {"iterations": 1500, "learning_rate": 0.03},  # Many trees, very slow learning
-        {"iterations": 300, "learning_rate": 0.15},  # Fewer trees, faster learning
-        {"iterations": 200, "learning_rate": 0.2},  # Few trees, aggressive learning
-        {"iterations": 750, "learning_rate": 0.08},  # Moderate compromise
-        {"iterations": 100, "learning_rate": 0.3},  # Very few trees, very aggressive
-        {"iterations": 2000, "learning_rate": 0.01},  # Many trees, very conservative
+        {"n_estimators": 100, "learning_rate": 0.1},  # Default balanced
+        {"n_estimators": 200, "learning_rate": 0.05},  # More trees, slower learning
+        {"n_estimators": 300, "learning_rate": 0.03},  # Many trees, very slow learning
+        {"n_estimators": 500, "learning_rate": 0.01},  # Many trees, very conservative
+        {"n_estimators": 150, "learning_rate": 0.08},  # Moderate compromise
+        {"n_estimators": 50, "learning_rate": 0.2},  # Few trees, aggressive learning
+        {"n_estimators": 75, "learning_rate": 0.15},  # Balanced aggressive
+        {"n_estimators": 400, "learning_rate": 0.02},  # Conservative approach
     ]
     best_config = configs[0]
 
@@ -72,7 +72,7 @@ def _optimize_boosting_config(X_train, y_train, X_test, y_true, opts):
 
             pbar.set_postfix(
                 {
-                    "iter": config["iterations"],
+                    "n_est": config["n_estimators"],
                     "lr": f"{config['learning_rate']:.3f}",
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
@@ -88,44 +88,20 @@ def _optimize_tree_structure(X_train, y_train, X_test, y_true, opts):
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Strategic tree structure configurations for CatBoost
+    # Strategic tree structure configurations for LightGBM
     configs = [
-        {"depth": 6, "min_data_in_leaf": 1, "grow_policy": "SymmetricTree"},  # Default
+        {"max_depth": -1, "num_leaves": 31, "min_child_samples": 20},  # Default
+        {"max_depth": 6, "num_leaves": 63, "min_child_samples": 20},  # Controlled depth
+        {"max_depth": 8, "num_leaves": 127, "min_child_samples": 20},  # Deeper trees
+        {"max_depth": -1, "num_leaves": 15, "min_child_samples": 20},  # Fewer leaves
+        {"max_depth": -1, "num_leaves": 63, "min_child_samples": 20},  # More leaves
         {
-            "depth": 4,
-            "min_data_in_leaf": 1,
-            "grow_policy": "SymmetricTree",
-        },  # Shallow trees
-        {
-            "depth": 8,
-            "min_data_in_leaf": 1,
-            "grow_policy": "SymmetricTree",
-        },  # Deeper trees
-        {
-            "depth": 10,
-            "min_data_in_leaf": 1,
-            "grow_policy": "SymmetricTree",
-        },  # Very deep
-        {
-            "depth": 6,
-            "min_data_in_leaf": 5,
-            "grow_policy": "SymmetricTree",
+            "max_depth": -1,
+            "num_leaves": 31,
+            "min_child_samples": 50,
         },  # Conservative splits
-        {
-            "depth": 6,
-            "min_data_in_leaf": 10,
-            "grow_policy": "SymmetricTree",
-        },  # More conservative
-        {
-            "depth": 6,
-            "min_data_in_leaf": 1,
-            "grow_policy": "Lossguide",
-        },  # Alternative grow policy
-        {
-            "depth": 8,
-            "min_data_in_leaf": 3,
-            "grow_policy": "Depthwise",
-        },  # Depthwise growth
+        {"max_depth": 10, "num_leaves": 255, "min_child_samples": 10},  # Complex trees
+        {"max_depth": 4, "num_leaves": 15, "min_child_samples": 100},  # Simple trees
     ]
     best_config = configs[0]
 
@@ -143,11 +119,14 @@ def _optimize_tree_structure(X_train, y_train, X_test, y_true, opts):
                 best_f1 = f1
                 best_config = config
 
+            depth_str = (
+                str(config["max_depth"]) if config["max_depth"] != -1 else "Auto"
+            )
             pbar.set_postfix(
                 {
-                    "depth": config["depth"],
-                    "min_leaf": config["min_data_in_leaf"],
-                    "policy": config["grow_policy"][:6],
+                    "depth": depth_str,
+                    "leaves": config["num_leaves"],
+                    "min_child": config["min_child_samples"],
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -162,16 +141,16 @@ def _optimize_regularization(X_train, y_train, X_test, y_true, opts):
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Strategic regularization configurations for CatBoost
+    # Strategic regularization configurations for LightGBM
     configs = [
-        {"l2_leaf_reg": 3, "reg_lambda": None},  # Default L2
-        {"l2_leaf_reg": 1, "reg_lambda": None},  # Light L2
-        {"l2_leaf_reg": 10, "reg_lambda": None},  # Strong L2
-        {"l2_leaf_reg": 3, "reg_lambda": 1},  # L2 + lambda
-        {"l2_leaf_reg": 5, "reg_lambda": 0.5},  # Balanced regularization
-        {"l2_leaf_reg": 0.1, "reg_lambda": None},  # Very light L2
-        {"l2_leaf_reg": 20, "reg_lambda": None},  # Very strong L2
-        {"l2_leaf_reg": 3, "reg_lambda": 5},  # Strong lambda
+        {"reg_alpha": 0.0, "reg_lambda": 0.0},  # No regularization
+        {"reg_alpha": 0.1, "reg_lambda": 0.1},  # Light regularization
+        {"reg_alpha": 1.0, "reg_lambda": 1.0},  # Moderate regularization
+        {"reg_alpha": 0.0, "reg_lambda": 1.0},  # L2 only
+        {"reg_alpha": 1.0, "reg_lambda": 0.0},  # L1 only (sparsity)
+        {"reg_alpha": 0.5, "reg_lambda": 0.5},  # Balanced light
+        {"reg_alpha": 2.0, "reg_lambda": 2.0},  # Strong regularization
+        {"reg_alpha": 0.1, "reg_lambda": 1.0},  # Light L1 + moderate L2
     ]
     best_config = configs[0]
 
@@ -189,15 +168,10 @@ def _optimize_regularization(X_train, y_train, X_test, y_true, opts):
                 best_f1 = f1
                 best_config = config
 
-            lambda_str = (
-                f"{config['reg_lambda']:.1f}"
-                if config["reg_lambda"] is not None
-                else "None"
-            )
             pbar.set_postfix(
                 {
-                    "l2_leaf": f"{config['l2_leaf_reg']:.1f}",
-                    "lambda": lambda_str,
+                    "alpha": f"{config['reg_alpha']:.1f}",
+                    "lambda": f"{config['reg_lambda']:.1f}",
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -212,16 +186,44 @@ def _optimize_sampling_config(X_train, y_train, X_test, y_true, opts):
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Strategic sampling configurations for CatBoost
+    # Strategic sampling configurations for LightGBM
     configs = [
-        {"subsample": 1.0, "rsm": 1.0},  # No sampling
-        {"subsample": 0.8, "rsm": 0.8},  # Moderate sampling
-        {"subsample": 0.9, "rsm": 0.9},  # Light sampling
-        {"subsample": 0.7, "rsm": 0.7},  # Aggressive sampling
-        {"subsample": 0.8, "rsm": 1.0},  # Row sampling only
-        {"subsample": 1.0, "rsm": 0.8},  # Feature sampling only
-        {"subsample": 0.6, "rsm": 0.8},  # Heavy row sampling
-        {"subsample": 0.8, "rsm": 0.6},  # Heavy feature sampling
+        {"subsample": 1.0, "colsample_bytree": 1.0, "subsample_freq": 0},  # No sampling
+        {
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "subsample_freq": 1,
+        },  # Moderate sampling
+        {
+            "subsample": 0.9,
+            "colsample_bytree": 0.9,
+            "subsample_freq": 1,
+        },  # Light sampling
+        {
+            "subsample": 0.7,
+            "colsample_bytree": 0.7,
+            "subsample_freq": 1,
+        },  # Aggressive sampling
+        {
+            "subsample": 0.8,
+            "colsample_bytree": 1.0,
+            "subsample_freq": 1,
+        },  # Row sampling only
+        {
+            "subsample": 1.0,
+            "colsample_bytree": 0.8,
+            "subsample_freq": 0,
+        },  # Column sampling only
+        {
+            "subsample": 0.6,
+            "colsample_bytree": 0.8,
+            "subsample_freq": 1,
+        },  # Heavy row sampling
+        {
+            "subsample": 0.8,
+            "colsample_bytree": 0.6,
+            "subsample_freq": 0,
+        },  # Heavy column sampling
     ]
     best_config = configs[0]
 
@@ -242,7 +244,8 @@ def _optimize_sampling_config(X_train, y_train, X_test, y_true, opts):
             pbar.set_postfix(
                 {
                     "subsample": f"{config['subsample']:.1f}",
-                    "rsm": f"{config['rsm']:.1f}",
+                    "colsample": f"{config['colsample_bytree']:.1f}",
+                    "freq": config["subsample_freq"],
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -252,8 +255,8 @@ def _optimize_sampling_config(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_loss_function(X_train, y_train, X_test, y_true, opts):
-    """Optimize loss function and related parameters"""
+def _optimize_objective_metric(X_train, y_train, X_test, y_true, opts):
+    """Optimize objective function and metric"""
     max_acc = -np.inf
     best_f1 = 0.0
 
@@ -262,18 +265,18 @@ def _optimize_loss_function(X_train, y_train, X_test, y_true, opts):
 
     if n_classes == 2:  # Binary classification
         configs = [
-            {"loss_function": "Logloss"},
-            {"loss_function": "CrossEntropy"},
+            {"objective": "binary", "metric": "binary_logloss"},
+            {"objective": "binary", "metric": "binary_error"},
         ]
     else:  # Multi-class classification
         configs = [
-            {"loss_function": "MultiClass"},
-            {"loss_function": "MultiClassOneVsAll"},
+            {"objective": "multiclass", "metric": "multi_logloss"},
+            {"objective": "multiclass", "metric": "multi_error"},
         ]
 
     best_config = configs[0]
 
-    with tqdm(configs, desc="Optimizing Loss Function", leave=False) as pbar:
+    with tqdm(configs, desc="Optimizing Objective/Metric", leave=False) as pbar:
         for config in pbar:
             test_opts = opts.copy()
             test_opts.update(config)
@@ -289,7 +292,8 @@ def _optimize_loss_function(X_train, y_train, X_test, y_true, opts):
 
             pbar.set_postfix(
                 {
-                    "loss": config["loss_function"][:8],
+                    "objective": config["objective"][:6],
+                    "metric": config["metric"][:8],
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -299,32 +303,48 @@ def _optimize_loss_function(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_bootstrap_config(X_train, y_train, X_test, y_true, opts):
-    """Optimize bootstrap configuration"""
+def _optimize_advanced_params(X_train, y_train, X_test, y_true, opts):
+    """Optimize advanced LightGBM parameters"""
     max_acc = -np.inf
     best_f1 = 0.0
 
-    # Bootstrap configurations for CatBoost
+    # Advanced parameter configurations for LightGBM
     configs = [
-        {"bootstrap_type": "Bayesian"},  # Default for small datasets
-        {"bootstrap_type": "Bernoulli", "subsample": 0.66},  # Bernoulli bootstrap
-        {"bootstrap_type": "MVS"},  # Minimum variance sampling
-        {"bootstrap_type": "Poisson"},  # Poisson bootstrap
-        {"bootstrap_type": "No"},  # No bootstrap
+        {
+            "boosting_type": "gbdt",
+            "min_gain_to_split": 0.0,
+            "min_sum_hessian_in_leaf": 1e-3,
+        },  # Default
+        {
+            "boosting_type": "dart",
+            "min_gain_to_split": 0.0,
+            "min_sum_hessian_in_leaf": 1e-3,
+        },  # DART boosting
+        {
+            "boosting_type": "gbdt",
+            "min_gain_to_split": 0.1,
+            "min_sum_hessian_in_leaf": 1e-3,
+        },  # Conservative splits
+        {
+            "boosting_type": "gbdt",
+            "min_gain_to_split": 0.0,
+            "min_sum_hessian_in_leaf": 1e-2,
+        },  # Conservative hessian
+        {
+            "boosting_type": "goss",
+            "min_gain_to_split": 0.0,
+            "min_sum_hessian_in_leaf": 1e-3,
+        },  # GOSS boosting
+        {
+            "boosting_type": "gbdt",
+            "min_gain_to_split": 0.05,
+            "min_sum_hessian_in_leaf": 5e-3,
+        },  # Balanced conservative
     ]
-
-    # For large datasets, prefer faster options
-    n_samples = X_train.shape[0]
-    if n_samples > 10000:
-        configs = [
-            {"bootstrap_type": "MVS"},
-            {"bootstrap_type": "Bernoulli", "subsample": 0.8},
-            {"bootstrap_type": "No"},
-        ]
 
     best_config = configs[0]
 
-    with tqdm(configs, desc="Optimizing Bootstrap Config", leave=False) as pbar:
+    with tqdm(configs, desc="Optimizing Advanced Params", leave=False) as pbar:
         for config in pbar:
             test_opts = opts.copy()
             test_opts.update(config)
@@ -340,7 +360,9 @@ def _optimize_bootstrap_config(X_train, y_train, X_test, y_true, opts):
 
             pbar.set_postfix(
                 {
-                    "bootstrap": config["bootstrap_type"][:6],
+                    "boost": config["boosting_type"][:4],
+                    "min_gain": f"{config['min_gain_to_split']:.2f}",
+                    "hessian": f"{config['min_sum_hessian_in_leaf']:.0e}",
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -350,9 +372,9 @@ def _optimize_bootstrap_config(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_catboost(X_train, y_train, X_test, y_true, cycles=2):
+def _optimize_lightgbm(X_train, y_train, X_test, y_true, cycles=2):
     """
-    Optimizes the hyperparameters for CatBoost Classifier.
+    Optimizes the hyperparameters for LightGBM Classifier.
     :param X_train: Training data
     :param y_train: Training labels
     :param X_test: Test data
@@ -360,33 +382,34 @@ def _optimize_catboost(X_train, y_train, X_test, y_true, cycles=2):
     :param cycles: Number of optimization cycles
     """
 
-    if not CATBOOST_AVAILABLE:
-        print("CatBoost is not available. Please install it with: pip install catboost")
+    if not LIGHTGBM_AVAILABLE:
+        print("LightGBM is not available. Please install it with: pip install lightgbm")
         return {}, 0.0, 0.0, [], []
 
     # Determine problem type
     n_classes = len(np.unique(y_train))
-    n_samples, n_features = X_train.shape
 
     # Define initial parameters with good defaults
     opts = {
-        "iterations": 500,
+        "n_estimators": 100,
         "learning_rate": 0.1,
-        "depth": 6,
-        "l2_leaf_reg": 3,
-        "reg_lambda": None,
+        "max_depth": -1,
+        "num_leaves": 31,
+        "min_child_samples": 20,
         "subsample": 1.0,
-        "rsm": 1.0,  # Random subspace method (feature sampling)
-        "min_data_in_leaf": 1,
-        "grow_policy": "SymmetricTree",
-        "bootstrap_type": "Bayesian" if n_samples < 10000 else "MVS",
-        "loss_function": "MultiClass" if n_classes > 2 else "Logloss",
-        "eval_metric": "MultiClass" if n_classes > 2 else "Logloss",
-        "random_seed": 42,
-        "thread_count": -1,
-        "verbose": False,
-        "allow_writing_files": False,
-        "use_best_model": False,  # Disable early stopping initially
+        "colsample_bytree": 1.0,
+        "subsample_freq": 0,
+        "reg_alpha": 0.0,
+        "reg_lambda": 0.0,
+        "min_gain_to_split": 0.0,
+        "min_sum_hessian_in_leaf": 1e-3,
+        "boosting_type": "gbdt",
+        "objective": "multiclass" if n_classes > 2 else "binary",
+        "metric": "multi_logloss" if n_classes > 2 else "binary_logloss",
+        "random_state": 42,
+        "n_jobs": -1,
+        "verbose": -1,
+        "force_col_wise": True,
     }
 
     # Track results
@@ -395,12 +418,12 @@ def _optimize_catboost(X_train, y_train, X_test, y_true, cycles=2):
 
     # Main optimization loop with overall progress bar
     with tqdm(
-        range(cycles), desc="CatBoost Optimization Cycles", position=0
+        range(cycles), desc="LightGBM Optimization Cycles", position=0
     ) as cycle_pbar:
         for c in cycle_pbar:
-            cycle_pbar.set_description(f"CatBoost Cycle {c + 1}/{cycles}")
+            cycle_pbar.set_description(f"LightGBM Cycle {c + 1}/{cycles}")
 
-            # Core hyperparameters (most impactful for CatBoost)
+            # Core hyperparameters (most impactful for LightGBM)
             opts, _, _ = _optimize_boosting_config(
                 X_train, y_train, X_test, y_true, opts
             )
@@ -413,8 +436,10 @@ def _optimize_catboost(X_train, y_train, X_test, y_true, cycles=2):
             opts, _, _ = _optimize_sampling_config(
                 X_train, y_train, X_test, y_true, opts
             )
-            opts, _, _ = _optimize_loss_function(X_train, y_train, X_test, y_true, opts)
-            opts, ma, f1 = _optimize_bootstrap_config(
+            opts, _, _ = _optimize_objective_metric(
+                X_train, y_train, X_test, y_true, opts
+            )
+            opts, ma, f1 = _optimize_advanced_params(
                 X_train, y_train, X_test, y_true, opts
             )
 
@@ -426,36 +451,37 @@ def _optimize_catboost(X_train, y_train, X_test, y_true, cycles=2):
                     "accuracy": f"{ma:.4f}",
                     "f1": f"{f1:.4f}",
                     "best_overall": f"{max(ma_vec):.4f}",
-                    "iter": opts["iterations"],
+                    "n_est": opts["n_estimators"],
                     "lr": f"{opts['learning_rate']:.3f}",
-                    "depth": opts["depth"],
-                    "l2_reg": f"{opts['l2_leaf_reg']:.1f}",
+                    "leaves": opts["num_leaves"],
+                    "reg_alpha": f"{opts['reg_alpha']:.1f}",
+                    "reg_lambda": f"{opts['reg_lambda']:.1f}",
                     "subsample": f"{opts['subsample']:.1f}",
-                    "bootstrap": opts["bootstrap_type"][:4],
+                    "boost_type": opts["boosting_type"][:4],
                 }
             )
 
     return opts, ma, f1, ma_vec, f1_vec
 
 
-def _analyze_catboost_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze CatBoost performance and feature importance"""
+def _analyze_lightgbm_performance(X_train, y_train, X_test, y_true, best_opts):
+    """Analyze LightGBM performance and feature importance"""
 
-    if not CATBOOST_AVAILABLE:
-        print("CatBoost is not available for analysis.")
+    if not LIGHTGBM_AVAILABLE:
+        print("LightGBM is not available for analysis.")
         return {}
 
     print("\n" + "=" * 60)
-    print("CATBOOST CLASSIFIER PERFORMANCE ANALYSIS")
+    print("LIGHTGBM CLASSIFIER PERFORMANCE ANALYSIS")
     print("=" * 60)
 
     # Train final model
-    print("Training final CatBoost model with best parameters...")
+    print("Training final LightGBM model with best parameters...")
     final_opts = best_opts.copy()
-    final_opts["verbose"] = False
-    final_opts["allow_writing_files"] = False
+    final_opts["verbose"] = -1
+    final_opts["force_col_wise"] = True
 
-    classifier = CatBoostClassifier(**final_opts)
+    classifier = lgb.LGBMClassifier(**final_opts)
     classifier.fit(X_train, y_train)
 
     # Make predictions
@@ -469,25 +495,28 @@ def _analyze_catboost_performance(X_train, y_train, X_test, y_true, best_opts):
 
     # Analyze configuration
     print(f"\nOptimal Configuration:")
-    print(f"  Iterations: {best_opts['iterations']}")
+    print(f"  N Estimators: {best_opts['n_estimators']}")
     print(f"  Learning Rate: {best_opts['learning_rate']:.3f}")
-    print(f"  Tree Depth: {best_opts['depth']}")
-    print(f"  Min Data in Leaf: {best_opts['min_data_in_leaf']}")
-    print(f"  Grow Policy: {best_opts['grow_policy']}")
-    print(f"  L2 Leaf Regularization: {best_opts['l2_leaf_reg']:.2f}")
-
-    if best_opts["reg_lambda"] is not None:
-        print(f"  Reg Lambda: {best_opts['reg_lambda']:.2f}")
-
+    print(
+        f"  Max Depth: {best_opts['max_depth'] if best_opts['max_depth'] != -1 else 'Auto'}"
+    )
+    print(f"  Num Leaves: {best_opts['num_leaves']}")
+    print(f"  Min Child Samples: {best_opts['min_child_samples']}")
+    print(f"  Boosting Type: {best_opts['boosting_type']}")
+    print(f"  Objective: {best_opts['objective']}")
+    print(f"  Metric: {best_opts['metric']}")
+    print(f"  Reg Alpha (L1): {best_opts['reg_alpha']:.3f}")
+    print(f"  Reg Lambda (L2): {best_opts['reg_lambda']:.3f}")
     print(f"  Subsample: {best_opts['subsample']:.2f}")
-    print(f"  RSM (Feature Sampling): {best_opts['rsm']:.2f}")
-    print(f"  Bootstrap Type: {best_opts['bootstrap_type']}")
-    print(f"  Loss Function: {best_opts['loss_function']}")
+    print(f"  Column Sample: {best_opts['colsample_bytree']:.2f}")
+    print(f"  Subsample Freq: {best_opts['subsample_freq']}")
+    print(f"  Min Gain to Split: {best_opts['min_gain_to_split']:.3f}")
+    print(f"  Min Sum Hessian: {best_opts['min_sum_hessian_in_leaf']:.0e}")
 
     # Feature importance analysis
     print(f"\nFeature Importance Analysis:")
     try:
-        feature_importance = classifier.get_feature_importance()
+        feature_importance = classifier.feature_importances_
         if len(feature_importance) > 0:
             # Get top 5 features
             top_indices = np.argsort(feature_importance)[-5:][::-1]
@@ -521,42 +550,57 @@ def _analyze_catboost_performance(X_train, y_train, X_test, y_true, best_opts):
         imbalance_ratio = max(counts) / min(counts)
         print(f"  Imbalance Ratio: {imbalance_ratio:.2f}:1")
         if imbalance_ratio > 2:
-            print(f"  Dataset is imbalanced - CatBoost handles this well automatically")
+            print(f"  Dataset is imbalanced - consider class_weight parameter")
 
-    # Bootstrap analysis
-    print(f"\nBootstrap Configuration:")
-    bootstrap_descriptions = {
-        "Bayesian": "Good for small datasets, provides uncertainty estimates",
-        "Bernoulli": "Standard bootstrap, good balance of speed and quality",
-        "MVS": "Minimum variance sampling, fastest for large datasets",
-        "Poisson": "Poisson bootstrap, good for regression-like problems",
-        "No": "No bootstrap, fastest but may overfit",
+    # Boosting type analysis
+    print(f"\nBoosting Type Analysis:")
+    boosting_descriptions = {
+        "gbdt": "Gradient Boosting Decision Tree - standard and reliable",
+        "dart": "Dropouts meet Multiple Additive Regression Trees - prevents overfitting",
+        "goss": "Gradient-based One-Side Sampling - faster training on large datasets",
+        "rf": "Random Forest mode - parallel training",
     }
-    bootstrap_type = best_opts["bootstrap_type"]
+    boosting_type = best_opts["boosting_type"]
     print(
-        f"  {bootstrap_type}: {bootstrap_descriptions.get(bootstrap_type, 'Unknown')}"
+        f"  {boosting_type.upper()}: {boosting_descriptions.get(boosting_type, 'Unknown')}"
     )
 
     # Regularization analysis
-    total_reg = best_opts["l2_leaf_reg"]
-    if best_opts["reg_lambda"] is not None:
-        total_reg += best_opts["reg_lambda"]
-
-    if total_reg < 1:
-        print(f"  Regularization: Light (may be appropriate for small datasets)")
+    total_reg = best_opts["reg_alpha"] + best_opts["reg_lambda"]
+    if total_reg == 0:
+        print(f"  Regularization: None (may overfit on small datasets)")
+    elif total_reg < 1:
+        print(f"  Regularization: Light")
     elif total_reg < 5:
-        print(f"  Regularization: Moderate (good balance)")
+        print(f"  Regularization: Moderate")
     else:
-        print(f"  Regularization: Strong (good for preventing overfitting)")
+        print(f"  Regularization: Strong")
 
     # Sampling analysis
-    total_sampling = best_opts["subsample"] * best_opts["rsm"]
+    total_sampling = best_opts["subsample"] * best_opts["colsample_bytree"]
     if total_sampling >= 0.9:
         print(f"  Sampling: Minimal (uses most data and features)")
     elif total_sampling >= 0.7:
         print(f"  Sampling: Moderate (good for generalization)")
     else:
         print(f"  Sampling: Aggressive (strong regularization effect)")
+
+    # Tree complexity analysis
+    if best_opts["max_depth"] == -1:
+        complexity_indicator = best_opts["num_leaves"]
+        print(f"  Tree Complexity: Auto depth with {complexity_indicator} leaves")
+    else:
+        complexity_indicator = best_opts["max_depth"] * best_opts["num_leaves"]
+        print(
+            f"  Tree Complexity: Depth {best_opts['max_depth']} with {best_opts['num_leaves']} leaves"
+        )
+
+    if complexity_indicator < 50:
+        print(f"    → Simple trees (good for small datasets)")
+    elif complexity_indicator < 200:
+        print(f"    → Moderate complexity (balanced)")
+    else:
+        print(f"    → Complex trees (good for large datasets)")
 
     return {
         "accuracy": accuracy,
@@ -565,25 +609,26 @@ def _analyze_catboost_performance(X_train, y_train, X_test, y_true, best_opts):
         "imbalance_ratio": max(counts) / min(counts) if len(unique) == 2 else 1.0,
         "total_regularization": total_reg,
         "sampling_fraction": total_sampling,
-        "bootstrap_type": bootstrap_type,
+        "boosting_type": boosting_type,
+        "tree_complexity": complexity_indicator,
     }
 
 
 # Example usage function
 def example_usage():
-    """Example of how to use the optimized CatBoost Classifier function"""
+    """Example of how to use the optimized LightGBM Classifier function"""
     from sklearn.datasets import make_classification
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
 
-    if not CATBOOST_AVAILABLE:
-        print("CatBoost is not available. Please install it with: pip install catboost")
+    if not LIGHTGBM_AVAILABLE:
+        print("LightGBM is not available. Please install it with: pip install lightgbm")
         return None, 0.0, 0.0, [], []
 
     # Generate sample data
     print("Generating sample classification data...")
     X, y = make_classification(
-        n_samples=3000,  # Larger dataset for CatBoost
+        n_samples=3000,  # Larger dataset for LightGBM
         n_features=20,
         n_informative=15,
         n_redundant=5,
@@ -597,18 +642,18 @@ def example_usage():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # CatBoost handles raw features excellently, but we can still scale
+    # LightGBM handles raw features well, but scaling can help sometimes
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
     print(f"Training set: {X_train_scaled.shape}")
     print(f"Test set: {X_test_scaled.shape}")
-    print("Starting CatBoost Classifier optimization...")
+    print("Starting LightGBM Classifier optimization...")
 
     # Run optimization
     best_opts, best_acc, best_f1, acc_history, f1_history = (
-        _optimize_catboost_classifier(
+        _optimize_lightgbm_classifier(
             X_train_scaled, y_train, X_test_scaled, y_test, cycles=2
         )
     )
@@ -618,13 +663,8 @@ def example_usage():
     print(f"Best F1 score: {best_f1:.4f}")
 
     # Analyze performance
-    analysis = _analyze_catboost_performance(
+    analysis = _analyze_lightgbm_performance(
         X_train_scaled, y_train, X_test_scaled, y_test, best_opts
     )
 
     return best_opts, best_acc, best_f1, acc_history, f1_history
-
-
-if __name__ == "__main__":
-    # Run example
-    example_usage()

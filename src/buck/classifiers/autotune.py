@@ -1,6 +1,6 @@
 import gc
 
-from buck.classifiers.ada_boost import _optimize_ada_boost
+from buck.classifiers.ada_boost import _optimize_adaboost
 from buck.classifiers.bagging_classifier import _optimize_bagging
 from buck.classifiers.decision_tree import _optimize_decision_tree
 from buck.classifiers.extra_trees import _optimize_extra_trees
@@ -13,13 +13,14 @@ from buck.classifiers.neural_network import _optimize_neural_network
 from buck.classifiers.passive_aggressive import _optimize_passive_aggressive
 from buck.classifiers.random_forest import _optimize_random_forest
 from buck.classifiers.ridge_classifier import _optimize_ridge
-from buck.classifiers.self_training import _optimize_self_training
-from buck.classifiers.stacking_classifier import _optimize_stacking_classifier
-from buck.classifiers.stocastic_gradient_descent import _optimize_sgd_classifier
-from buck.classifiers.voting_classifier import _optimize_voting_classifier
+from buck.classifiers.self_training import _optimize_selftrain
+from buck.classifiers.stacking_classifier import _optimize_stacking
+from buck.classifiers.stocastic_gradient_descent import _optimize_sgd
+from buck.classifiers.voting_classifier import _optimize_voting
 from buck.classifiers.convolution_nn import _optimize_cnn
 from buck.classifiers.xg_boost import _optimize_xgboost
-from buck.classifiers.cat_boost import _optimize_catboost_classifier
+from buck.classifiers.cat_boost import _optimize_catboost
+from buck.classifiers.light_gbm import _optimize_lightgbm
 
 """
 To validate:
@@ -79,9 +80,17 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Extra Trees", "optimals"], opts)
     print(results["Extra Trees"], "\n")
     gc.collect()
-    """
+    # ----------------------- XG BOOST ------------------------
+    opts, ma, f1, ma_vec, f1_vec = _optimize_xgboost(
+        X_train, y_train, X_test, y_true, cycles=cycles
+    )
+    write_to_nested_dict(results, ["XG Boost", "Accuracy"], ma)
+    write_to_nested_dict(results, ["XG Boost", "f1-score"], f1)
+    write_to_nested_dict(results, ["XG Boost", "optimals"], opts)
+    print(results["XG Boost"], "\n")
+    gc.collect()
     # ----------------------- CAT BOOST -----------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_catboost_classifier(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_catboost(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Cat Boost", "Accuracy"], ma)
@@ -90,6 +99,16 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     print(results["Cat Boost"], "\n")
     gc.collect()
     return results
+    # ----------------------- LIGHT GBM -----------------------
+    opts, ma, f1, ma_vec, f1_vec = _optimize_lightgbm(
+        X_train, y_train, X_test, y_true, cycles=cycles
+    )
+    write_to_nested_dict(results, ["Light GBM", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Light GBM", "f1-score"], f1)
+    write_to_nested_dict(results, ["Light GBM", "optimals"], opts)
+    print(results["Light GBM"], "\n")
+    gc.collect()
+    """
     # --------------------- RANDOM FOREST ---------------------
     opts, ma, f1, ma_vec, f1_vec = _optimize_random_forest(
         X_train, y_train, X_test, y_true, cycles=cycles
@@ -215,13 +234,4 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Gaussian Process", "f1-score"], f1)
     write_to_nested_dict(results, ["Gaussian Process", "optimals"], opts)
     print(results["Gaussian Process"], "\n")
-    gc.collect()
-    # ----------------------- XG BOOST ------------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_xgboost(
-        X_train, y_train, X_test, y_true, cycles=cycles
-    )
-    write_to_nested_dict(results, ["XG Boost", "Accuracy"], ma)
-    write_to_nested_dict(results, ["XG Boost", "f1-score"], f1)
-    write_to_nested_dict(results, ["XG Boost", "optimals"], opts)
-    print(results["XG Boost"], "\n")
     gc.collect()

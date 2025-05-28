@@ -355,7 +355,7 @@ def _optimize_tree_parameters(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_voting_classifier(X_train, y_train, X_test, y_true, cycles=2):
+def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
     """
     Optimizes the hyperparameters for a VotingClassifier.
     :param X_train: Training data
