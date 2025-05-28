@@ -350,7 +350,7 @@ def _optimize_class_weight(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_sgd_classifier(X_train, y_train, X_test, y_true, cycles=2):
+def _optimize_sgd(X_train, y_train, X_test, y_true, cycles=2):
     """
     Optimizes the hyperparameters for SGDClassifier.
     :param X_train: Training data

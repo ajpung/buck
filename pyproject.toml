@@ -16,6 +16,7 @@ dependencies = [
     "jupyter_client",
     "keras",
     "lime",
+    "lightgbm",
     "matplotlib",
     "mypy",
     "notebook",
@@ -30,6 +31,7 @@ dependencies = [
     "setuptools",
     "setuptools-scm",
     "tensorflow",
+    "xgboost",
     "wheel",
 ]
 dynamic = ["version"]

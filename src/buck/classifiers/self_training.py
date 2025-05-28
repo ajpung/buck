@@ -174,9 +174,7 @@ def _create_semi_supervised_data(X, y, labeled_ratio=0.3):
     return X, y_semi, labeled_indices
 
 
-def _optimize_self_training(
-    X_train, y_train, X_test, y_true, cycles=2, labeled_ratio=0.3
-):
+def _optimize_selftrain(X_train, y_train, X_test, y_true, cycles=2, labeled_ratio=0.3):
     """
     Optimizes the hyperparameters for SelfTrainingClassifier.
     :param X_train: Training data

@@ -217,7 +217,7 @@ def _optimize_base_estimator(X_train, y_train, X_test, y_true, opts):
 
 
 # ----------------- MAIN OPTIMIZATION FUNCTION -----------------
-def _optimize_ada_boost(X_train, y_train, X_test, y_true, cycles=2):
+def _optimize_adaboost(X_train, y_train, X_test, y_true, cycles=2):
     """
     Optimized AdaBoost hyperparameter tuning with strategic parameter choices
 
