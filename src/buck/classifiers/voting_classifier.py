@@ -1,125 +1,172 @@
 from typing import Any
 import warnings
 import numpy as np
+import time
 from tqdm.auto import tqdm
 from sklearn.ensemble import (
     VotingClassifier,
-    BaggingClassifier,
     RandomForestClassifier,
     ExtraTreesClassifier,
-    GradientBoostingClassifier,
 )
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.exceptions import ConvergenceWarning
+
+# Import XGBoost (your top performer!)
+try:
+    from xgboost import XGBClassifier
+
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    print("⚠️  XGBoost not available - install with: pip install xgboost")
+    XGBOOST_AVAILABLE = False
 
 # Suppress convergence warnings for cleaner progress bars
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
+# Global efficiency controls
+_max_time_per_step = 300  # 5 minutes max per optimization step
+_min_accuracy_threshold = 0.25  # Stop if accuracy is consistently terrible
+_consecutive_failures = 0
+_max_consecutive_failures = 3
+
 
 def _safe_evaluate_model(X_train, y_train, X_test, y_true, estimators, **voting_params):
-    """Safely evaluate a voting model configuration"""
+    """Safely evaluate a voting model configuration with timeout protection"""
+    global _consecutive_failures
+
     try:
+        start_time = time.time()
         classifier = VotingClassifier(estimators=estimators, **voting_params)
         classifier.fit(X_train, y_train)
+
+        # Check if training took too long
+        if time.time() - start_time > 120:  # 2 minutes max per model
+            return 0.0, 0.0, False
+
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+
+        # Track consecutive failures
+        if accuracy < _min_accuracy_threshold:
+            _consecutive_failures += 1
+        else:
+            _consecutive_failures = 0
+
         return accuracy, f1, True
-    except Exception:
+    except Exception as e:
+        print(f"Model evaluation failed: {e}")
+        _consecutive_failures += 1
         return 0.0, 0.0, False
 
 
-def _create_estimator_combinations(n_samples, n_features):
-    """Create different estimator combinations based on data characteristics"""
+def _create_top_performer_combinations(n_samples, n_features):
+    """Create combinations focused on YOUR TOP 3 PERFORMERS: XGBoost, RF, ET"""
 
-    # Fast estimators
+    # Your proven top performers with optimized settings
+    if XGBOOST_AVAILABLE:
+        if n_samples < 5000:
+            xgb_estimators = [
+                (
+                    "xgb",
+                    XGBClassifier(
+                        n_estimators=50, random_state=42, verbosity=0, n_jobs=-1
+                    ),
+                ),
+            ]
+        else:
+            xgb_estimators = [
+                (
+                    "xgb",
+                    XGBClassifier(
+                        n_estimators=100, random_state=42, verbosity=0, n_jobs=-1
+                    ),
+                ),
+            ]
+    else:
+        xgb_estimators = []
+
+    # Your top tree performers - optimized sizes
+    if n_samples < 5000:
+        tree_estimators = [
+            ("rf", RandomForestClassifier(n_estimators=50, random_state=42, n_jobs=-1)),
+            ("et", ExtraTreesClassifier(n_estimators=50, random_state=42, n_jobs=-1)),
+        ]
+    else:
+        tree_estimators = [
+            (
+                "rf",
+                RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1),
+            ),
+            ("et", ExtraTreesClassifier(n_estimators=100, random_state=42, n_jobs=-1)),
+        ]
+
+    # Fast supporting algorithms (only as supplements)
     fast_estimators = [
-        ("lr", LogisticRegression(random_state=42, max_iter=1000)),
+        ("lr", LogisticRegression(random_state=42, max_iter=1000, n_jobs=-1)),
         ("nb", GaussianNB()),
     ]
 
-    # Tree-based estimators (core strength)
-    tree_estimators = [
-        ("rf", RandomForestClassifier(n_estimators=50, random_state=42, n_jobs=-1)),
-        ("et", ExtraTreesClassifier(n_estimators=50, random_state=42, n_jobs=-1)),
-        ("dt", DecisionTreeClassifier(random_state=42)),
-    ]
+    # FOCUS ON YOUR TOP PERFORMERS - build combinations around them
+    combinations = []
 
-    # Ensemble estimators
-    ensemble_estimators = [
-        ("bagging", BaggingClassifier(n_estimators=50, random_state=42, n_jobs=-1)),
-        ("gb", GradientBoostingClassifier(n_estimators=50, random_state=42)),
-    ]
+    if XGBOOST_AVAILABLE:
+        # Your top 3 together (the dream team!)
+        combinations.append(xgb_estimators + tree_estimators)  # xgb + rf + et
 
-    # Advanced estimators
-    if n_samples < 10000:  # Only for smaller datasets due to computational cost
-        advanced_estimators = [
-            ("svc", SVC(probability=True, random_state=42)),
-            ("knn", KNeighborsClassifier(n_neighbors=min(5, max(3, n_samples // 100)))),
-        ]
-    else:
-        advanced_estimators = []
+        # Top performer pairs
+        combinations.append(xgb_estimators + tree_estimators[:1])  # xgb + rf
+        combinations.append(xgb_estimators + tree_estimators[1:])  # xgb + et
 
-    # Different combinations based on dataset characteristics
-    if n_samples > 50000:  # Large dataset: focus on fast estimators
-        combinations = [
-            fast_estimators + tree_estimators[:2],  # lr, nb, rf, et
-            tree_estimators[:2] + ensemble_estimators[:1],  # rf, et, bagging
-            fast_estimators[:1]
-            + tree_estimators[:2]
-            + ensemble_estimators[:1],  # lr, rf, et, bagging
-        ]
-    elif n_samples > 10000:  # Medium dataset: balanced approach
-        combinations = [
-            tree_estimators[:3],  # rf, et, dt
-            fast_estimators + tree_estimators[:2],  # lr, nb, rf, et
-            tree_estimators[:2] + ensemble_estimators,  # rf, et, bagging, gb
-            fast_estimators[:1]
-            + tree_estimators[:2]
-            + ensemble_estimators[:1],  # lr, rf, et, bagging
-            fast_estimators + ensemble_estimators[:1],  # lr, nb, bagging
-        ]
-    else:  # Small dataset: can use all estimators
-        combinations = [
-            tree_estimators[:3],  # rf, et, dt
-            fast_estimators + tree_estimators[:2],  # lr, nb, rf, et
-            tree_estimators[:2] + ensemble_estimators,  # rf, et, bagging, gb
-            fast_estimators + advanced_estimators,  # lr, nb, svc, knn
-            tree_estimators[:2] + advanced_estimators[:1],  # rf, et, svc
-            fast_estimators[:1]
-            + tree_estimators[:1]
-            + ensemble_estimators[:1]
-            + advanced_estimators[:1],
-            # lr, rf, bagging, svc
-        ]
+        # Add one fast model to top performers
+        combinations.append(
+            xgb_estimators + tree_estimators[:1] + fast_estimators[:1]
+        )  # xgb + rf + lr
+        combinations.append(
+            xgb_estimators + tree_estimators + fast_estimators[:1]
+        )  # all 4
 
-        if advanced_estimators:
-            combinations.append(
-                fast_estimators[:1] + advanced_estimators
-            )  # lr, svc, knn
+    # Your proven tree performers
+    combinations.append(tree_estimators)  # rf + et
+    combinations.append(tree_estimators[:1] + fast_estimators[:1])  # rf + lr
+    combinations.append(tree_estimators[1:] + fast_estimators[:1])  # et + lr
+
+    # Fallback: fast models only (if top performers fail)
+    combinations.append(fast_estimators)  # lr + nb
 
     return combinations
 
 
 def _optimize_estimator_combinations(X_train, y_train, X_test, y_true, opts):
-    """Optimize estimator combinations"""
+    """Optimize combinations focused on your top performers"""
+    global _consecutive_failures
+    start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
     n_samples, n_features = X_train.shape
 
-    # Get estimator combinations
-    estimator_combinations = _create_estimator_combinations(n_samples, n_features)
+    # Get combinations focused on your top performers
+    estimator_combinations = _create_top_performer_combinations(n_samples, n_features)
     best_estimators = estimator_combinations[0]
 
     with tqdm(
-        estimator_combinations, desc="Optimizing Estimator Combinations", leave=False
+        estimator_combinations,
+        desc="Optimizing TOP PERFORMER Combinations",
+        leave=False,
     ) as pbar:
         for estimators in pbar:
+            # Early stopping conditions
+            if time.time() - start_time > _max_time_per_step:
+                pbar.set_description("Top Performers (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Top Performers (POOR ACCURACY)")
+                break
+
             accuracy, f1, success = _safe_evaluate_model(
                 X_train, y_train, X_test, y_true, estimators, **opts["voting"]
             )
@@ -132,7 +179,7 @@ def _optimize_estimator_combinations(X_train, y_train, X_test, y_true, opts):
             estimator_names = [name for name, _ in estimators]
             pbar.set_postfix(
                 {
-                    "estimators": "+".join(estimator_names)[:15],
+                    "combo": "+".join(estimator_names)[:15],
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -144,6 +191,10 @@ def _optimize_estimator_combinations(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_voting_config(X_train, y_train, X_test, y_true, opts):
     """Optimize voting configuration"""
+    global _consecutive_failures
+    start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
 
@@ -158,19 +209,29 @@ def _optimize_voting_config(X_train, y_train, X_test, y_true, opts):
     if all_support_proba:
         configs = [
             {"voting": "soft", "flatten_transform": True},
-            {"voting": "soft", "flatten_transform": False},
             {"voting": "hard", "flatten_transform": True},
+            {
+                "voting": "soft",
+                "flatten_transform": False,
+            },  # Sometimes better for XGBoost
         ]
     else:
         configs = [
             {"voting": "hard", "flatten_transform": True},
-            {"voting": "hard", "flatten_transform": False},
         ]
 
     best_config = configs[0]
 
-    with tqdm(configs, desc="Optimizing Voting Config", leave=False) as pbar:
+    with tqdm(configs, desc="Optimizing Voting Strategy", leave=False) as pbar:
         for config in pbar:
+            # Early stopping conditions
+            if time.time() - start_time > _max_time_per_step:
+                pbar.set_description("Voting Strategy (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Voting Strategy (POOR ACCURACY)")
+                break
+
             test_voting_params = opts["voting"].copy()
             test_voting_params.update(config)
 
@@ -201,130 +262,81 @@ def _optimize_voting_config(X_train, y_train, X_test, y_true, opts):
     return opts, max_acc, best_f1
 
 
-def _optimize_ensemble_sizes(X_train, y_train, X_test, y_true, opts):
-    """Optimize ensemble sizes for tree-based estimators"""
+def _optimize_top_performer_params(X_train, y_train, X_test, y_true, opts):
+    """Optimize parameters for your top performers: XGBoost, RF, ET"""
+    global _consecutive_failures
+    start_time = time.time()
+    _consecutive_failures = 0
+
     max_acc = -np.inf
     best_f1 = 0.0
+    n_samples = X_train.shape[0]
 
-    # Different ensemble size configurations
-    size_configs = [
-        {"default": 50},  # Small and fast
-        {"default": 100},  # Balanced
-        {"default": 200},  # Large and powerful
-        {"rf": 100, "et": 50, "bagging": 75, "gb": 50},  # Mixed sizes
-        {"rf": 150, "et": 100, "bagging": 100, "gb": 75},  # Larger mixed
-    ]
-    best_config = size_configs[0]
+    # Parameter configs optimized for your top performers
+    if n_samples < 2000:
+        param_configs = [
+            # Small dataset configs
+            {"n_estimators": 25, "max_depth": 6, "learning_rate": 0.1},
+            {"n_estimators": 50, "max_depth": 8, "learning_rate": 0.1},
+            {"n_estimators": 75, "max_depth": 10, "learning_rate": 0.05},
+        ]
+    elif n_samples < 10000:
+        param_configs = [
+            # Medium dataset configs
+            {"n_estimators": 50, "max_depth": 8, "learning_rate": 0.1},
+            {"n_estimators": 100, "max_depth": 10, "learning_rate": 0.1},
+            {"n_estimators": 150, "max_depth": 12, "learning_rate": 0.05},
+        ]
+    else:
+        param_configs = [
+            # Large dataset configs
+            {"n_estimators": 100, "max_depth": 10, "learning_rate": 0.1},
+            {"n_estimators": 200, "max_depth": 12, "learning_rate": 0.05},
+            {"n_estimators": 300, "max_depth": 15, "learning_rate": 0.05},
+        ]
 
-    with tqdm(size_configs, desc="Optimizing Ensemble Sizes", leave=False) as pbar:
+    best_config = param_configs[0]
+
+    with tqdm(
+        param_configs, desc="Optimizing Top Performer Params", leave=False
+    ) as pbar:
         for config in pbar:
-            # Update estimators with new sizes
+            # Early stopping conditions
+            if time.time() - start_time > _max_time_per_step:
+                pbar.set_description("Top Performer Params (TIME LIMIT)")
+                break
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Top Performer Params (POOR ACCURACY)")
+                break
+
+            # Update estimators with new parameters
             updated_estimators = []
             for name, estimator in opts["estimators"]:
-                if hasattr(estimator, "n_estimators"):
-                    # Get size for this estimator type
-                    if name in config:
-                        new_size = config[name]
-                    elif "default" in config:
-                        new_size = config["default"]
-                    else:
-                        new_size = 50  # fallback
-
-                    # Create new estimator with updated size
-                    if name == "rf":
-                        new_estimator = RandomForestClassifier(
-                            n_estimators=new_size, random_state=42, n_jobs=-1
-                        )
-                    elif name == "et":
-                        new_estimator = ExtraTreesClassifier(
-                            n_estimators=new_size, random_state=42, n_jobs=-1
-                        )
-                    elif name == "bagging":
-                        new_estimator = BaggingClassifier(
-                            n_estimators=new_size, random_state=42, n_jobs=-1
-                        )
-                    elif name == "gb":
-                        new_estimator = GradientBoostingClassifier(
-                            n_estimators=new_size, random_state=42
-                        )
-                    else:
-                        new_estimator = estimator  # Keep original if unknown type
+                if name == "xgb" and XGBOOST_AVAILABLE:
+                    new_estimator = XGBClassifier(
+                        n_estimators=config["n_estimators"],
+                        max_depth=config["max_depth"],
+                        learning_rate=config["learning_rate"],
+                        random_state=42,
+                        verbosity=0,
+                        n_jobs=-1,
+                    )
+                elif name == "rf":
+                    new_estimator = RandomForestClassifier(
+                        n_estimators=config["n_estimators"],
+                        max_depth=config["max_depth"],
+                        random_state=42,
+                        n_jobs=-1,
+                    )
+                elif name == "et":
+                    new_estimator = ExtraTreesClassifier(
+                        n_estimators=config["n_estimators"],
+                        max_depth=config["max_depth"],
+                        random_state=42,
+                        n_jobs=-1,
+                    )
                 else:
-                    new_estimator = estimator  # Keep non-ensemble estimators unchanged
-
-                updated_estimators.append((name, new_estimator))
-
-            accuracy, f1, success = _safe_evaluate_model(
-                X_train, y_train, X_test, y_true, updated_estimators, **opts["voting"]
-            )
-
-            if success and accuracy >= max_acc:
-                max_acc = accuracy
-                best_f1 = f1
-                best_config = config
-                opts["estimators"] = updated_estimators
-
-            if "default" in config:
-                size_str = f"all={config['default']}"
-            else:
-                size_str = f"rf={config.get('rf', 50)},et={config.get('et', 50)}"
-
-            pbar.set_postfix(
-                {
-                    "sizes": size_str[:12],
-                    "acc": f"{accuracy:.4f}" if success else "failed",
-                    "best_acc": f"{max_acc:.4f}",
-                }
-            )
-
-    return opts, max_acc, best_f1
-
-
-def _optimize_tree_parameters(X_train, y_train, X_test, y_true, opts):
-    """Optimize tree-based parameters for ensemble estimators"""
-    max_acc = -np.inf
-    best_f1 = 0.0
-
-    # Tree parameter configurations
-    tree_configs = [
-        {"max_depth": None, "max_features": "sqrt", "min_samples_split": 2},
-        {"max_depth": 10, "max_features": "sqrt", "min_samples_split": 2},
-        {"max_depth": 20, "max_features": "sqrt", "min_samples_split": 2},
-        {"max_depth": None, "max_features": "log2", "min_samples_split": 2},
-        {"max_depth": None, "max_features": None, "min_samples_split": 2},
-        {"max_depth": None, "max_features": "sqrt", "min_samples_split": 5},
-        {"max_depth": 15, "max_features": "sqrt", "min_samples_split": 5},
-    ]
-    best_config = tree_configs[0]
-
-    with tqdm(tree_configs, desc="Optimizing Tree Parameters", leave=False) as pbar:
-        for config in pbar:
-            # Update tree-based estimators with new parameters
-            updated_estimators = []
-            for name, estimator in opts["estimators"]:
-                if name in ["rf", "et", "dt"] and hasattr(estimator, "max_depth"):
-                    # Get current n_estimators if it exists
-                    n_est = getattr(estimator, "n_estimators", 50)
-
-                    if name == "rf":
-                        new_estimator = RandomForestClassifier(
-                            n_estimators=n_est, random_state=42, n_jobs=-1, **config
-                        )
-                    elif name == "et":
-                        new_estimator = ExtraTreesClassifier(
-                            n_estimators=n_est, random_state=42, n_jobs=-1, **config
-                        )
-                    elif name == "dt":
-                        tree_config = {
-                            k: v for k, v in config.items() if k != "min_samples_split"
-                        }  # DT doesn't always use this
-                        new_estimator = DecisionTreeClassifier(
-                            random_state=42, **tree_config
-                        )
-                    else:
-                        new_estimator = estimator
-                else:
-                    new_estimator = estimator  # Keep non-tree estimators unchanged
+                    new_estimator = estimator  # Keep other estimators unchanged
 
                 updated_estimators.append((name, new_estimator))
 
@@ -340,13 +352,9 @@ def _optimize_tree_parameters(X_train, y_train, X_test, y_true, opts):
 
             pbar.set_postfix(
                 {
-                    "depth": (
-                        str(config["max_depth"])
-                        if config["max_depth"] is not None
-                        else "None"
-                    ),
-                    "features": str(config["max_features"])[:6],
-                    "split": config["min_samples_split"],
+                    "n_est": config["n_estimators"],
+                    "depth": config["max_depth"],
+                    "lr": f"{config['learning_rate']:.2f}",
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
@@ -357,7 +365,7 @@ def _optimize_tree_parameters(X_train, y_train, X_test, y_true, opts):
 
 def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
     """
-    Optimizes the hyperparameters for a VotingClassifier.
+    Optimizes VotingClassifier focused on YOUR TOP PERFORMERS: XGBoost, RF, ET
     :param X_train: Training data
     :param y_train: Training labels
     :param X_test: Test data
@@ -365,10 +373,39 @@ def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
     :param cycles: Number of optimization cycles
     """
 
-    # Initialize default parameters
+    # Quick baseline check with your top performer
+    print("Running baseline check with your top performers...")
+
+    if XGBOOST_AVAILABLE:
+        baseline_xgb = XGBClassifier(n_estimators=25, random_state=42, verbosity=0)
+        baseline_xgb.fit(X_train, y_train)
+        baseline_acc_xgb = baseline_xgb.score(X_test, y_true)
+        print(f"Baseline XGBoost accuracy: {baseline_acc_xgb:.4f}")
+
+    baseline_rf = RandomForestClassifier(n_estimators=25, random_state=42)
+    baseline_rf.fit(X_train, y_train)
+    baseline_acc_rf = baseline_rf.score(X_test, y_true)
+    print(f"Baseline RandomForest accuracy: {baseline_acc_rf:.4f}")
+
+    baseline_et = ExtraTreesClassifier(n_estimators=25, random_state=42)
+    baseline_et.fit(X_train, y_train)
+    baseline_acc_et = baseline_et.score(X_test, y_true)
+    print(f"Baseline ExtraTrees accuracy: {baseline_acc_et:.4f}")
+
+    best_baseline = max(baseline_acc_rf, baseline_acc_et)
+    if XGBOOST_AVAILABLE:
+        best_baseline = max(best_baseline, baseline_acc_xgb)
+
+    if best_baseline < 0.2:
+        print("⚠️  WARNING: Very low baseline accuracy even with your top performers!")
+        print(
+            "Consider checking data preprocessing, feature engineering, or class balance."
+        )
+
+    # Initialize with optimized defaults for your top performers
     opts = {
         "voting": {
-            "voting": "soft",
+            "voting": "soft",  # Usually better for XGBoost + RF + ET
             "n_jobs": -1,
             "flatten_transform": True,
             "verbose": 0,
@@ -380,27 +417,27 @@ def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
     ma_vec = []
     f1_vec = []
 
-    # Main optimization loop with overall progress bar
+    # Main optimization loop
     with tqdm(
-        range(cycles), desc="Voting Classifier Optimization Cycles", position=0
+        range(cycles), desc="TOP PERFORMER Voting Optimization", position=0
     ) as cycle_pbar:
         for c in cycle_pbar:
-            cycle_pbar.set_description(f"Voting Cycle {c + 1}/{cycles}")
+            cycle_start_time = time.time()
+            cycle_pbar.set_description(f"Top Performer Cycle {c + 1}/{cycles}")
 
-            # Core optimizations
+            # Optimizations focused on your proven winners
             opts, _, _ = _optimize_estimator_combinations(
                 X_train, y_train, X_test, y_true, opts
             )
             opts, _, _ = _optimize_voting_config(X_train, y_train, X_test, y_true, opts)
-            opts, _, _ = _optimize_ensemble_sizes(
-                X_train, y_train, X_test, y_true, opts
-            )
-            opts, ma, f1 = _optimize_tree_parameters(
+            opts, ma, f1 = _optimize_top_performer_params(
                 X_train, y_train, X_test, y_true, opts
             )
 
             ma_vec.append(ma)
             f1_vec.append(f1)
+
+            cycle_time = time.time() - cycle_start_time
 
             # Display progress
             estimator_names = [name for name, _ in opts["estimators"]]
@@ -409,10 +446,10 @@ def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
                     "accuracy": f"{ma:.4f}",
                     "f1": f"{f1:.4f}",
                     "best_overall": f"{max(ma_vec):.4f}",
-                    "estimators": "+".join(estimator_names)[:15],
+                    "cycle_time": f"{cycle_time:.1f}s",
+                    "combo": "+".join(estimator_names)[:15],
                     "voting": opts["voting"]["voting"],
-                    "n_estimators": len(opts["estimators"]),
-                    "flatten": "Y" if opts["voting"]["flatten_transform"] else "N",
+                    "baseline_beat": f"{ma - best_baseline:+.4f}",
                 }
             )
 
@@ -420,10 +457,10 @@ def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
 
 
 def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze the performance of voting vs individual estimators"""
+    """Analyze the performance of voting vs individual top performers"""
 
     print("\n" + "=" * 70)
-    print("VOTING CLASSIFIER PERFORMANCE ANALYSIS")
+    print("TOP PERFORMER VOTING CLASSIFIER ANALYSIS")
     print("=" * 70)
 
     # Train voting classifier
@@ -437,7 +474,7 @@ def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
     f1_voting = f1_score(y_true, y_pred_voting, average="weighted")
 
     # Train individual estimators
-    print(f"Individual Estimator Performance:")
+    print(f"Individual Top Performer Results:")
     individual_performances = []
 
     for name, estimator in best_opts["estimators"]:
@@ -446,12 +483,16 @@ def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
         acc_individual = accuracy_score(y_true, y_pred_individual)
         f1_individual = f1_score(y_true, y_pred_individual, average="weighted")
         individual_performances.append((name, acc_individual, f1_individual))
-        print(f"  {name:15s}: Accuracy={acc_individual:.4f}, F1={f1_individual:.4f}")
+
+        # Special highlighting for your top 3
+        marker = "🏆" if name in ["xgb", "rf", "et"] else "  "
+        print(
+            f"  {marker} {name:12s}: Accuracy={acc_individual:.4f}, F1={f1_individual:.4f}"
+        )
 
     # Voting performance
-    print(f"\nVoting Classifier:")
+    print(f"\n🎯 Optimized Voting Classifier:")
     print(f"  Voting Method: {best_opts['voting']['voting']}")
-    print(f"  Flatten Transform: {best_opts['voting']['flatten_transform']}")
     print(f"  Accuracy: {acc_voting:.4f}")
     print(f"  F1 Score: {f1_voting:.4f}")
 
@@ -459,7 +500,7 @@ def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
     best_individual = max(individual_performances, key=lambda x: x[1])
     best_name, best_acc, best_f1 = best_individual
 
-    print(f"\nBest Individual Estimator: {best_name}")
+    print(f"\n🥇 Best Individual: {best_name}")
     print(f"  Accuracy: {best_acc:.4f}")
     print(f"  F1 Score: {best_f1:.4f}")
 
@@ -467,57 +508,18 @@ def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
     acc_improvement = acc_voting - best_acc
     f1_improvement = f1_voting - best_f1
 
-    print(f"\nVoting Improvement over Best Individual:")
+    print(f"\n📈 Voting Improvement:")
     print(
         f"  Accuracy: {acc_improvement:+.4f} ({acc_improvement / best_acc * 100:+.1f}%)"
     )
     print(f"  F1 Score: {f1_improvement:+.4f} ({f1_improvement / best_f1 * 100:+.1f}%)")
 
-    # Average performance
-    avg_acc = np.mean([perf[1] for perf in individual_performances])
-    avg_f1 = np.mean([perf[2] for perf in individual_performances])
-
-    print(f"\nVoting vs Average Individual Performance:")
-    print(
-        f"  Accuracy: {acc_voting:.4f} vs {avg_acc:.4f} (avg) = {acc_voting - avg_acc:+.4f}"
-    )
-    print(
-        f"  F1 Score: {f1_voting:.4f} vs {avg_f1:.4f} (avg) = {f1_voting - avg_f1:+.4f}"
-    )
-
-    # Ensemble diversity analysis
-    print(f"\nEnsemble Composition:")
-    print(f"  Number of Estimators: {len(best_opts['estimators'])}")
-
-    # Count estimator types
-    estimator_types = {}
-    for name, estimator in best_opts["estimators"]:
-        est_type = type(estimator).__name__
-        estimator_types[est_type] = estimator_types.get(est_type, 0) + 1
-
-    for est_type, count in estimator_types.items():
-        print(f"  {est_type}: {count}")
-
-    # Prediction agreement analysis
-    if best_opts["voting"]["voting"] == "soft" and len(best_opts["estimators"]) > 1:
-        print(f"\nPrediction Analysis:")
-        agreements = 0
-        total_predictions = len(y_true)
-
-        # Get individual predictions
-        individual_preds = []
-        for name, estimator in best_opts["estimators"]:
-            individual_preds.append(estimator.predict(X_test))
-
-        # Calculate agreement
-        for i in range(total_predictions):
-            pred_set = set(pred[i] for pred in individual_preds)
-            if len(pred_set) == 1:  # All estimators agree
-                agreements += 1
-
-        agreement_rate = agreements / total_predictions
-        print(f"  Estimator Agreement Rate: {agreement_rate:.1%}")
-        print(f"  Disagreement Rate: {1 - agreement_rate:.1%}")
+    # Check if ensemble beats all individuals
+    all_individual_accs = [perf[1] for perf in individual_performances]
+    if acc_voting > max(all_individual_accs):
+        print("  ✅ Voting beats ALL individual models!")
+    else:
+        print("  ⚠️  Some individual models still outperform voting")
 
     return {
         "voting_accuracy": acc_voting,
@@ -527,20 +529,21 @@ def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
         "accuracy_improvement": acc_improvement,
         "f1_improvement": f1_improvement,
         "individual_performances": individual_performances,
-        "average_accuracy": avg_acc,
-        "average_f1": avg_f1,
     }
 
 
 # Example usage function
 def example_usage():
-    """Example of how to use the optimized Voting Classifier function"""
+    """Example using the TOP PERFORMER focused optimization"""
     from sklearn.datasets import make_classification
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
 
+    print("🚀 TOP PERFORMER Voting Classifier Optimization")
+    print("Focusing on: XGBoost, RandomForest, ExtraTrees")
+    print("=" * 50)
+
     # Generate sample data
-    print("Generating sample classification data...")
     X, y = make_classification(
         n_samples=2000,
         n_features=20,
@@ -550,37 +553,31 @@ def example_usage():
         random_state=42,
     )
 
-    # Split the data
+    # Split and scale
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # Scale the data (important for some estimators)
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    print(f"Training set: {X_train_scaled.shape}")
-    print(f"Test set: {X_test_scaled.shape}")
-    print("Starting Voting Classifier optimization...")
-
-    # Run optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_voting_classifier(
-        X_train_scaled, y_train, X_test_scaled, y_test, cycles=2
+    print(
+        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
     )
 
-    print(f"\nOptimization completed!")
-    print(f"Best accuracy: {best_acc:.4f}")
-    print(f"Best F1 score: {best_f1:.4f}")
+    # Run optimization focused on top performers
+    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_voting(
+        X_train_scaled, y_train, X_test_scaled, y_test, cycles=1
+    )
 
-    # Analyze performance
+    print(f"\n🎯 FINAL RESULTS:")
+    print(f"Best Voting Accuracy: {best_acc:.4f}")
+    print(f"Best Voting F1: {best_f1:.4f}")
+
+    # Detailed analysis
     analysis = _analyze_voting_performance(
         X_train_scaled, y_train, X_test_scaled, y_test, best_opts
     )
 
     return best_opts, best_acc, best_f1, acc_history, f1_history
-
-
-if __name__ == "__main__":
-    # Run example
-    example_usage()

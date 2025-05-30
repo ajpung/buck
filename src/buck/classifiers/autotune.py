@@ -108,7 +108,6 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Light GBM", "optimals"], opts)
     print(results["Light GBM"], "\n")
     gc.collect()
-    """
     # --------------------- RANDOM FOREST ---------------------
     opts, ma, f1, ma_vec, f1_vec = _optimize_random_forest(
         X_train, y_train, X_test, y_true, cycles=cycles
@@ -154,8 +153,9 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Ridge", "optimals"], opts)
     print(results["Ridge"], "\n")
     gc.collect()
+    """
     # ------------------------ VOTING -------------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_voting_classifier(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_voting(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Voting Classifier", "Accuracy"], ma)
@@ -164,7 +164,7 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     print(results["Voting Classifier"], "\n")
     gc.collect()
     # --------------------- SELF-TRAINING ---------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_self_training(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_selftrain(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Naive Bayes", "Accuracy"], ma)
@@ -173,7 +173,7 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     print(results["Naive Bayes"], "\n")
     gc.collect()
     # -------------- STOCHASTIC GRADIENT DESCENT --------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_sgd_classifier(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_sgd(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Stochastic Gradient Descent", "Accuracy"], ma)
@@ -182,7 +182,7 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     print(results["Stochastic Gradient Descent"], "\n")
     gc.collect()
     # ------------------------ STACKING -----------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_stacking_classifier(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_stacking(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Stacking Classifier", "Accuracy"], ma)
