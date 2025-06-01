@@ -27,8 +27,8 @@ except ImportError:
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Global efficiency controls - more aggressive for stacking due to CV overhead
-_max_time_per_step = 600  # 10 minutes max per optimization step (stacking is expensive)
-_max_time_per_model = 180  # 3 minutes max per model evaluation (CV makes it slow)
+_max_time_per_step = 900  # 10 minutes max per optimization step (stacking is expensive)
+_max_time_per_model = 900  # 3 minutes max per model evaluation (CV makes it slow)
 _min_accuracy_threshold = 0.15  # Stop if accuracy is consistently terrible
 _consecutive_failures = 0
 _max_consecutive_failures = 3
@@ -48,9 +48,9 @@ def _safe_evaluate_model(
         classifier.fit(X_train, y_train)
 
         # Check if training took too long (stacking is slow due to CV)
-        if time.time() - start_time > _max_time_per_model:
-            print(f"⏰ Stacking timeout after {_max_time_per_model}s")
-            return 0.0, 0.0, False
+        # if time.time() - start_time > _max_time_per_model:
+        #    print(f"⏰ Stacking timeout after {_max_time_per_model}s")
+        #    return 0.0, 0.0, False
 
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
@@ -170,10 +170,6 @@ def _optimize_base_estimators(X_train, y_train, X_test, y_true, opts):
         estimator_combinations, desc="Optimizing Base Estimators", leave=False
     ) as pbar:
         for estimators in pbar:
-            # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Base Estimators (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Base Estimators (POOR ACCURACY)")
                 break
@@ -259,9 +255,6 @@ def _optimize_meta_estimator(X_train, y_train, X_test, y_true, opts):
     with tqdm(meta_estimators, desc="Optimizing Meta Estimator", leave=False) as pbar:
         for name, meta_estimator in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Meta Estimator (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Meta Estimator (POOR ACCURACY)")
                 break
@@ -328,9 +321,6 @@ def _optimize_stacking_config(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Stacking Config", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Stacking Config (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Stacking Config (POOR ACCURACY)")
                 break
@@ -402,9 +392,6 @@ def _optimize_ensemble_sizes(X_train, y_train, X_test, y_true, opts):
     with tqdm(size_configs, desc="Optimizing Ensemble Sizes", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Ensemble Sizes (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Ensemble Sizes (POOR ACCURACY)")
                 break
@@ -572,162 +559,3 @@ def _optimize_stacking(X_train, y_train, X_test, y_true, cycles=2):
             )
 
     return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_stacking_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze the performance of stacking vs individual base estimators"""
-
-    print("\n" + "=" * 70)
-    print("FAST STACKING CLASSIFIER PERFORMANCE ANALYSIS")
-    print("=" * 70)
-
-    # Train stacking classifier
-    stacking_clf = StackingClassifier(
-        estimators=best_opts["base_estimators"],
-        final_estimator=best_opts["meta_estimator"],
-        **best_opts["stacking"],
-    )
-    stacking_clf.fit(X_train, y_train)
-    y_pred_stacking = stacking_clf.predict(X_test)
-
-    acc_stacking = accuracy_score(y_true, y_pred_stacking)
-    f1_stacking = f1_score(y_true, y_pred_stacking, average="weighted")
-
-    # Train individual base estimators
-    print(f"🏗️  Base Estimators Performance:")
-    base_performances = []
-
-    for name, estimator in best_opts["base_estimators"]:
-        estimator.fit(X_train, y_train)
-        y_pred_base = estimator.predict(X_test)
-        acc_base = accuracy_score(y_true, y_pred_base)
-        f1_base = f1_score(y_true, y_pred_base, average="weighted")
-        base_performances.append((name, acc_base, f1_base))
-
-        # Highlight your top performers
-        marker = "🏆" if name in ["xgb", "rf", "et"] else "  "
-        print(f"  {marker} {name:12s}: Accuracy={acc_base:.4f}, F1={f1_base:.4f}")
-
-    # Meta estimator performance
-    print(f"\n🧠 Meta Estimator ({best_opts.get('meta_name', 'Unknown')}):")
-    meta_direct = best_opts["meta_estimator"]
-    meta_direct.fit(X_train, y_train)
-    y_pred_meta = meta_direct.predict(X_test)
-    acc_meta = accuracy_score(y_true, y_pred_meta)
-    f1_meta = f1_score(y_true, y_pred_meta, average="weighted")
-    print(f"  Direct Training: Accuracy={acc_meta:.4f}, F1={f1_meta:.4f}")
-
-    # Stacking performance
-    print(f"\n🎯 Optimized Stacking Classifier:")
-    print(f"  Accuracy: {acc_stacking:.4f}")
-    print(f"  F1 Score: {f1_stacking:.4f}")
-
-    # Best individual estimator
-    best_individual = max(base_performances, key=lambda x: x[1])
-    best_name, best_acc, best_f1 = best_individual
-
-    print(f"\n🥇 Best Individual Estimator: {best_name}")
-    print(f"  Accuracy: {best_acc:.4f}")
-    print(f"  F1 Score: {best_f1:.4f}")
-
-    # Improvement analysis
-    acc_improvement = acc_stacking - best_acc
-    f1_improvement = f1_stacking - best_f1
-
-    print(f"\n📈 Stacking Improvement:")
-    print(
-        f"  Accuracy: {acc_improvement:+.4f} ({acc_improvement / best_acc * 100:+.1f}%)"
-    )
-    print(f"  F1 Score: {f1_improvement:+.4f} ({f1_improvement / best_f1 * 100:+.1f}%)")
-
-    # Stacking effectiveness
-    if acc_improvement > 0.01:
-        print("  ✅ Stacking provides meaningful improvement!")
-    elif acc_improvement > 0:
-        print("  ⚠️  Stacking provides marginal improvement")
-    else:
-        print("  ❌ Stacking didn't help - individual models might be sufficient")
-
-    # Configuration summary
-    print(f"\n🔧 Stacking Configuration:")
-    print(f"  Base Estimators: {len(best_opts['base_estimators'])}")
-    base_names = [name for name, _ in best_opts["base_estimators"]]
-    print(f"  Combination: {' + '.join(base_names)}")
-    print(f"  CV Folds: {best_opts['stacking']['cv']}")
-    print(f"  Stack Method: {best_opts['stacking']['stack_method']}")
-    print(f"  Passthrough: {best_opts['stacking']['passthrough']}")
-    print(f"  Meta Estimator: {best_opts.get('meta_name', 'Unknown')}")
-
-    # Cost-benefit analysis
-    num_base = len(best_opts["base_estimators"])
-    cv_folds = best_opts["stacking"]["cv"]
-    total_models_trained = num_base * cv_folds + 1  # +1 for final meta
-    print(f"\n⚡ Training Efficiency:")
-    print(f"  Models trained per prediction: {total_models_trained}")
-    print(
-        f"  Trade-off: {acc_improvement:.4f} accuracy gain for {total_models_trained}x training cost"
-    )
-
-    return {
-        "stacking_accuracy": acc_stacking,
-        "stacking_f1": f1_stacking,
-        "best_individual_accuracy": best_acc,
-        "best_individual_f1": best_f1,
-        "accuracy_improvement": acc_improvement,
-        "f1_improvement": f1_improvement,
-        "base_performances": base_performances,
-        "total_models_trained": total_models_trained,
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example of FAST Stacking Classifier optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-
-    print("🚀 FAST Stacking Classifier Optimization")
-    print("Focus: Your Top Performers + Speed")
-    print("=" * 50)
-
-    # Generate sample data
-    X, y = make_classification(
-        n_samples=2000,
-        n_features=20,
-        n_informative=15,
-        n_redundant=5,
-        n_classes=3,
-        random_state=42,
-    )
-
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
-    # Scale the data (important for some estimators)
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    print(
-        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
-    )
-    print("⚠️  Stacking requires CV training - will be slower than individual models")
-
-    # Run FAST optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_stacking(
-        X_train_scaled, y_train, X_test_scaled, y_test, cycles=1  # Start with 1 cycle
-    )
-
-    print(f"\n🎯 OPTIMIZATION COMPLETE!")
-    print(f"Best Stacking Accuracy: {best_acc:.4f}")
-    print(f"Best Stacking F1: {best_f1:.4f}")
-
-    # Analyze performance
-    analysis = _analyze_stacking_performance(
-        X_train_scaled, y_train, X_test_scaled, y_test, best_opts
-    )
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history

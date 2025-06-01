@@ -160,9 +160,6 @@ def _optimize_estimator_combinations(X_train, y_train, X_test, y_true, opts):
     ) as pbar:
         for estimators in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Top Performers (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Top Performers (POOR ACCURACY)")
                 break
@@ -225,9 +222,6 @@ def _optimize_voting_config(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Voting Strategy", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Voting Strategy (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Voting Strategy (POOR ACCURACY)")
                 break
@@ -302,9 +296,6 @@ def _optimize_top_performer_params(X_train, y_train, X_test, y_true, opts):
     ) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Top Performer Params (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Top Performer Params (POOR ACCURACY)")
                 break
@@ -454,130 +445,3 @@ def _optimize_voting(X_train, y_train, X_test, y_true, cycles=2):
             )
 
     return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_voting_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze the performance of voting vs individual top performers"""
-
-    print("\n" + "=" * 70)
-    print("TOP PERFORMER VOTING CLASSIFIER ANALYSIS")
-    print("=" * 70)
-
-    # Train voting classifier
-    voting_clf = VotingClassifier(
-        estimators=best_opts["estimators"], **best_opts["voting"]
-    )
-    voting_clf.fit(X_train, y_train)
-    y_pred_voting = voting_clf.predict(X_test)
-
-    acc_voting = accuracy_score(y_true, y_pred_voting)
-    f1_voting = f1_score(y_true, y_pred_voting, average="weighted")
-
-    # Train individual estimators
-    print(f"Individual Top Performer Results:")
-    individual_performances = []
-
-    for name, estimator in best_opts["estimators"]:
-        estimator.fit(X_train, y_train)
-        y_pred_individual = estimator.predict(X_test)
-        acc_individual = accuracy_score(y_true, y_pred_individual)
-        f1_individual = f1_score(y_true, y_pred_individual, average="weighted")
-        individual_performances.append((name, acc_individual, f1_individual))
-
-        # Special highlighting for your top 3
-        marker = "🏆" if name in ["xgb", "rf", "et"] else "  "
-        print(
-            f"  {marker} {name:12s}: Accuracy={acc_individual:.4f}, F1={f1_individual:.4f}"
-        )
-
-    # Voting performance
-    print(f"\n🎯 Optimized Voting Classifier:")
-    print(f"  Voting Method: {best_opts['voting']['voting']}")
-    print(f"  Accuracy: {acc_voting:.4f}")
-    print(f"  F1 Score: {f1_voting:.4f}")
-
-    # Best individual estimator
-    best_individual = max(individual_performances, key=lambda x: x[1])
-    best_name, best_acc, best_f1 = best_individual
-
-    print(f"\n🥇 Best Individual: {best_name}")
-    print(f"  Accuracy: {best_acc:.4f}")
-    print(f"  F1 Score: {best_f1:.4f}")
-
-    # Improvement analysis
-    acc_improvement = acc_voting - best_acc
-    f1_improvement = f1_voting - best_f1
-
-    print(f"\n📈 Voting Improvement:")
-    print(
-        f"  Accuracy: {acc_improvement:+.4f} ({acc_improvement / best_acc * 100:+.1f}%)"
-    )
-    print(f"  F1 Score: {f1_improvement:+.4f} ({f1_improvement / best_f1 * 100:+.1f}%)")
-
-    # Check if ensemble beats all individuals
-    all_individual_accs = [perf[1] for perf in individual_performances]
-    if acc_voting > max(all_individual_accs):
-        print("  ✅ Voting beats ALL individual models!")
-    else:
-        print("  ⚠️  Some individual models still outperform voting")
-
-    return {
-        "voting_accuracy": acc_voting,
-        "voting_f1": f1_voting,
-        "best_individual_accuracy": best_acc,
-        "best_individual_f1": best_f1,
-        "accuracy_improvement": acc_improvement,
-        "f1_improvement": f1_improvement,
-        "individual_performances": individual_performances,
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example using the TOP PERFORMER focused optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-
-    print("🚀 TOP PERFORMER Voting Classifier Optimization")
-    print("Focusing on: XGBoost, RandomForest, ExtraTrees")
-    print("=" * 50)
-
-    # Generate sample data
-    X, y = make_classification(
-        n_samples=2000,
-        n_features=20,
-        n_informative=15,
-        n_redundant=5,
-        n_classes=3,
-        random_state=42,
-    )
-
-    # Split and scale
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    print(
-        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
-    )
-
-    # Run optimization focused on top performers
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_voting(
-        X_train_scaled, y_train, X_test_scaled, y_test, cycles=1
-    )
-
-    print(f"\n🎯 FINAL RESULTS:")
-    print(f"Best Voting Accuracy: {best_acc:.4f}")
-    print(f"Best Voting F1: {best_f1:.4f}")
-
-    # Detailed analysis
-    analysis = _analyze_voting_performance(
-        X_train_scaled, y_train, X_test_scaled, y_test, best_opts
-    )
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history
