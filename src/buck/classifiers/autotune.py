@@ -43,10 +43,9 @@ def write_to_nested_dict(data, keys, value):
 def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     results = {}
     print("Optimizing")
-    """
-    '# ------------------------ ADABOOST -----------------------
+    # ------------------------ ADABOOST -----------------------
     opts, ma, f1, ma_vec, f1_vec = _optimize_ada_boost(
-       X_train, y_train, X_test, y_true, cycles=cycles
+        X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Adaboost", "Accuracy"], ma)
     write_to_nested_dict(results, ["Adaboost", "f1-score"], f1)
@@ -55,7 +54,7 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     gc.collect()
     # ------------------- BAGGING CLASSIFIER ------------------
     opts, ma, f1, ma_vec, f1_vec = _optimize_bagging(
-       X_train, y_train, X_test, y_true, cycles=cycles
+        X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Bagging Classifier", "Accuracy"], ma)
     write_to_nested_dict(results, ["Bagging Classifier", "f1-score"], f1)
@@ -153,16 +152,6 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Ridge", "optimals"], opts)
     print(results["Ridge"], "\n")
     gc.collect()
-    """
-    # ------------------------ VOTING -------------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_voting(
-        X_train, y_train, X_test, y_true, cycles=cycles
-    )
-    write_to_nested_dict(results, ["Voting Classifier", "Accuracy"], ma)
-    write_to_nested_dict(results, ["Voting Classifier", "f1-score"], f1)
-    write_to_nested_dict(results, ["Voting Classifier", "optimals"], opts)
-    print(results["Voting Classifier"], "\n")
-    gc.collect()
     # --------------------- SELF-TRAINING ---------------------
     opts, ma, f1, ma_vec, f1_vec = _optimize_selftrain(
         X_train, y_train, X_test, y_true, cycles=cycles
@@ -234,4 +223,13 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Gaussian Process", "f1-score"], f1)
     write_to_nested_dict(results, ["Gaussian Process", "optimals"], opts)
     print(results["Gaussian Process"], "\n")
+    gc.collect()
+    # ------------------------ VOTING -------------------------
+    opts, ma, f1, ma_vec, f1_vec = _optimize_voting(
+        X_train, y_train, X_test, y_true, cycles=cycles
+    )
+    write_to_nested_dict(results, ["Voting Classifier", "Accuracy"], ma)
+    write_to_nested_dict(results, ["Voting Classifier", "f1-score"], f1)
+    write_to_nested_dict(results, ["Voting Classifier", "optimals"], opts)
+    print(results["Voting Classifier"], "\n")
     gc.collect()

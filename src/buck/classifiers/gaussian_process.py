@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Global efficiency controls for GP (very aggressive due to O(n^3) scaling)
 _max_time_per_step = 900  # 15 minutes max per optimization step
-_max_time_per_model = 300  # 5 minutes max per model evaluation
+_max_time_per_model = 900  # 5 minutes max per model evaluation
 _min_accuracy_threshold = 0.15  # Stop if accuracy is consistently terrible
 _consecutive_failures = 0
 _max_consecutive_failures = 2  # Very aggressive for GPs
@@ -136,11 +136,11 @@ def _safe_evaluate_model(X_train, y_train, X_test, y_true, opts):
 
         classifier.fit(X_train, y_train)
 
-        # Check if training took too long
-        training_time = time.time() - start_time
-        if training_time > _max_time_per_model:
-            print(f"⏰ GP timeout after {training_time:.1f}s")
-            return 0.0, 0.0, False
+        ## Check if training took too long
+        # training_time = time.time() - start_time
+        # if training_time > _max_time_per_model:
+        #    print(f"⏰ GP timeout after {training_time:.1f}s")
+        #    return 0.0, 0.0, False
 
         # Check memory usage
         memory_after = psutil.virtual_memory().percent
@@ -220,9 +220,6 @@ def _optimize_kernel_type(X_train, y_train, X_test, y_true, opts):
     with tqdm(kernel_items, desc="Optimizing Kernel Type", leave=False) as pbar:
         for kernel_name, kernel in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Kernel Type (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Kernel Type (POOR ACCURACY)")
                 break
@@ -290,9 +287,6 @@ def _optimize_key_hyperparams(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Key Hyperparams", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Key Hyperparams (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Key Hyperparams (POOR ACCURACY)")
                 break
@@ -343,9 +337,6 @@ def _optimize_length_scale(X_train, y_train, X_test, y_true, opts):
     with tqdm(variable_array, desc="Optimizing Length Scale", leave=False) as pbar:
         for length_scale in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Length Scale (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Length Scale (POOR ACCURACY)")
                 break
@@ -528,186 +519,3 @@ def _optimize_gaussian_process(X_train, y_train, X_test, y_true, cycles=1):
     print(f"\n🎯 GP optimization completed in {total_time:.1f}s total")
 
     return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_gp_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze GP performance and provide insights"""
-
-    print("\n" + "=" * 70)
-    print("SAFE GAUSSIAN PROCESS PERFORMANCE ANALYSIS")
-    print("=" * 70)
-
-    # Train final model
-    print("Training final GP with best parameters...")
-    start_time = time.time()
-
-    try:
-        gp_clf = GaussianProcessClassifier(**best_opts)
-        gp_clf.fit(X_train, y_train)
-        training_time = time.time() - start_time
-
-        y_pred = gp_clf.predict(X_test)
-        y_pred_proba = gp_clf.predict_proba(X_test)
-
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted")
-
-        # Calculate prediction confidence
-        max_proba = np.max(y_pred_proba, axis=1)
-        mean_confidence = np.mean(max_proba)
-
-        training_success = True
-
-    except Exception as e:
-        print(f"Final training failed: {e}")
-        accuracy = f1 = training_time = mean_confidence = 0.0
-        training_success = False
-
-    if training_success:
-        print(f"\n🎯 Final GP Performance:")
-        print(f"  Test Accuracy: {accuracy:.4f}")
-        print(f"  Test F1 Score: {f1:.4f}")
-        print(f"  Training Time: {training_time:.1f} seconds")
-        print(f"  Mean Prediction Confidence: {mean_confidence:.4f}")
-
-        # Kernel analysis
-        print(f"\n🔧 Optimal Configuration:")
-        kernel = best_opts["kernel"]
-
-        if hasattr(kernel, "k1") and hasattr(kernel, "k2"):
-            print(
-                f"  Kernel: Composite ({type(kernel.k1).__name__} + {type(kernel.k2).__name__})"
-            )
-        else:
-            print(f"  Kernel: {type(kernel).__name__}")
-
-        if hasattr(kernel, "length_scale"):
-            print(f"  Length Scale: {kernel.length_scale:.4f}")
-        elif hasattr(kernel, "k1") and hasattr(kernel.k1, "length_scale"):
-            print(f"  Length Scale: {kernel.k1.length_scale:.4f}")
-
-        print(f"  Optimizer Restarts: {best_opts['n_restarts_optimizer']}")
-        print(f"  Max Iter Predict: {best_opts['max_iter_predict']}")
-
-        # Dataset analysis
-        n_samples, n_features = X_train.shape
-        print(f"\n📊 Dataset Characteristics:")
-        print(f"  Training Samples: {n_samples}")
-        print(f"  Features: {n_features}")
-        print(f"  Classes: {len(np.unique(y_train))}")
-
-        # Complexity analysis
-        print(f"\n🧮 Computational Complexity:")
-        print(f"  Training: O(n³) = O({n_samples}³) ≈ {n_samples ** 3:,} operations")
-        print(f"  Prediction: O(n) per sample")
-        print(f"  Memory: O(n²) ≈ {(n_samples ** 2 * 8) / (1024 ** 2):.1f} MB")
-
-        # Performance insights
-        print(f"\n💡 Performance Insights:")
-
-        if accuracy > 0.9:
-            print(f"  ✅ Excellent performance - GP is working very well")
-        elif accuracy > 0.8:
-            print(f"  ✅ Good performance - GP captures the pattern well")
-        elif accuracy > 0.6:
-            print(f"  ⚠️  Moderate performance - consider kernel tuning or more data")
-        else:
-            print(f"  ❌ Poor performance - GP may not be suitable for this problem")
-
-        if mean_confidence > 0.8:
-            print(f"  ✅ High prediction confidence - GP is certain about predictions")
-        elif mean_confidence > 0.6:
-            print(f"  ⚠️  Moderate confidence - some uncertainty in predictions")
-        else:
-            print(f"  ❌ Low confidence - high uncertainty, consider more data")
-
-        if training_time > 300:  # 5 minutes
-            print(f"  ⏰ Long training time - dataset pushing GP limits")
-
-        # Recommendations
-        print(f"\n🚀 Recommendations:")
-
-        if n_samples > 500:
-            print(f"  💡 Consider subsampling for faster training")
-        if n_features > 20:
-            print(f"  💡 Consider PCA for dimensionality reduction")
-        if accuracy < 0.7:
-            print(f"  💡 GP may not be best choice - try XGBoost or RandomForest")
-        if training_time > 60:
-            print(f"  💡 For production, consider approximation methods (sparse GP)")
-
-        print(f"\n🎯 GP Advantages for this problem:")
-        print(f"  ✅ Provides uncertainty quantification")
-        print(f"  ✅ Works well with limited data")
-        print(f"  ✅ Handles non-linear patterns")
-        print(f"  ✅ No hyperparameter tuning needed (marginal likelihood)")
-
-    return {
-        "accuracy": accuracy,
-        "f1": f1,
-        "training_time": training_time,
-        "mean_confidence": mean_confidence,
-        "training_success": training_success,
-        "n_samples": X_train.shape[0],
-        "kernel_type": type(best_opts["kernel"]).__name__,
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example of SAFE GP optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-    import numpy as np
-
-    print("🚀 SAFE Gaussian Process Optimization")
-    print("Focus: Dataset Suitability + Safety")
-    print("=" * 50)
-
-    # Generate SMALL sample data (GP requirement!)
-    print("Generating SMALL sample data for GP...")
-
-    X, y = make_classification(
-        n_samples=300,  # Small for GP!
-        n_features=10,  # Moderate features
-        n_informative=8,
-        n_redundant=2,
-        n_classes=3,
-        random_state=42,
-    )
-
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y
-    )
-
-    # Scale the data (important for GP!)
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    print(
-        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
-    )
-    print("🔥 Small dataset size is CRITICAL for GP performance!")
-
-    # Run SAFE GP optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_gaussian_process(
-        X_train_scaled,
-        y_train,
-        X_test_scaled,
-        y_test,
-        cycles=1,  # Keep cycles=1 for safety
-    )
-
-    print(f"\n🎯 OPTIMIZATION COMPLETE!")
-    print(f"Best GP Accuracy: {best_acc:.4f}")
-    print(f"Best GP F1: {best_f1:.4f}")
-
-    # Analyze performance
-    analysis = _analyze_gp_performance(
-        X_train_scaled, y_train, X_test_scaled, y_test, best_opts
-    )
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history

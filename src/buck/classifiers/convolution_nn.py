@@ -1,124 +1,298 @@
+from typing import Any
 import warnings
 import numpy as np
 import time
 from tqdm.auto import tqdm
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.preprocessing import LabelEncoder
-import gc
+import math
 
-# Suppress TensorFlow warnings for cleaner progress bars
-tf.get_logger().setLevel("ERROR")
+# Suppress warnings for cleaner progress bars
 warnings.filterwarnings("ignore")
 
-# Global efficiency controls for CNN (very aggressive due to training cost)
-_max_time_per_step = 1800  # 30 minutes max per optimization step
-_max_time_per_model = 600  # 10 minutes max per model training
+# Global efficiency controls - same as MLP
+_max_time_per_step = 900  # 15 minutes max per optimization step (CNNs can be slow)
+_max_time_per_model = 900  # 15 minutes max per model evaluation
 _min_accuracy_threshold = 0.15  # Stop if accuracy is consistently terrible
 _consecutive_failures = 0
-_max_consecutive_failures = 2  # More aggressive for CNNs
+_max_consecutive_failures = 3
 
-# Hardware detection
-_has_gpu = len(tf.config.list_physical_devices("GPU")) > 0
+# Try to import deep learning libraries
+HAS_TENSORFLOW = False
+HAS_TORCH = False
 
+try:
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+    from tensorflow.keras.optimizers import Adam, SGD
+    from tensorflow.keras.utils import to_categorical
 
-def _check_hardware_suitability(X_train):
-    """Check if hardware is suitable for CNN training"""
-    n_samples = X_train.shape[0]
-    image_size = X_train.shape[1] * X_train.shape[2] if len(X_train.shape) > 2 else 0
+    HAS_TENSORFLOW = True
+    # Suppress TensorFlow warnings
+    tf.get_logger().setLevel("ERROR")
+except ImportError:
+    pass
 
-    print(f"🔍 Hardware Check:")
-    print(
-        f"  GPU Available: {'✅ Yes' if _has_gpu else '❌ No (CPU only - will be VERY slow!)'}"
-    )
-    print(f"  Dataset Size: {n_samples} images")
-    print(
-        f"  Image Dimensions: {X_train.shape[1:] if len(X_train.shape) > 1 else 'Unknown'}"
-    )
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from torch.utils.data import DataLoader, TensorDataset
 
-    if not _has_gpu:
-        print("⚠️  WARNING: No GPU detected!")
-        print("CNN training on CPU is extremely slow. Consider:")
-        print("  - Using Google Colab (free GPU)")
-        print("  - Using cloud services (AWS, GCP)")
-        print("  - Using traditional ML algorithms instead")
-        if n_samples > 1000:
-            print("  - Reducing dataset size for CPU training")
-
-    if n_samples < 100:
-        print("⚠️  WARNING: Very small dataset for CNNs!")
-        print("CNNs typically need thousands of images. Consider:")
-        print("  - Data augmentation")
-        print("  - Transfer learning")
-        print("  - Traditional ML algorithms")
-
-    return _has_gpu
+    HAS_TORCH = True
+except ImportError:
+    pass
 
 
-def _safe_evaluate_cnn(
-    X_train, y_train, X_test, y_true, architecture, compile_opts, fit_opts
-):
-    """Safely evaluate a CNN configuration with timeout protection"""
+def _create_default_return_values():
+    """Create safe default return values for error cases - same as other scripts"""
+    default_opts = {
+        "architecture": "simple",
+        "optimizer": "adam",
+        "learning_rate": 0.001,
+        "epochs": 10,
+        "batch_size": 32,
+    }
+    return default_opts, 0.0, 0.0, [0.0], [0.0]
+
+
+def _check_cnn_suitability(X_train, y_train):
+    """Check if dataset is suitable for CNN with robust error handling"""
+    try:
+        print("🔍 CNN Suitability Check:")
+        print("=" * 50)
+
+        original_shape = X_train.shape
+        n_samples = original_shape[0]
+        n_classes = len(np.unique(y_train))
+
+        print(f"Original data shape: {original_shape}")
+        print(f"Samples: {n_samples}, Classes: {n_classes}")
+
+        # Check if we have deep learning libraries
+        if not HAS_TENSORFLOW and not HAS_TORCH:
+            print("❌ CRITICAL: No deep learning libraries found!")
+            print("Need: pip install tensorflow OR pip install torch")
+            print("Falling back to simple classification...")
+            return False, "no_dl_libraries", original_shape
+
+        # Determine data type and handle appropriately
+        if len(original_shape) == 2:
+            # 2D tabular data - needs reshaping for CNN
+            n_features = original_shape[1]
+            print(f"📊 Tabular data detected: {n_features} features")
+
+            # Try to create reasonable image-like shape
+            sqrt_features = int(math.sqrt(n_features))
+
+            if sqrt_features * sqrt_features == n_features:
+                # Perfect square - can reshape to square image
+                new_shape = (n_samples, sqrt_features, sqrt_features, 1)
+                print(
+                    f"✅ Can reshape to square images: {sqrt_features}x{sqrt_features}"
+                )
+            else:
+                # Find best rectangular shape
+                best_h, best_w = _find_best_image_shape(n_features)
+                if best_h * best_w <= n_features:
+                    new_shape = (n_samples, best_h, best_w, 1)
+                    print(f"✅ Can reshape to rectangular images: {best_h}x{best_w}")
+                else:
+                    print(
+                        f"❌ Cannot create reasonable image shape from {n_features} features"
+                    )
+                    print("Recommendation: Use MLP/Neural Network instead of CNN")
+                    return False, "unsuitable_shape", original_shape
+
+            if sqrt_features < 8:
+                print(
+                    f"⚠️  WARNING: Very small images ({sqrt_features}x{sqrt_features})"
+                )
+                print("CNNs work better with larger images (32x32+)")
+
+            return True, "tabular_data", new_shape
+
+        elif len(original_shape) == 3:
+            # Already 3D - assume grayscale images
+            n_samples, height, width = original_shape
+            print(f"🖼️  Grayscale images detected: {height}x{width}")
+
+            if height < 8 or width < 8:
+                print(f"⚠️  WARNING: Very small images ({height}x{width})")
+                print("CNNs work better with larger images")
+
+            # Add channel dimension
+            new_shape = (n_samples, height, width, 1)
+            return True, "grayscale_images", new_shape
+
+        elif len(original_shape) == 4:
+            # Already 4D - assume color images
+            n_samples, height, width, channels = original_shape
+            print(f"🖼️  Color images detected: {height}x{width}x{channels}")
+
+            if height < 8 or width < 8:
+                print(f"⚠️  WARNING: Very small images ({height}x{width})")
+
+            return True, "color_images", original_shape
+
+        else:
+            print(f"❌ Unsupported data shape: {original_shape}")
+            return False, "unsupported_shape", original_shape
+
+    except Exception as e:
+        print(f"❌ Error in CNN suitability check: {e}")
+        return False, "check_failed", X_train.shape
+
+
+def _find_best_image_shape(n_features):
+    """Find best rectangular image shape for given number of features"""
+    best_ratio = float("inf")
+    best_h, best_w = 1, n_features
+
+    for h in range(1, int(math.sqrt(n_features)) + 1):
+        if n_features % h == 0:
+            w = n_features // h
+            ratio = max(h, w) / min(h, w)  # Aspect ratio
+            if ratio < best_ratio:
+                best_ratio = ratio
+                best_h, best_w = h, w
+
+    return best_h, best_w
+
+
+def _reshape_data_for_cnn(X_train, X_test, target_shape, data_type):
+    """Reshape data appropriately for CNN"""
+    try:
+        if data_type == "tabular_data":
+            # Reshape 2D tabular data to image-like format
+            n_samples_train = X_train.shape[0]
+            n_samples_test = X_test.shape[0]
+
+            # Target shape is (n_samples, height, width, channels)
+            target_h, target_w, target_c = (
+                target_shape[1],
+                target_shape[2],
+                target_shape[3],
+            )
+
+            # Pad with zeros if needed
+            n_features = X_train.shape[1]
+            needed_features = target_h * target_w
+
+            if n_features < needed_features:
+                # Pad with zeros
+                pad_width = ((0, 0), (0, needed_features - n_features))
+                X_train_padded = np.pad(
+                    X_train, pad_width, mode="constant", constant_values=0
+                )
+                X_test_padded = np.pad(
+                    X_test, pad_width, mode="constant", constant_values=0
+                )
+            else:
+                # Truncate if needed
+                X_train_padded = X_train[:, :needed_features]
+                X_test_padded = X_test[:, :needed_features]
+
+            # Reshape to image format
+            X_train_reshaped = X_train_padded.reshape(
+                n_samples_train, target_h, target_w, target_c
+            )
+            X_test_reshaped = X_test_padded.reshape(
+                n_samples_test, target_h, target_w, target_c
+            )
+
+            print(
+                f"✅ Reshaped tabular data: {X_train.shape} → {X_train_reshaped.shape}"
+            )
+
+        elif data_type == "grayscale_images":
+            # Add channel dimension to 3D grayscale data
+            X_train_reshaped = X_train.reshape(*X_train.shape, 1)
+            X_test_reshaped = X_test.reshape(*X_test.shape, 1)
+
+            print(
+                f"✅ Added channel dimension: {X_train.shape} → {X_train_reshaped.shape}"
+            )
+
+        else:  # color_images
+            # Already in correct format
+            X_train_reshaped = X_train
+            X_test_reshaped = X_test
+
+            print(f"✅ Data already in correct format: {X_train.shape}")
+
+        # Normalize to [0, 1] range
+        X_train_reshaped = X_train_reshaped.astype("float32")
+        X_test_reshaped = X_test_reshaped.astype("float32")
+
+        # Check if data needs normalization
+        if X_train_reshaped.max() > 1.0:
+            print("📊 Normalizing data to [0, 1] range...")
+            X_train_reshaped = X_train_reshaped / X_train_reshaped.max()
+            X_test_reshaped = X_test_reshaped / X_train_reshaped.max()
+
+        return X_train_reshaped, X_test_reshaped, True
+
+    except Exception as e:
+        print(f"❌ Error reshaping data: {e}")
+        return X_train, X_test, False
+
+
+def _safe_evaluate_cnn_model(X_train, y_train, X_test, y_true, **kwargs):
+    """Safely evaluate a CNN model configuration with timeout protection"""
     global _consecutive_failures
 
     try:
-        # Clear session to prevent memory issues
-        keras.backend.clear_session()
         start_time = time.time()
+
+        if not HAS_TENSORFLOW:
+            print("❌ TensorFlow not available for CNN evaluation")
+            return 0.0, 0.0, False
+
+        # Get model architecture parameters
+        architecture = kwargs.get("architecture", "simple")
+        optimizer = kwargs.get("optimizer", "adam")
+        learning_rate = kwargs.get("learning_rate", 0.001)
+        epochs = kwargs.get("epochs", 10)
+        batch_size = kwargs.get("batch_size", 32)
 
         # Build model
         model = _build_cnn_model(
             X_train.shape[1:], len(np.unique(y_train)), architecture
         )
-        model.compile(**compile_opts)
 
-        # Add timeout callback
-        class TimeoutCallback(keras.callbacks.Callback):
-            def __init__(self, max_time):
-                self.max_time = max_time
-                self.start_time = time.time()
+        # Compile model
+        if optimizer == "adam":
+            opt = Adam(learning_rate=learning_rate)
+        else:
+            opt = SGD(learning_rate=learning_rate)
 
-            def on_epoch_end(self, epoch, logs=None):
-                if time.time() - self.start_time > self.max_time:
-                    print(f"⏰ Training timeout after {self.max_time}s")
-                    self.model.stop_training = True
+        model.compile(
+            optimizer=opt, loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+        )
 
-        # Prepare callbacks
-        callbacks = fit_opts.get("callbacks", []).copy()
-        callbacks.append(TimeoutCallback(_max_time_per_model))
-
-        # Train model with reduced verbosity and timeout
+        # Train model with timeout protection
         history = model.fit(
             X_train,
             y_train,
-            validation_split=0.2,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_split=0.1,
             verbose=0,
-            callbacks=callbacks,
-            **{k: v for k, v in fit_opts.items() if k != "callbacks"},
         )
 
         # Check if training took too long
         training_time = time.time() - start_time
         if training_time > _max_time_per_model:
             print(f"⏰ CNN timeout after {training_time:.1f}s")
-            del model
-            gc.collect()
-            return 0.0, 0.0, False, 0.0
+            return 0.0, 0.0, False
 
-        # Evaluate
-        y_pred_proba = model.predict(X_test, verbose=0)
-        y_pred = np.argmax(y_pred_proba, axis=1)
+        # Make predictions
+        y_pred = model.predict(X_test, verbose=0)
+        y_pred_classes = np.argmax(y_pred, axis=1)
 
-        accuracy = accuracy_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-
-        val_acc = (
-            history.history.get("val_accuracy", [0])[-1]
-            if "val_accuracy" in history.history
-            else 0
-        )
+        accuracy = accuracy_score(y_true, y_pred_classes)
+        f1 = f1_score(y_true, y_pred_classes, average="weighted", zero_division=0)
 
         # Track consecutive failures
         if accuracy < _min_accuracy_threshold:
@@ -126,193 +300,126 @@ def _safe_evaluate_cnn(
         else:
             _consecutive_failures = 0
 
-        # Clean up
+        # Clean up memory
         del model
-        gc.collect()
+        tf.keras.backend.clear_session()
 
-        return accuracy, f1, True, val_acc
+        return accuracy, f1, True
 
     except Exception as e:
-        print(f"CNN evaluation failed: {e}")
-        keras.backend.clear_session()
-        gc.collect()
+        print(f"❌ CNN evaluation failed: {e}")
         _consecutive_failures += 1
-        return 0.0, 0.0, False, 0.0
+        return 0.0, 0.0, False
 
 
-def _build_cnn_model(input_shape, num_classes, architecture):
-    """Build CNN model based on architecture configuration"""
-    model = keras.Sequential()
+def _build_cnn_model(input_shape, n_classes, architecture="simple"):
+    """Build CNN model with different architectures"""
 
-    # Input layer
-    model.add(layers.Input(shape=input_shape))
+    model = Sequential()
 
-    # Convolutional blocks
-    for i, block in enumerate(architecture["conv_blocks"]):
-        # Convolutional layer
+    if architecture == "simple":
+        # Simple CNN for small images or tabular data
         model.add(
-            layers.Conv2D(
-                filters=block["filters"],
-                kernel_size=block["kernel_size"],
-                activation=architecture["activation"],
-                padding="same",
+            Conv2D(
+                32, (3, 3), activation="relu", input_shape=input_shape, padding="same"
             )
         )
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(64, (3, 3), activation="relu", padding="same"))
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Flatten())
+        model.add(Dense(64, activation="relu"))
+        model.add(Dropout(0.5))
+        model.add(Dense(n_classes, activation="softmax"))
 
-        # Batch normalization (if enabled)
-        if architecture.get("batch_norm", False):
-            model.add(layers.BatchNormalization())
+    elif architecture == "medium":
+        # Medium CNN for moderate sized images
+        model.add(
+            Conv2D(
+                32, (3, 3), activation="relu", input_shape=input_shape, padding="same"
+            )
+        )
+        model.add(Conv2D(32, (3, 3), activation="relu", padding="same"))
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(64, (3, 3), activation="relu", padding="same"))
+        model.add(Conv2D(64, (3, 3), activation="relu", padding="same"))
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(128, (3, 3), activation="relu", padding="same"))
+        model.add(Flatten())
+        model.add(Dense(128, activation="relu"))
+        model.add(Dropout(0.5))
+        model.add(Dense(64, activation="relu"))
+        model.add(Dropout(0.5))
+        model.add(Dense(n_classes, activation="softmax"))
 
-        # Pooling layer
-        if block.get("pool_size"):
-            model.add(layers.MaxPooling2D(pool_size=block["pool_size"]))
-
-        # Dropout (if specified)
-        if block.get("dropout", 0) > 0:
-            model.add(layers.Dropout(block["dropout"]))
-
-    # Global pooling or flatten
-    if architecture.get("global_pooling", False):
-        model.add(layers.GlobalAveragePooling2D())
-    else:
-        model.add(layers.Flatten())
-
-    # Dense layers
-    for dense_units in architecture["dense_layers"]:
-        model.add(layers.Dense(dense_units, activation=architecture["activation"]))
-        if architecture.get("dense_dropout", 0) > 0:
-            model.add(layers.Dropout(architecture["dense_dropout"]))
-
-    # Output layer
-    if num_classes == 2:
-        model.add(layers.Dense(1, activation="sigmoid"))
-    else:
-        model.add(layers.Dense(num_classes, activation="softmax"))
+    elif architecture == "deep":
+        # Deeper CNN for larger images
+        model.add(
+            Conv2D(
+                32, (3, 3), activation="relu", input_shape=input_shape, padding="same"
+            )
+        )
+        model.add(Conv2D(32, (3, 3), activation="relu", padding="same"))
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(64, (3, 3), activation="relu", padding="same"))
+        model.add(Conv2D(64, (3, 3), activation="relu", padding="same"))
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(128, (3, 3), activation="relu", padding="same"))
+        model.add(Conv2D(128, (3, 3), activation="relu", padding="same"))
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(256, (3, 3), activation="relu", padding="same"))
+        model.add(Flatten())
+        model.add(Dense(256, activation="relu"))
+        model.add(Dropout(0.5))
+        model.add(Dense(128, activation="relu"))
+        model.add(Dropout(0.5))
+        model.add(Dense(n_classes, activation="softmax"))
 
     return model
 
 
-def _get_fast_cnn_architectures(input_shape, n_samples):
-    """Get fast CNN architectures based on dataset size and image dimensions"""
+def _get_smart_architectures(image_height, image_width, n_samples):
+    """Get smart CNN architectures based on image characteristics"""
 
-    height, width = input_shape[:2]
-
-    # Very lightweight architectures for speed
     architectures = []
 
-    if n_samples < 500:
-        # Tiny dataset - very simple architectures
-        architectures = [
-            {
-                "name": "Tiny-1",
-                "conv_blocks": [
-                    {"filters": 16, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 32, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                ],
-                "dense_layers": [64],
-                "activation": "relu",
-                "batch_norm": False,
-                "global_pooling": True,  # Reduces parameters
-                "dense_dropout": 0.3,
-            },
-            {
-                "name": "Tiny-2",
-                "conv_blocks": [
-                    {"filters": 32, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                ],
-                "dense_layers": [32],
-                "activation": "relu",
-                "batch_norm": False,
-                "global_pooling": True,
-                "dense_dropout": 0.5,
-            },
-        ]
-    elif n_samples < 2000:
-        # Small dataset - simple architectures
-        architectures = [
-            {
-                "name": "Small-1",
-                "conv_blocks": [
-                    {"filters": 32, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 64, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                ],
-                "dense_layers": [128],
-                "activation": "relu",
-                "batch_norm": False,
-                "global_pooling": False,
-                "dense_dropout": 0.5,
-            },
-            {
-                "name": "Small-BN",
-                "conv_blocks": [
-                    {"filters": 32, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 64, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                ],
-                "dense_layers": [128],
-                "activation": "relu",
-                "batch_norm": True,
-                "global_pooling": True,
-                "dense_dropout": 0.3,
-            },
-        ]
+    # Determine suitable architectures based on image size
+    min_dim = min(image_height, image_width)
+
+    if min_dim < 16:
+        # Very small images - only simple architecture
+        architectures = ["simple"]
+    elif min_dim < 32:
+        # Small images - simple and medium
+        architectures = ["simple", "medium"]
     else:
-        # Larger dataset - can handle slightly more complex architectures
-        architectures = [
-            {
-                "name": "Medium-1",
-                "conv_blocks": [
-                    {"filters": 32, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 64, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 128, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                ],
-                "dense_layers": [256],
-                "activation": "relu",
-                "batch_norm": True,
-                "global_pooling": False,
-                "dense_dropout": 0.5,
-            },
-            {
-                "name": "Medium-GlobalPool",
-                "conv_blocks": [
-                    {"filters": 64, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 128, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                    {"filters": 256, "kernel_size": (3, 3)},
-                ],
-                "dense_layers": [128],
-                "activation": "relu",
-                "batch_norm": True,
-                "global_pooling": True,
-                "dense_dropout": 0.3,
-            },
-        ]
+        # Larger images - can handle all architectures
+        if n_samples > 1000:
+            architectures = ["simple", "medium", "deep"]
+        else:
+            architectures = ["simple", "medium"]
 
     return architectures
 
 
 def _optimize_architecture_and_optimizer(X_train, y_train, X_test, y_true, opts):
-    """Optimize architecture and optimizer together for maximum efficiency"""
+    """Optimize architecture and optimizer together for efficiency"""
     global _consecutive_failures
     start_time = time.time()
     _consecutive_failures = 0
 
     max_acc = -np.inf
     best_f1 = 0.0
+
+    # Get image dimensions
+    image_height, image_width = X_train.shape[1], X_train.shape[2]
     n_samples = X_train.shape[0]
 
-    # Get fast architectures
-    architectures = _get_fast_cnn_architectures(X_train.shape[1:], n_samples)
+    # Get smart architectures
+    architectures = _get_smart_architectures(image_height, image_width, n_samples)
 
-    # Smart optimizer selection (fewer options)
-    if not _has_gpu:
-        optimizers = [
-            {"name": "adam", "lr": 0.001},  # Only one for CPU
-        ]
-    else:
-        optimizers = [
-            {"name": "adam", "lr": 0.001},
-            {"name": "adam", "lr": 0.0001},
-            {"name": "rmsprop", "lr": 0.001},
-        ]
+    # Smart optimizer selection
+    optimizers = ["adam", "sgd"]
 
     # Create architecture-optimizer combinations
     configs = []
@@ -322,37 +429,18 @@ def _optimize_architecture_and_optimizer(X_train, y_train, X_test, y_true, opts)
 
     best_config = configs[0]
 
-    with tqdm(
-        configs, desc="Optimizing CNN Architecture & Optimizer", leave=False
-    ) as pbar:
+    with tqdm(configs, desc="Optimizing Architecture & Optimizer", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("CNN Architecture (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
-                pbar.set_description("CNN Architecture (POOR ACCURACY)")
+                pbar.set_description("Architecture & Optimizer (POOR ACCURACY)")
                 break
 
-            # Setup optimizer
             test_opts = opts.copy()
-            if config["optimizer"]["name"] == "adam":
-                test_opts["compile"]["optimizer"] = keras.optimizers.Adam(
-                    learning_rate=config["optimizer"]["lr"]
-                )
-            elif config["optimizer"]["name"] == "rmsprop":
-                test_opts["compile"]["optimizer"] = keras.optimizers.RMSprop(
-                    learning_rate=config["optimizer"]["lr"]
-                )
+            test_opts.update(config)
 
-            accuracy, f1, success, val_acc = _safe_evaluate_cnn(
-                X_train,
-                y_train,
-                X_test,
-                y_true,
-                config["architecture"],
-                test_opts["compile"],
-                test_opts["fit"],
+            accuracy, f1, success = _safe_evaluate_cnn_model(
+                X_train, y_train, X_test, y_true, **test_opts
             )
 
             if success and accuracy >= max_acc:
@@ -360,35 +448,68 @@ def _optimize_architecture_and_optimizer(X_train, y_train, X_test, y_true, opts)
                 best_f1 = f1
                 best_config = config
 
-            arch_name = config["architecture"]["name"]
-            opt_info = f"{config['optimizer']['name']}({config['optimizer']['lr']:.0e})"
-
             pbar.set_postfix(
                 {
-                    "arch": arch_name[:8],
-                    "opt": opt_info[:10],
+                    "arch": config["architecture"][:6],
+                    "opt": config["optimizer"][:4],
                     "acc": f"{accuracy:.4f}" if success else "failed",
-                    "val": f"{val_acc:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
             )
 
-    # Set best configuration
-    opts["architecture"] = best_config["architecture"]
-    if best_config["optimizer"]["name"] == "adam":
-        opts["compile"]["optimizer"] = keras.optimizers.Adam(
-            learning_rate=best_config["optimizer"]["lr"]
-        )
-    elif best_config["optimizer"]["name"] == "rmsprop":
-        opts["compile"]["optimizer"] = keras.optimizers.RMSprop(
-            learning_rate=best_config["optimizer"]["lr"]
-        )
+    opts.update(best_config)
+    return opts, max_acc, best_f1
 
+
+def _optimize_learning_rate(X_train, y_train, X_test, y_true, opts):
+    """Optimize learning rate with early stopping"""
+    global _consecutive_failures
+    start_time = time.time()
+    _consecutive_failures = 0
+
+    max_acc = -np.inf
+    best_f1 = 0.0
+
+    # Smart learning rate range based on optimizer
+    if opts["optimizer"] == "adam":
+        variable_array = [0.001, 0.0001, 0.01, 0.0005]  # Adam rates
+    else:  # SGD
+        variable_array = [0.1, 0.01, 0.001, 0.05]  # SGD rates
+
+    best_val = variable_array[0]  # Default
+
+    with tqdm(variable_array, desc="Optimizing Learning Rate", leave=False) as pbar:
+        for v in pbar:
+            if _consecutive_failures >= _max_consecutive_failures:
+                pbar.set_description("Learning Rate (POOR ACCURACY)")
+                break
+
+            test_opts = opts.copy()
+            test_opts["learning_rate"] = v
+
+            accuracy, f1, success = _safe_evaluate_cnn_model(
+                X_train, y_train, X_test, y_true, **test_opts
+            )
+
+            if success and accuracy >= max_acc:
+                max_acc = accuracy
+                best_f1 = f1
+                best_val = v
+
+            pbar.set_postfix(
+                {
+                    "lr": f"{v:.4f}",
+                    "acc": f"{accuracy:.4f}" if success else "failed",
+                    "best_acc": f"{max_acc:.4f}",
+                }
+            )
+
+    opts["learning_rate"] = best_val
     return opts, max_acc, best_f1
 
 
 def _optimize_training_params(X_train, y_train, X_test, y_true, opts):
-    """Optimize training parameters with focus on speed"""
+    """Optimize training parameters together"""
     global _consecutive_failures
     start_time = time.time()
     _consecutive_failures = 0
@@ -397,30 +518,24 @@ def _optimize_training_params(X_train, y_train, X_test, y_true, opts):
     best_f1 = 0.0
     n_samples = X_train.shape[0]
 
-    # Fast training configurations
-    if not _has_gpu:
-        # CPU configurations - very fast training
+    # Smart parameter combinations based on dataset size
+    if n_samples < 1000:
         configs = [
-            {"epochs": 10, "batch_size": 32, "early_stopping": True, "patience": 3},
-            {"epochs": 20, "batch_size": 64, "early_stopping": True, "patience": 5},
+            {"epochs": 20, "batch_size": 16},
+            {"epochs": 30, "batch_size": 32},
+            {"epochs": 15, "batch_size": 8},
         ]
-    elif n_samples < 500:
-        # Small dataset configs
+    elif n_samples < 5000:
         configs = [
-            {"epochs": 20, "batch_size": 16, "early_stopping": True, "patience": 5},
-            {"epochs": 30, "batch_size": 32, "early_stopping": True, "patience": 7},
-        ]
-    elif n_samples < 2000:
-        # Medium dataset configs
-        configs = [
-            {"epochs": 30, "batch_size": 32, "early_stopping": True, "patience": 7},
-            {"epochs": 50, "batch_size": 64, "early_stopping": True, "patience": 10},
+            {"epochs": 15, "batch_size": 32},
+            {"epochs": 20, "batch_size": 64},
+            {"epochs": 10, "batch_size": 16},
         ]
     else:
-        # Larger dataset configs
         configs = [
-            {"epochs": 50, "batch_size": 64, "early_stopping": True, "patience": 10},
-            {"epochs": 100, "batch_size": 128, "early_stopping": True, "patience": 15},
+            {"epochs": 10, "batch_size": 64},
+            {"epochs": 15, "batch_size": 128},
+            {"epochs": 8, "batch_size": 32},
         ]
 
     best_config = configs[0]
@@ -428,37 +543,15 @@ def _optimize_training_params(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Training Params", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Training Params (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Training Params (POOR ACCURACY)")
                 break
 
             test_opts = opts.copy()
-            test_opts["fit"]["epochs"] = config["epochs"]
-            test_opts["fit"]["batch_size"] = config["batch_size"]
+            test_opts.update(config)
 
-            # Add early stopping
-            callbacks = []
-            if config.get("early_stopping", False):
-                callbacks.append(
-                    keras.callbacks.EarlyStopping(
-                        monitor="val_loss",
-                        patience=config["patience"],
-                        restore_best_weights=True,
-                    )
-                )
-            test_opts["fit"]["callbacks"] = callbacks
-
-            accuracy, f1, success, val_acc = _safe_evaluate_cnn(
-                X_train,
-                y_train,
-                X_test,
-                y_true,
-                opts["architecture"],
-                test_opts["compile"],
-                test_opts["fit"],
+            accuracy, f1, success = _safe_evaluate_cnn_model(
+                X_train, y_train, X_test, y_true, **test_opts
             )
 
             if success and accuracy >= max_acc:
@@ -470,382 +563,182 @@ def _optimize_training_params(X_train, y_train, X_test, y_true, opts):
                 {
                     "epochs": config["epochs"],
                     "batch": config["batch_size"],
-                    "early": "Y" if config.get("early_stopping") else "N",
                     "acc": f"{accuracy:.4f}" if success else "failed",
                     "best_acc": f"{max_acc:.4f}",
                 }
             )
 
-    # Set best configuration
-    opts["fit"]["epochs"] = best_config["epochs"]
-    opts["fit"]["batch_size"] = best_config["batch_size"]
-
-    callbacks = []
-    if best_config.get("early_stopping", False):
-        callbacks.append(
-            keras.callbacks.EarlyStopping(
-                monitor="val_loss",
-                patience=best_config["patience"],
-                restore_best_weights=True,
-            )
-        )
-    opts["fit"]["callbacks"] = callbacks
-
+    opts.update(best_config)
     return opts, max_acc, best_f1
 
 
-def _optimize_cnn(X_train, y_train, X_test, y_true, cycles=1):
+def _optimize_cnn(X_train, y_train, X_test, y_true, cycles=2):
     """
-    FAST CNN hyperparameter optimization for image classification.
+    ROBUST CNN optimization that handles both tabular and image data.
 
-    :param X_train: Training images (N, H, W, C) or (N, H, W)
-    :param y_train: Training labels
-    :param X_test: Test images
-    :param y_true: True labels for test data
-    :param cycles: Number of optimization cycles (keep low for CNNs!)
-    :return: optimized options, best accuracy, best f1, accuracy history, f1 history
+    Always returns exactly 5 values: (opts, accuracy, f1, accuracy_history, f1_history)
     """
 
-    print("🧠 FAST CNN Optimization - Hardware & Dataset Analysis")
+    print("🧠 ROBUST CNN Optimization")
+    print("Focus: Reliability + Data Handling")
     print("=" * 60)
 
-    # Hardware check
-    has_gpu = _check_hardware_suitability(X_train)
-
-    # Ensure proper data format
-    if len(X_train.shape) == 3:  # Add channel dimension if grayscale
-        X_train = np.expand_dims(X_train, axis=-1)
-        X_test = np.expand_dims(X_test, axis=-1)
-
-    # Normalize data
-    X_train = X_train.astype("float32") / 255.0
-    X_test = X_test.astype("float32") / 255.0
-
-    n_samples, height, width = X_train.shape[:3]
-
-    # More dataset warnings
-    if height < 32 or width < 32:
-        print("⚠️  WARNING: Very small images - CNNs may not be optimal")
-    if height > 224 or width > 224:
-        print("⚠️  WARNING: Large images will be slow to train")
-        print("Consider resizing images to 224x224 or smaller")
-
-    # Encode labels if needed
-    if len(y_train.shape) == 1:
-        num_classes = len(np.unique(y_train))
-        if num_classes > 2:
-            y_train = keras.utils.to_categorical(y_train, num_classes)
-            y_true_encoded = keras.utils.to_categorical(y_true, num_classes)
-        else:
-            y_true_encoded = y_true
-    else:
-        y_true_encoded = y_true
-        num_classes = y_train.shape[1]
-
-    print(f"Dataset: {n_samples} images, {height}x{width}, {num_classes} classes")
-
-    # Quick baseline check with minimal CNN
-    print("Running baseline check...")
-    baseline_start = time.time()
-
     try:
-        baseline_model = keras.Sequential(
-            [
-                layers.Input(shape=X_train.shape[1:]),
-                layers.Conv2D(16, (3, 3), activation="relu"),
-                layers.MaxPooling2D((2, 2)),
-                layers.Flatten(),
-                layers.Dense(32, activation="relu"),
-                layers.Dense(
-                    num_classes if num_classes > 2 else 1,
-                    activation="softmax" if num_classes > 2 else "sigmoid",
-                ),
-            ]
+        # Critical suitability check
+        suitable, data_type, target_shape = _check_cnn_suitability(X_train, y_train)
+
+        if not suitable:
+            print(f"\n❌ Dataset unsuitable for CNN optimization! Reason: {data_type}")
+            print("Returning safe default values.")
+            print("Recommendation: Use MLP/Neural Network for tabular data")
+            return _create_default_return_values()
+
+        # Reshape data appropriately
+        print(f"\n🔄 Preparing data for CNN...")
+        X_train_reshaped, X_test_reshaped, reshape_success = _reshape_data_for_cnn(
+            X_train, X_test, target_shape, data_type
         )
 
-        baseline_model.compile(
-            optimizer="adam",
-            loss=(
-                "categorical_crossentropy" if num_classes > 2 else "binary_crossentropy"
-            ),
-            metrics=["accuracy"],
-        )
+        if not reshape_success:
+            print("❌ Data reshaping failed!")
+            return _create_default_return_values()
 
-        baseline_model.fit(
-            X_train, y_train, epochs=3, batch_size=32, verbose=0, validation_split=0.2
-        )
-        baseline_acc = baseline_model.evaluate(X_test, y_true_encoded, verbose=0)[1]
-        baseline_time = time.time() - baseline_start
+        n_samples, height, width, channels = X_train_reshaped.shape
+        n_classes = len(np.unique(y_train))
 
-        print(f"Baseline CNN: {baseline_acc:.4f} (trained in {baseline_time:.1f}s)")
+        print(f"Final data shape: {X_train_reshaped.shape}")
+        print(f"Image size: {height}x{width}x{channels}, Classes: {n_classes}")
 
-        if baseline_time > 60:
-            print("⚠️  Slow baseline - CNN optimization will take significant time")
+        # CNN warnings based on final shape
+        if height < 16 or width < 16:
+            print("⚠️  WARNING: Very small images for CNN!")
+            print("CNNs work better with larger images (32x32+)")
 
-        del baseline_model
-        keras.backend.clear_session()
+        if n_samples < 500:
+            print("⚠️  WARNING: Small dataset for CNN!")
+            print("CNNs typically need thousands of samples.")
+
+        # Quick baseline check
+        print("\nRunning baseline CNN check...")
+        baseline_start = time.time()
+
+        try:
+            baseline_opts = {
+                "architecture": "simple",
+                "optimizer": "adam",
+                "learning_rate": 0.001,
+                "epochs": 5,  # Quick baseline
+                "batch_size": 32,
+            }
+
+            baseline_acc, baseline_f1, baseline_success = _safe_evaluate_cnn_model(
+                X_train_reshaped, y_train, X_test_reshaped, y_true, **baseline_opts
+            )
+            baseline_time = time.time() - baseline_start
+
+            if baseline_success:
+                print(
+                    f"Baseline CNN: {baseline_acc:.4f} (trained in {baseline_time:.1f}s)"
+                )
+            else:
+                print("⚠️  Baseline CNN failed - proceeding with caution")
+                baseline_acc = 0.0
+
+        except Exception as e:
+            print(f"Baseline check failed: {e}")
+            baseline_acc = 0.0
+
+        # Define initial parameters with smart defaults
+        opts = {
+            "architecture": "simple",
+            "optimizer": "adam",
+            "learning_rate": 0.001,
+            "epochs": 10,
+            "batch_size": 32,
+        }
+
+        # Track results with guaranteed initialization
+        ma_vec = []
+        f1_vec = []
+        final_accuracy = 0.0
+        final_f1 = 0.0
+
+        # Main optimization loop with error handling
+        with tqdm(
+            range(cycles), desc="Robust CNN Optimization", position=0
+        ) as cycle_pbar:
+            for c in cycle_pbar:
+                try:
+                    cycle_start_time = time.time()
+                    cycle_pbar.set_description(f"CNN Cycle {c + 1}/{cycles}")
+
+                    # Core optimizations in order of importance
+                    try:
+                        opts, _, _ = _optimize_architecture_and_optimizer(
+                            X_train_reshaped, y_train, X_test_reshaped, y_true, opts
+                        )
+                    except Exception as e:
+                        print(f"❌ Architecture optimization failed: {e}")
+
+                    try:
+                        opts, _, _ = _optimize_learning_rate(
+                            X_train_reshaped, y_train, X_test_reshaped, y_true, opts
+                        )
+                    except Exception as e:
+                        print(f"❌ Learning rate optimization failed: {e}")
+
+                    try:
+                        opts, ma, f1 = _optimize_training_params(
+                            X_train_reshaped, y_train, X_test_reshaped, y_true, opts
+                        )
+
+                        final_accuracy = ma
+                        final_f1 = f1
+
+                    except Exception as e:
+                        print(f"❌ Training parameter optimization failed: {e}")
+                        ma = f1 = 0.0
+
+                    # Record results
+                    ma_vec.append(ma)
+                    f1_vec.append(f1)
+
+                    cycle_time = time.time() - cycle_start_time
+
+                    cycle_pbar.set_postfix(
+                        {
+                            "accuracy": f"{ma:.4f}",
+                            "f1": f"{f1:.4f}",
+                            "best_overall": f"{max(ma_vec) if ma_vec else 0:.4f}",
+                            "cycle_time": f"{cycle_time:.1f}s",
+                            "arch": opts["architecture"][:6],
+                            "opt": opts["optimizer"][:4],
+                            "lr": f'{opts["learning_rate"]:.4f}',
+                            "epochs": opts["epochs"],
+                            "baseline_beat": f"{ma - baseline_acc:+.4f}",
+                        }
+                    )
+
+                except Exception as e:
+                    print(f"❌ Cycle {c + 1} failed: {e}")
+                    ma_vec.append(0.0)
+                    f1_vec.append(0.0)
+                    continue
+
+        # Ensure we have valid histories
+        if not ma_vec:
+            ma_vec = [0.0]
+        if not f1_vec:
+            f1_vec = [0.0]
+
+        print(f"\n🎯 Robust CNN optimization completed!")
+        print(f"Final accuracy: {final_accuracy:.4f}")
+        print(f"Final F1: {final_f1:.4f}")
+
+        # GUARANTEE: Always return exactly 5 values
+        return opts, final_accuracy, final_f1, ma_vec, f1_vec
 
     except Exception as e:
-        print(f"Baseline check failed: {e}")
-        baseline_acc = 0.0
-
-    # Define initial options with smart defaults
-    opts = {
-        "architecture": {
-            "conv_blocks": [
-                {"filters": 32, "kernel_size": (3, 3), "pool_size": (2, 2)},
-                {"filters": 64, "kernel_size": (3, 3), "pool_size": (2, 2)},
-            ],
-            "dense_layers": [128],
-            "activation": "relu",
-            "batch_norm": False,
-            "global_pooling": False,
-            "dense_dropout": 0.5,
-        },
-        "compile": {
-            "optimizer": keras.optimizers.Adam(learning_rate=0.001),
-            "loss": (
-                "sparse_categorical_crossentropy"
-                if num_classes > 2 and len(y_train.shape) == 1
-                else (
-                    "categorical_crossentropy"
-                    if num_classes > 2
-                    else "binary_crossentropy"
-                )
-            ),
-            "metrics": ["accuracy"],
-        },
-        "fit": {
-            "epochs": 20 if not has_gpu else 50,
-            "batch_size": 32,
-            "callbacks": [
-                keras.callbacks.EarlyStopping(
-                    monitor="val_loss", patience=5, restore_best_weights=True
-                )
-            ],
-        },
-    }
-
-    # Track results
-    ma_vec = []
-    f1_vec = []
-
-    # Main optimization loop (keep cycles low for CNNs!)
-    with tqdm(range(cycles), desc="FAST CNN Optimization", position=0) as cycle_pbar:
-        for c in cycle_pbar:
-            cycle_start_time = time.time()
-            cycle_pbar.set_description(f"CNN Cycle {c + 1}/{cycles}")
-
-            # Core optimizations (minimal for speed)
-            opts, _, _ = _optimize_architecture_and_optimizer(
-                X_train, y_train, X_test, y_true_encoded, opts
-            )
-            opts, ma, f1 = _optimize_training_params(
-                X_train, y_train, X_test, y_true_encoded, opts
-            )
-
-            ma_vec.append(ma)
-            f1_vec.append(f1)
-
-            cycle_time = time.time() - cycle_start_time
-
-            cycle_pbar.set_postfix(
-                {
-                    "accuracy": f"{ma:.4f}",
-                    "f1": f"{f1:.4f}",
-                    "best_overall": f"{max(ma_vec):.4f}",
-                    "cycle_time": f"{cycle_time:.1f}s",
-                    "arch": opts["architecture"].get("name", "Custom")[:8],
-                    "epochs": opts["fit"]["epochs"],
-                    "batch": opts["fit"]["batch_size"],
-                    "baseline_beat": f"{ma - baseline_acc:+.4f}",
-                }
-            )
-
-    print(
-        f"\n🎯 CNN optimization completed in {time.time() - baseline_start:.1f}s total"
-    )
-
-    return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_cnn_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze CNN performance and provide insights"""
-
-    print("\n" + "=" * 70)
-    print("FAST CNN PERFORMANCE ANALYSIS")
-    print("=" * 70)
-
-    # Encode labels if needed for final evaluation
-    if len(y_train.shape) == 1:
-        num_classes = len(np.unique(y_train))
-        if num_classes > 2:
-            y_train_encoded = keras.utils.to_categorical(y_train, num_classes)
-            y_true_encoded = keras.utils.to_categorical(y_true, num_classes)
-        else:
-            y_train_encoded = y_train
-            y_true_encoded = y_true
-    else:
-        y_train_encoded = y_train
-        y_true_encoded = y_true
-
-    # Train final model
-    print("Training final CNN with best parameters...")
-    start_time = time.time()
-
-    final_model = _build_cnn_model(
-        X_train.shape[1:], len(np.unique(y_train)), best_opts["architecture"]
-    )
-    final_model.compile(**best_opts["compile"])
-
-    history = final_model.fit(
-        X_train, y_train_encoded, validation_split=0.2, verbose=0, **best_opts["fit"]
-    )
-
-    training_time = time.time() - start_time
-
-    # Evaluate
-    y_pred_proba = final_model.predict(X_test, verbose=0)
-    y_pred = np.argmax(y_pred_proba, axis=1)
-
-    accuracy = accuracy_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred, average="weighted")
-
-    print(f"\n🎯 Final CNN Performance:")
-    print(f"  Test Accuracy: {accuracy:.4f}")
-    print(f"  Test F1 Score: {f1:.4f}")
-    print(f"  Training Time: {training_time:.1f} seconds")
-
-    # Architecture analysis
-    print(f"\n🏗️  Optimal Architecture:")
-    arch = best_opts["architecture"]
-    print(f"  Name: {arch.get('name', 'Custom')}")
-    print(f"  Conv Blocks: {len(arch['conv_blocks'])}")
-
-    total_filters = sum(block["filters"] for block in arch["conv_blocks"])
-    print(f"  Total Filters: {total_filters}")
-    print(f"  Dense Layers: {arch['dense_layers']}")
-    print(f"  Activation: {arch['activation']}")
-    print(f"  Batch Normalization: {arch.get('batch_norm', False)}")
-    print(f"  Global Pooling: {arch.get('global_pooling', False)}")
-
-    # Training analysis
-    print(f"\n📈 Training Configuration:")
-    print(f"  Optimizer: {str(best_opts['compile']['optimizer'])[:30]}")
-    print(f"  Epochs: {best_opts['fit']['epochs']}")
-    print(f"  Batch Size: {best_opts['fit']['batch_size']}")
-    print(f"  Early Stopping: {'Yes' if best_opts['fit'].get('callbacks') else 'No'}")
-
-    # Model complexity
-    total_params = final_model.count_params()
-    trainable_params = int(
-        np.sum([keras.backend.count_params(p) for p in final_model.trainable_weights])
-    )
-
-    print(f"\n🧮 Model Complexity:")
-    print(f"  Total Parameters: {total_params:,}")
-    print(f"  Trainable Parameters: {trainable_params:,}")
-
-    # Training history analysis
-    if len(history.history) > 0:
-        final_loss = history.history.get("loss", [0])[-1]
-        final_val_loss = history.history.get("val_loss", [0])[-1]
-        final_val_acc = history.history.get("val_accuracy", [0])[-1]
-
-        print(f"\n📊 Training History:")
-        print(f"  Final Training Loss: {final_loss:.4f}")
-        print(f"  Final Validation Loss: {final_val_loss:.4f}")
-        print(f"  Final Validation Accuracy: {final_val_acc:.4f}")
-        print(f"  Epochs Trained: {len(history.history.get('loss', []))}")
-
-    # Performance insights
-    n_samples = X_train.shape[0]
-    print(f"\n💡 Performance Insights:")
-
-    if accuracy > 0.9:
-        print(f"  ✅ Excellent performance - CNN is working well")
-    elif accuracy > 0.7:
-        print(f"  ✅ Good performance - room for improvement with more training")
-    elif accuracy > 0.5:
-        print(
-            f"  ⚠️  Moderate performance - consider data augmentation or architecture changes"
-        )
-    else:
-        print(
-            f"  ❌ Poor performance - check data quality, preprocessing, or try different approach"
-        )
-
-    if training_time > 300:  # 5 minutes
-        print(
-            f"  ⏰ Long training time - consider smaller architecture or fewer epochs"
-        )
-
-    if total_params > n_samples * 10:
-        print(f"  ⚠️  Many parameters vs samples - risk of overfitting")
-
-    # Recommendations
-    print(f"\n🚀 Recommendations:")
-    if accuracy < 0.8 and n_samples < 1000:
-        print(f"  💡 Small dataset - consider transfer learning or data augmentation")
-    if not _has_gpu and training_time > 60:
-        print(f"  💡 Consider using GPU for faster training")
-    if total_params > 100000:
-        print(f"  💡 Large model - consider model compression for deployment")
-
-    # Cleanup
-    del final_model
-    keras.backend.clear_session()
-    gc.collect()
-
-    return {
-        "accuracy": accuracy,
-        "f1": f1,
-        "training_time": training_time,
-        "total_params": total_params,
-        "architecture_name": arch.get("name", "Custom"),
-        "epochs_trained": len(history.history.get("loss", [])),
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example of FAST CNN optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    import numpy as np
-
-    print("🚀 FAST CNN Optimization")
-    print("Focus: Hardware-Aware + Speed")
-    print("=" * 50)
-
-    # Generate sample image data (simulated)
-    print("Generating sample image data...")
-
-    # Create fake image data for demo
-    n_samples = 1000
-    height, width, channels = 32, 32, 3
-
-    X = np.random.rand(n_samples, height, width, channels) * 255
-    y = np.random.randint(0, 3, n_samples)  # 3 classes
-
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
-    print(f"Dataset: {X_train.shape[0]} images of size {height}x{width}x{channels}")
-    print("⚠️  Note: Using random data for demo - real images would work better!")
-
-    # Run FAST CNN optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_cnn(
-        X_train, y_train, X_test, y_test, cycles=1  # Keep cycles=1 for demo
-    )
-
-    print(f"\n🎯 OPTIMIZATION COMPLETE!")
-    print(f"Best CNN Accuracy: {best_acc:.4f}")
-    print(f"Best CNN F1: {best_f1:.4f}")
-
-    # Analyze performance
-    analysis = _analyze_cnn_performance(X_train, y_train, X_test, y_test, best_opts)
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history
+        print(f"❌ CRITICAL ERROR in CNN optimization: {e}")
+        print("Returning safe default values to prevent crash.")
+        return _create_default_return_values()

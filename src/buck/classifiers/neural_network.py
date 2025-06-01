@@ -12,9 +12,9 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Global efficiency controls
 _max_time_per_step = (
-    600  # 10 minutes max per optimization step (neural nets can be slow)
+    900  # 10 minutes max per optimization step (neural nets can be slow)
 )
-_max_time_per_model = 180  # 3 minutes max per model evaluation
+_max_time_per_model = 900  # 3 minutes max per model evaluation
 _min_accuracy_threshold = 0.15  # Stop if accuracy is consistently terrible
 _consecutive_failures = 0
 _max_consecutive_failures = 3
@@ -30,10 +30,10 @@ def _safe_evaluate_model(X_train, y_train, X_test, y_true, **kwargs):
         classifier.fit(X_train, y_train)
 
         # Check if training took too long
-        training_time = time.time() - start_time
-        if training_time > _max_time_per_model:
-            print(f"⏰ Neural net timeout after {training_time:.1f}s")
-            return 0.0, 0.0, False
+        # training_time = time.time() - start_time
+        # if training_time > _max_time_per_model:
+        #    print(f"⏰ Neural net timeout after {training_time:.1f}s")
+        #    return 0.0, 0.0, False
 
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
@@ -118,9 +118,6 @@ def _optimize_architecture_and_solver(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Architecture & Solver", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Architecture & Solver (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Architecture & Solver (POOR ACCURACY)")
                 break
@@ -170,10 +167,6 @@ def _optimize_activation(X_train, y_train, X_test, y_true, opts):
 
     with tqdm(variable_array, desc="Optimizing Activation", leave=False) as pbar:
         for v in pbar:
-            # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Activation (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Activation (POOR ACCURACY)")
                 break
@@ -228,9 +221,6 @@ def _optimize_regularization(X_train, y_train, X_test, y_true, opts):
     with tqdm(variable_array, desc="Optimizing Regularization", leave=False) as pbar:
         for v in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Regularization (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Regularization (POOR ACCURACY)")
                 break
@@ -291,9 +281,6 @@ def _optimize_learning_params(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Learning Params", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Learning Params (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Learning Params (POOR ACCURACY)")
                 break
@@ -383,9 +370,6 @@ def _optimize_convergence_params(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Convergence", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Convergence (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Convergence (POOR ACCURACY)")
                 break
@@ -541,191 +525,3 @@ def _optimize_neural_network(X_train, y_train, X_test, y_true, cycles=2):
             )
 
     return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_neural_network_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze neural network performance and provide insights"""
-
-    print("\n" + "=" * 70)
-    print("FAST NEURAL NETWORK PERFORMANCE ANALYSIS")
-    print("=" * 70)
-
-    # Train the optimal model and measure timing
-    print("Training final neural network with best parameters...")
-
-    start_time = time.time()
-    nn_clf = MLPClassifier(**best_opts)
-    nn_clf.fit(X_train, y_train)
-    training_time = time.time() - start_time
-
-    y_pred = nn_clf.predict(X_test)
-    accuracy = accuracy_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred, average="weighted")
-
-    print(f"\n🎯 Optimal Neural Network Performance:")
-    print(f"  Accuracy: {accuracy:.4f}")
-    print(f"  F1 Score: {f1:.4f}")
-    print(f"  Training Time: {training_time:.1f} seconds")
-
-    # Compare with baseline
-    baseline_nn = MLPClassifier(
-        hidden_layer_sizes=(100,), random_state=42, max_iter=500
-    )
-    baseline_nn.fit(X_train, y_train)
-    baseline_acc = baseline_nn.score(X_test, y_true)
-    baseline_f1 = f1_score(y_true, baseline_nn.predict(X_test), average="weighted")
-
-    print(f"\n📊 Comparison with Baseline:")
-    print(f"  Baseline Accuracy: {baseline_acc:.4f}")
-    print(f"  Baseline F1: {baseline_f1:.4f}")
-    print(
-        f"  Improvement: {accuracy - baseline_acc:+.4f} accuracy, {f1 - baseline_f1:+.4f} F1"
-    )
-
-    # Architecture analysis
-    print(f"\n🧠 Optimal Architecture:")
-    print(f"  Hidden Layers: {best_opts['hidden_layer_sizes']}")
-    print(f"  Activation Function: {best_opts['activation']}")
-    print(f"  Solver: {best_opts['solver']}")
-    print(f"  Regularization (alpha): {best_opts['alpha']:.0e}")
-
-    # Architecture insights
-    n_layers = len(best_opts["hidden_layer_sizes"])
-    total_params = 0
-    layer_sizes = (
-        [X_train.shape[1]]
-        + list(best_opts["hidden_layer_sizes"])
-        + [len(np.unique(y_true))]
-    )
-
-    for i in range(len(layer_sizes) - 1):
-        total_params += (
-            layer_sizes[i] * layer_sizes[i + 1] + layer_sizes[i + 1]
-        )  # weights + biases
-
-    print(f"  Number of Hidden Layers: {n_layers}")
-    print(f"  Estimated Parameters: ~{total_params:,}")
-
-    # Training analysis
-    print(f"\n📈 Training Configuration:")
-    if best_opts["solver"] != "lbfgs":
-        print(f"  Learning Rate: {best_opts.get('learning_rate_init', 'N/A')}")
-    print(f"  Max Iterations: {best_opts['max_iter']}")
-    print(f"  Tolerance: {best_opts['tol']:.0e}")
-    print(f"  Early Stopping: {best_opts.get('early_stopping', False)}")
-
-    # Convergence analysis
-    if hasattr(nn_clf, "n_iter_"):
-        print(f"\n🔄 Convergence Analysis:")
-        print(f"  Iterations Used: {nn_clf.n_iter_}")
-        converged = nn_clf.n_iter_ < best_opts["max_iter"]
-        print(f"  Converged: {'✅ Yes' if converged else '⚠️  No (hit max_iter)'}")
-
-        if not converged:
-            print(f"  💡 Consider increasing max_iter or enabling early_stopping")
-
-    # Performance insights
-    n_samples, n_features = X_train.shape
-    print(f"\n💡 Architecture Insights:")
-
-    if n_layers == 1:
-        print(f"  ✅ Single hidden layer - good for most problems")
-    elif n_layers == 2:
-        print(f"  ✅ Two layers - can capture complex patterns")
-    else:
-        print(f"  ⚠️  Deep network ({n_layers} layers) - may need more data")
-
-    if best_opts["activation"] == "relu":
-        print(f"  ✅ ReLU activation - good general choice")
-    elif best_opts["activation"] == "tanh":
-        print(f"  💡 Tanh activation - good for normalized inputs")
-
-    if best_opts["solver"] == "adam":
-        print(f"  ✅ Adam solver - adaptive and robust")
-    elif best_opts["solver"] == "lbfgs":
-        print(f"  💡 L-BFGS solver - good for small datasets")
-
-    # Recommendations
-    print(f"\n🚀 Recommendations:")
-
-    if accuracy < 0.7 and n_samples < 1000:
-        print(f"  💡 Small dataset - consider simpler models or data augmentation")
-
-    if training_time > 60:
-        print(
-            f"  ⚠️  Long training time - consider smaller architecture or early stopping"
-        )
-
-    if total_params > n_samples * 10:
-        print(f"  ⚠️  Many parameters vs samples - risk of overfitting")
-
-    if best_opts.get("alpha", 1e-4) > 1e-2:
-        print(f"  💡 High regularization suggests overfitting tendency")
-
-    return {
-        "accuracy": accuracy,
-        "f1": f1,
-        "training_time": training_time,
-        "baseline_accuracy": baseline_acc,
-        "baseline_f1": baseline_f1,
-        "accuracy_improvement": accuracy - baseline_acc,
-        "f1_improvement": f1 - baseline_f1,
-        "architecture": best_opts["hidden_layer_sizes"],
-        "n_parameters": total_params,
-        "converged": getattr(nn_clf, "n_iter_", 0) < best_opts["max_iter"],
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example of FAST Neural Network optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-
-    print("🚀 FAST Neural Network Optimization")
-    print("Focus: Smart Architecture + Speed")
-    print("=" * 50)
-
-    # Generate sample data
-    X, y = make_classification(
-        n_samples=2000,
-        n_features=20,
-        n_informative=15,
-        n_redundant=5,
-        n_classes=3,
-        random_state=42,
-    )
-
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
-    # Scale the data (CRITICAL for neural networks!)
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    print(
-        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
-    )
-    print("🔥 Feature scaling is CRITICAL for neural network performance!")
-
-    # Run FAST optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_neural_network(
-        X_train_scaled, y_train, X_test_scaled, y_test, cycles=1  # Start with 1 cycle
-    )
-
-    print(f"\n🎯 OPTIMIZATION COMPLETE!")
-    print(f"Best Neural Net Accuracy: {best_acc:.4f}")
-    print(f"Best Neural Net F1: {best_f1:.4f}")
-    print(f"Optimal Architecture: {best_opts['hidden_layer_sizes']}")
-    print(f"Best Solver: {best_opts['solver']}")
-
-    # Analyze performance
-    analysis = _analyze_neural_network_performance(
-        X_train_scaled, y_train, X_test_scaled, y_test, best_opts
-    )
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history

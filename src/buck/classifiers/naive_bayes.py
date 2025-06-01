@@ -17,8 +17,8 @@ from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Global efficiency controls (lighter for NB since it's already fast)
-_max_time_per_step = 60  # 1 minute max per optimization step
-_max_time_per_model = 5  # 5 seconds max per model evaluation (NB is very fast)
+_max_time_per_step = 900  # 1 minute max per optimization step
+_max_time_per_model = 900  # 5 seconds max per model evaluation (NB is very fast)
 _min_accuracy_threshold = 0.10  # Stop if accuracy is consistently terrible
 _consecutive_failures = 0
 _max_consecutive_failures = 3
@@ -48,10 +48,10 @@ def _safe_evaluate_model(
 
         classifier.fit(X_train, y_train)
 
-        # Check if training took too long (very rare for NB)
-        if time.time() - start_time > _max_time_per_model:
-            print(f"⏰ NB timeout after {_max_time_per_model}s")
-            return 0.0, 0.0, False
+        ## Check if training took too long (very rare for NB)
+        # if time.time() - start_time > _max_time_per_model:
+        #    print(f"⏰ NB timeout after {_max_time_per_model}s")
+        #    return 0.0, 0.0, False
 
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_true, y_pred)
@@ -115,10 +115,6 @@ def _optimize_nb_type(X_train, y_train, X_test, y_true, opts):
 
     with tqdm(nb_types.items(), desc="Optimizing NB Type", leave=False) as pbar:
         for nb_type, default_params in pbar:
-            # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("NB Type (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("NB Type (POOR ACCURACY)")
                 break
@@ -177,9 +173,6 @@ def _optimize_var_smoothing(X_train, y_train, X_test, y_true, opts):
     with tqdm(variable_array, desc="Optimizing Var Smoothing", leave=False) as pbar:
         for v in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Var Smoothing (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Var Smoothing (POOR ACCURACY)")
                 break
@@ -233,9 +226,6 @@ def _optimize_alpha(X_train, y_train, X_test, y_true, opts):
     with tqdm(variable_array, desc="Optimizing Alpha", leave=False) as pbar:
         for v in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Alpha (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Alpha (POOR ACCURACY)")
                 break
@@ -295,9 +285,6 @@ def _optimize_binarize(X_train, y_train, X_test, y_true, opts):
     ) as pbar:
         for v in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Binarize (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Binarize (POOR ACCURACY)")
                 break
@@ -349,9 +336,6 @@ def _optimize_fit_prior(X_train, y_train, X_test, y_true, opts):
     with tqdm(variable_array, desc="Optimizing Fit Prior", leave=False) as pbar:
         for v in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Fit Prior (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Fit Prior (POOR ACCURACY)")
                 break
@@ -494,163 +478,3 @@ def _optimize_naive_bayes(X_train, y_train, X_test, y_true, cycles=2):
             )
 
     return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_naive_bayes_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze Naive Bayes performance and provide insights"""
-
-    print("\n" + "=" * 60)
-    print("FAST NAIVE BAYES PERFORMANCE ANALYSIS")
-    print("=" * 60)
-
-    # Create and train the optimal model
-    nb_type = best_opts["nb_type"]
-    model_params = {k: v for k, v in best_opts.items() if k != "nb_type"}
-
-    if nb_type == "gaussian":
-        nb_clf = GaussianNB(**model_params)
-    elif nb_type == "multinomial":
-        nb_clf = MultinomialNB(**model_params)
-    elif nb_type == "bernoulli":
-        nb_clf = BernoulliNB(**model_params)
-    elif nb_type == "complement":
-        nb_clf = ComplementNB(**model_params)
-    else:
-        nb_clf = GaussianNB()  # Fallback
-
-    nb_clf.fit(X_train, y_train)
-    y_pred = nb_clf.predict(X_test)
-
-    # Calculate metrics
-    accuracy = accuracy_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred, average="weighted")
-
-    print(f"🎯 Optimal Naive Bayes Performance:")
-    print(f"  Algorithm Type: {nb_type.title()}")
-    print(f"  Accuracy: {accuracy:.4f}")
-    print(f"  F1 Score: {f1:.4f}")
-
-    # Compare with baseline Gaussian NB
-    baseline_nb = GaussianNB()
-    baseline_nb.fit(X_train, y_train)
-    baseline_acc = baseline_nb.score(X_test, y_true)
-    baseline_f1 = f1_score(y_true, baseline_nb.predict(X_test), average="weighted")
-
-    print(f"\n📊 Comparison with Baseline Gaussian NB:")
-    print(f"  Baseline Accuracy: {baseline_acc:.4f}")
-    print(f"  Baseline F1: {baseline_f1:.4f}")
-    print(
-        f"  Improvement: {accuracy - baseline_acc:+.4f} accuracy, {f1 - baseline_f1:+.4f} F1"
-    )
-
-    # Algorithm-specific insights
-    print(f"\n🔧 Optimal Configuration:")
-
-    if nb_type == "gaussian":
-        print(f"  Variance Smoothing: {best_opts.get('var_smoothing', 1e-9):.0e}")
-        print(f"  💡 Gaussian NB works best with continuous features")
-
-    elif nb_type == "multinomial":
-        print(f"  Alpha (Laplace smoothing): {best_opts.get('alpha', 1.0):.2f}")
-        print(f"  Fit Prior: {best_opts.get('fit_prior', True)}")
-        print(f"  💡 Multinomial NB is ideal for discrete features (e.g., word counts)")
-
-    elif nb_type == "bernoulli":
-        print(f"  Alpha (Laplace smoothing): {best_opts.get('alpha', 1.0):.2f}")
-        print(f"  Binarize Threshold: {best_opts.get('binarize', 0.0)}")
-        print(f"  Fit Prior: {best_opts.get('fit_prior', True)}")
-        print(f"  💡 Bernoulli NB works with binary/boolean features")
-
-    elif nb_type == "complement":
-        print(f"  Alpha (Laplace smoothing): {best_opts.get('alpha', 1.0):.2f}")
-        print(f"  Fit Prior: {best_opts.get('fit_prior', True)}")
-        print(f"  💡 Complement NB is especially good for imbalanced datasets")
-
-    # Dataset suitability analysis
-    print(f"\n💭 Algorithm Choice Insights:")
-
-    has_negative = np.any(X_train < 0)
-    has_continuous = not np.all(X_train == X_train.astype(int))
-    n_classes = len(np.unique(y_true))
-
-    if nb_type == "gaussian" and not has_negative:
-        print(f"  ⚠️  Consider trying Multinomial NB for non-negative data")
-    elif nb_type in ["multinomial", "complement"] and has_negative:
-        print(f"  ✅ Gaussian NB was correctly chosen (negative values present)")
-    elif nb_type == "complement" and n_classes > 2:
-        print(f"  ✅ Good choice for multi-class classification")
-
-    # Speed insights
-    print(f"\n⚡ Performance Characteristics:")
-    print(f"  Training Speed: Very Fast (Naive Bayes)")
-    print(f"  Prediction Speed: Very Fast")
-    print(f"  Memory Usage: Low")
-    print(f"  Scalability: Excellent for large datasets")
-
-    return {
-        "algorithm_type": nb_type,
-        "accuracy": accuracy,
-        "f1": f1,
-        "baseline_accuracy": baseline_acc,
-        "baseline_f1": baseline_f1,
-        "accuracy_improvement": accuracy - baseline_acc,
-        "f1_improvement": f1 - baseline_f1,
-        "optimal_params": model_params,
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example of FAST Naive Bayes optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-
-    print("🚀 FAST Naive Bayes Optimization")
-    print("Focus: Speed + Algorithm Selection")
-    print("=" * 50)
-
-    # Generate sample data
-    X, y = make_classification(
-        n_samples=2000,
-        n_features=20,
-        n_informative=15,
-        n_redundant=5,
-        n_classes=3,
-        random_state=42,
-    )
-
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
-    # Note: Scaling is optional for NB, depends on the variant chosen
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    print(
-        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
-    )
-
-    # Run FAST optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_naive_bayes(
-        X_train_scaled,
-        y_train,
-        X_test_scaled,
-        y_test,
-        cycles=1,  # NB is fast, 1 cycle is often enough
-    )
-
-    print(f"\n🎯 OPTIMIZATION COMPLETE!")
-    print(f"Best NB Accuracy: {best_acc:.4f}")
-    print(f"Best NB F1: {best_f1:.4f}")
-    print(f"Optimal Algorithm: {best_opts['nb_type'].title()}")
-
-    # Analyze performance
-    analysis = _analyze_naive_bayes_performance(
-        X_train_scaled, y_train, X_test_scaled, y_test, best_opts
-    )
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history

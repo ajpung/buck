@@ -11,9 +11,9 @@ from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Global efficiency controls
-_max_time_per_step = 300  # 5 minutes max per optimization step
+_max_time_per_step = 900  # 5 minutes max per optimization step
 _max_time_per_model = (
-    60  # 1 minute max per model evaluation (KNN can be slow on large data)
+    900  # 1 minute max per model evaluation (KNN can be slow on large data)
 )
 _min_accuracy_threshold = 0.15  # Stop if accuracy is consistently terrible
 _consecutive_failures = 0
@@ -35,11 +35,11 @@ def _safe_evaluate_model(X_train, y_train, X_test, y_true, **kwargs):
         pred_time = time.time() - pred_start
 
         total_time = time.time() - start_time
-        if total_time > _max_time_per_model:
-            print(
-                f"⏰ KNN timeout after {total_time:.1f}s (prediction: {pred_time:.1f}s)"
-            )
-            return 0.0, 0.0, False
+        # if total_time > _max_time_per_model:
+        #    print(
+        #        f"⏰ KNN timeout after {total_time:.1f}s (prediction: {pred_time:.1f}s)"
+        #    )
+        #    return 0.0, 0.0, False
 
         accuracy = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
@@ -125,10 +125,6 @@ def _optimize_nn(X_train, y_train, X_test, y_true, opts):
         variable_array, desc="Optimizing Number of Neighbors", leave=False
     ) as pbar:
         for v in pbar:
-            # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Number of Neighbors (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Number of Neighbors (POOR ACCURACY)")
                 break
@@ -195,10 +191,6 @@ def _optimize_weights_and_algorithm(X_train, y_train, X_test, y_true, opts):
 
     with tqdm(configs, desc="Optimizing Weights & Algorithm", leave=False) as pbar:
         for config in pbar:
-            # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Weights & Algorithm (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Weights & Algorithm (POOR ACCURACY)")
                 break
@@ -250,10 +242,6 @@ def _optimize_leaf_size(X_train, y_train, X_test, y_true, opts):
 
     with tqdm(variable_array, desc="Optimizing Leaf Size", leave=False) as pbar:
         for v in pbar:
-            # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Leaf Size (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Leaf Size (POOR ACCURACY)")
                 break
@@ -310,9 +298,6 @@ def _optimize_metric_and_p(X_train, y_train, X_test, y_true, opts):
     with tqdm(configs, desc="Optimizing Distance Metric", leave=False) as pbar:
         for config in pbar:
             # Early stopping conditions
-            if time.time() - start_time > _max_time_per_step:
-                pbar.set_description("Distance Metric (TIME LIMIT)")
-                break
             if _consecutive_failures >= _max_consecutive_failures:
                 pbar.set_description("Distance Metric (POOR ACCURACY)")
                 break
@@ -446,166 +431,3 @@ def _optimize_knn(X_train, y_train, X_test, y_true, cycles=2):
             )
 
     return opts, ma, f1, ma_vec, f1_vec
-
-
-def _analyze_knn_performance(X_train, y_train, X_test, y_true, best_opts):
-    """Analyze KNN performance and provide insights"""
-
-    print("\n" + "=" * 60)
-    print("FAST KNN PERFORMANCE ANALYSIS")
-    print("=" * 60)
-
-    # Train the optimal model and measure timing
-    print("Training final KNN model with best parameters...")
-
-    start_time = time.time()
-    knn_clf = KNeighborsClassifier(**best_opts)
-    knn_clf.fit(X_train, y_train)
-    fit_time = time.time() - start_time
-
-    start_time = time.time()
-    y_pred = knn_clf.predict(X_test)
-    pred_time = time.time() - start_time
-
-    # Calculate metrics
-    accuracy = accuracy_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred, average="weighted")
-
-    print(f"\n🎯 Optimal KNN Performance:")
-    print(f"  Accuracy: {accuracy:.4f}")
-    print(f"  F1 Score: {f1:.4f}")
-    print(f"  Training Time: {fit_time:.3f} seconds")
-    print(f"  Prediction Time: {pred_time:.3f} seconds")
-
-    # Compare with baseline
-    baseline_knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
-    baseline_knn.fit(X_train, y_train)
-    baseline_acc = baseline_knn.score(X_test, y_true)
-    baseline_f1 = f1_score(y_true, baseline_knn.predict(X_test), average="weighted")
-
-    print(f"\n📊 Comparison with Baseline (k=5):")
-    print(f"  Baseline Accuracy: {baseline_acc:.4f}")
-    print(f"  Baseline F1: {baseline_f1:.4f}")
-    print(
-        f"  Improvement: {accuracy - baseline_acc:+.4f} accuracy, {f1 - baseline_f1:+.4f} F1"
-    )
-
-    # Configuration analysis
-    print(f"\n🔧 Optimal Configuration:")
-    print(f"  Number of Neighbors (k): {best_opts['n_neighbors']}")
-    print(f"  Distance Metric: {best_opts['metric']}")
-    if best_opts["metric"] == "minkowski":
-        print(f"  Minkowski p-parameter: {best_opts['p']}")
-    print(f"  Weighting: {best_opts['weights']}")
-    print(f"  Algorithm: {best_opts['algorithm']}")
-    print(f"  Leaf Size: {best_opts['leaf_size']}")
-
-    # Performance insights
-    n_samples, n_features = X_train.shape
-    print(f"\n💡 Performance Insights:")
-
-    k = best_opts["n_neighbors"]
-    if k == 1:
-        print(f"  ⚠️  k=1 suggests overfitting or very clean data")
-    elif k > np.sqrt(n_samples):
-        print(f"  ⚠️  Large k ({k}) - might be smoothing too much")
-    else:
-        print(f"  ✅ k={k} is reasonable for dataset size")
-
-    if best_opts["weights"] == "distance":
-        print(f"  ✅ Distance weighting helps with varying neighbor relevance")
-
-    if best_opts["metric"] == "cosine":
-        print(f"  💡 Cosine metric suggests directional relationships matter")
-    elif best_opts["metric"] == "manhattan":
-        print(f"  💡 Manhattan metric good for sparse/noisy data")
-
-    # Scalability analysis
-    print(f"\n⚡ Scalability Analysis:")
-    print(f"  Training Complexity: O(1) - just stores data")
-    print(f"  Prediction Complexity: O(n*d) per query")
-    print(f"  Memory Usage: O(n*d) - stores all training data")
-
-    if n_samples > 10000:
-        print(f"  ⚠️  Large dataset ({n_samples}) - consider approximate methods")
-    if n_features > 50:
-        print(f"  ⚠️  High dimensions ({n_features}) - curse of dimensionality")
-    if pred_time > 1:
-        print(f"  ⚠️  Slow predictions ({pred_time:.1f}s) - consider faster algorithms")
-
-    # Recommendations
-    print(f"\n🚀 Recommendations:")
-    if accuracy < 0.7 and n_features > 20:
-        print(f"  💡 Consider dimensionality reduction (PCA, feature selection)")
-    if pred_time > 5:
-        print(f"  💡 Consider approximate methods (LSH) or different algorithms")
-    if n_samples > 50000:
-        print(f"  💡 Consider faster algorithms (XGBoost, RandomForest) for production")
-
-    return {
-        "accuracy": accuracy,
-        "f1": f1,
-        "training_time": fit_time,
-        "prediction_time": pred_time,
-        "baseline_accuracy": baseline_acc,
-        "baseline_f1": baseline_f1,
-        "accuracy_improvement": accuracy - baseline_acc,
-        "f1_improvement": f1 - baseline_f1,
-        "optimal_k": best_opts["n_neighbors"],
-        "optimal_metric": best_opts["metric"],
-    }
-
-
-# Example usage function
-def example_usage():
-    """Example of FAST KNN optimization"""
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-
-    print("🚀 FAST KNN Optimization")
-    print("Focus: Smart Parameter Selection + Speed")
-    print("=" * 50)
-
-    # Generate sample data (keep it moderate size for KNN)
-    X, y = make_classification(
-        n_samples=2000,  # Moderate size for KNN demo
-        n_features=20,
-        n_informative=15,
-        n_redundant=5,
-        n_classes=3,
-        random_state=42,
-    )
-
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-
-    # Scale the data (CRITICAL for KNN!)
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    print(
-        f"Dataset: {X_train_scaled.shape[0]} samples, {X_train_scaled.shape[1]} features"
-    )
-    print("🔥 Feature scaling is CRITICAL for KNN performance!")
-
-    # Run FAST optimization
-    best_opts, best_acc, best_f1, acc_history, f1_history = _optimize_knn(
-        X_train_scaled, y_train, X_test_scaled, y_test, cycles=1  # Start with 1 cycle
-    )
-
-    print(f"\n🎯 OPTIMIZATION COMPLETE!")
-    print(f"Best KNN Accuracy: {best_acc:.4f}")
-    print(f"Best KNN F1: {best_f1:.4f}")
-    print(f"Optimal k: {best_opts['n_neighbors']}")
-    print(f"Best Metric: {best_opts['metric']}")
-
-    # Analyze performance
-    analysis = _analyze_knn_performance(
-        X_train_scaled, y_train, X_test_scaled, y_test, best_opts
-    )
-
-    return best_opts, best_acc, best_f1, acc_history, f1_history
