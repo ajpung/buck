@@ -31,6 +31,9 @@ dependencies = [
     "setuptools",
     "setuptools-scm",
     "tensorflow",
+    "torch @ https://download.pytorch.org/whl/cu118/torch-2.1.0%2Bcu118-cp311-cp311-win_amd64.whl",
+    "torchvision @ https://download.pytorch.org/whl/cu118/torchvision-0.16.0%2Bcu118-cp311-cp311-win_amd64.whl",
+    "torchaudio @ https://download.pytorch.org/whl/cu118/torchaudio-2.1.0%2Bcu118-cp311-cp311-win_amd64.whl",
     "xgboost",
     "wheel",
 ]

@@ -16,14 +16,14 @@ def make_bw_square(file: str) -> np.ndarray[tuple[int, ...], Any]:
     px, py, pz = image.shape
     # Find minimum value between X and Y dimensions
     min_dim = min(px, py)
-    # If data are 3D, flatten to black and white
+    # Keep all color channels or convert grayscale to RGB
     if pz > 2:
-        new_image = image[:, :, 0]
+        new_image = image[:, :, :3]  # Keep RGB channels
     else:
-        new_image = image
+        new_image = np.stack([image, image, image], axis=2)  # Convert grayscale to RGB
 
     # Force image to be square
-    new_image = new_image[:min_dim, :min_dim]
+    new_image = new_image[:min_dim, :min_dim, :]
     return new_image
 
 

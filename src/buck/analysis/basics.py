@@ -22,58 +22,31 @@ import cv2
 
 
 def extract_fast_numpy_features(X_images):
-    """
-    Ultra-fast multi-resolution using pure numpy (no cv2)
-    Works with any grayscale image format
-    """
-    # Handle different input shapes
-    if len(X_images.shape) == 4 and X_images.shape[-1] == 1:
-        # (N, H, W, 1) -> (N, H, W)
-        images_2d = X_images.squeeze(axis=-1)
+    n_samples = X_images.shape[0]
+
+    # Check if color or grayscale
+    if len(X_images.shape) == 4 and X_images.shape[3] == 3:
+        # Color images: 64×64×3 + 32×32×3 = 15360 features
+        feature_size = 12288 + 3072
     else:
-        images_2d = X_images
+        # Grayscale images: 64×64×1 + 32×32×1 = 5120 features
+        feature_size = 4096 + 1024
 
-    # Pre-allocate output array
-    n_samples = len(images_2d)
-    features_64x64 = 64 * 64  # 4,096
-    features_32x32 = 32 * 32  # 1,024
-    total_features = features_64x64 + features_32x32  # 5,120
+    all_features = np.zeros((n_samples, feature_size))
 
-    all_features = np.zeros((n_samples, total_features), dtype=np.float32)
+    for i in range(n_samples):
+        img = X_images[i]
 
-    # Process in batches for speed
-    batch_size = 100
-    for batch_start in range(0, n_samples, batch_size):
-        batch_end = min(batch_start + batch_size, n_samples)
+        # Resize to two different scales
+        img_64 = cv2.resize(img, (64, 64), interpolation=cv2.INTER_AREA)
+        img_32 = cv2.resize(img, (32, 32), interpolation=cv2.INTER_AREA)
 
-        for i in range(batch_start, batch_end):
-            img = images_2d[i]
+        # Flatten
+        features_64 = img_64.flatten()
+        features_32 = img_32.flatten()
 
-            # Simple downsampling using numpy (much faster than cv2)
-            # 288x288 -> 64x64 (every 4.5th pixel, roughly)
-            img_64 = img[::4, ::4]  # 72x72, then crop to 64x64
-            if img_64.shape[0] > 64:
-                img_64 = img_64[:64, :64]
-            elif img_64.shape[0] < 64:
-                # Pad if needed
-                pad_h = 64 - img_64.shape[0]
-                pad_w = 64 - img_64.shape[1]
-                img_64 = np.pad(img_64, ((0, pad_h), (0, pad_w)), mode="edge")
+        all_features[i] = np.concatenate([features_64, features_32])
 
-            # 288x288 -> 32x32 (every 9th pixel)
-            img_32 = img[::9, ::9]  # 32x32
-            if img_32.shape[0] > 32:
-                img_32 = img_32[:32, :32]
-            elif img_32.shape[0] < 32:
-                pad_h = 32 - img_32.shape[0]
-                pad_w = 32 - img_32.shape[1]
-                img_32 = np.pad(img_32, ((0, pad_h), (0, pad_w)), mode="edge")
-
-            # Flatten and store
-            features_64 = img_64.flatten()  # 4,096 features
-            features_32 = img_32.flatten()  # 1,024 features
-
-            all_features[i] = np.concatenate([features_64, features_32])
     return all_features
 
 
@@ -449,8 +422,8 @@ def split_data(images: List, ages: List) -> Tuple:
     # Normalize and reshape images
     X_train_val = X_train_val.astype("float32") / 255.0
     X_test = X_test.astype("float32") / 255.0
-    X_train_val = X_train_val.reshape(X_train_val.shape[0], 288, 288, 1)
-    X_test = X_test.reshape(X_test.shape[0], 288, 288, 1)
+    X_train_val = X_train_val.reshape(X_train_val.shape[0], 288, 288, 3)
+    X_test = X_test.reshape(X_test.shape[0], 288, 288, 3)
 
     # Implement stratified split for validation too
     X_train_orig, X_valid, y_train_orig, y_valid = train_test_split(
