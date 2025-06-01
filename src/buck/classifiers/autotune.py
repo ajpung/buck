@@ -44,7 +44,7 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     results = {}
     print("Optimizing")
     # ------------------------ ADABOOST -----------------------
-    opts, ma, f1, ma_vec, f1_vec = _optimize_ada_boost(
+    opts, ma, f1, ma_vec, f1_vec = _optimize_adaboost(
         X_train, y_train, X_test, y_true, cycles=cycles
     )
     write_to_nested_dict(results, ["Adaboost", "Accuracy"], ma)
@@ -116,6 +116,7 @@ def optimize_all(X_train, y_train, X_test, y_true, cycles=2):
     write_to_nested_dict(results, ["Random Forest", "optimals"], opts)
     print(results["Random Forest"], "\n")
     gc.collect()
+
     # ------------------ LINEAR DISCRIMINANT ------------------
     opts, ma, f1, ma_vec, f1_vec = _optimize_linear_discriminant(
         X_train, y_train, X_test, y_true, cycles=cycles

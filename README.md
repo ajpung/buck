@@ -88,4 +88,5 @@ python -m pip install -e .
 
 # Install the environment in Jupyter
 python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
+
 ```
