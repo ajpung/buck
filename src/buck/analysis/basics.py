@@ -502,18 +502,18 @@ def homogenize_data(
     y_train_flat = np.argmax(y_train_augmented, axis=1)
     y_true = np.argmax(y_test_onehot, axis=1)
 
-    # USE THIS - should be very fast:
+    """
+    # For EfficientNet
     X_train_flat = extract_fast_numpy_features(X_train_augmented)
     X_test_flat = extract_fast_numpy_features(X_test)
-
     # Apply standardization
     scaler = StandardScaler()
     X_train_final = scaler.fit_transform(X_train_flat)
     X_test_final = scaler.transform(X_test_flat)
-
     # Free up memory (delete the unscaled versions)
     del X_train_flat, X_test_flat
     gc.collect()
+    """
 
     # Return the final scaled versions
-    return X_train_final, y_train_flat, X_test_final, y_true, label_mapping, num_classes
+    return X_train_augmented, y_train_flat, X_test, y_true, label_mapping, num_classes
