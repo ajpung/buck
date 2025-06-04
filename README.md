@@ -14,9 +14,8 @@ A tool for predicting the age of male whitetail deer based on trail camera image
 
 # Buck aging
 ## Introduction
-There are many ways to predict age on a male deer. The most common method is to
-look at the teeth, but this requires a professional to examine the animal. Other
-techniques have been deeply investigated including antler characteristics (mass, size, etc.) as
+There are many ways to predict the age a male whitetail deer. The most common method is to
+look at the teeth, but this requires the aid of a professional. Other techniques have been deeply investigated including antler characteristics (mass, size, etc.) as
 well as body proportions.
 
 ## Antler characteristics
