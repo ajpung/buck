@@ -8,6 +8,7 @@ authors = [
 ]
 
 dependencies = [
+    "albumentations",
     "black",
     "black[jupyter]",
     "catboost",
@@ -31,6 +32,7 @@ dependencies = [
     "setuptools",
     "setuptools-scm",
     "tensorflow",
+    "timm",
     "torch>=2.0.0",
     "torchvision>=0.15.0",
     "torchaudio>=2.0.0",
