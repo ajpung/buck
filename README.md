@@ -26,7 +26,7 @@ the model must be trained on a specific region to be accurate, and this is not
 practical for the average hunter. Other characteristics include average beam length,
 circumference, and tine length, but these suffer from the same issues as mass.
 
-## Supervised Learning
+## Computer Vision
 ### BUCK
 Alternatively, the NDA has provided a set of images and ratings for a number of
 deer, which can be used to train a model to predict age based on images alone.
