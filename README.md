@@ -29,7 +29,8 @@ circumference, and tine length, but these suffer from the same issues as mass.
 ## Supervised Learning
 ### BUCK
 Alternatively, the NDA has provided a set of images and ratings for a number of
-deer, which can be used to train a model to predict age based on images alone.
+deer, which can be used to train a mo
+del to predict age based on images alone.
 This is the method we will use in this project BUCK (Biometric Utilization of
 Cervid Kontours). Images of the deer were taken from numerous websites,
 publications, blog posts, videos, and tutorials from a multitude of 
@@ -58,7 +59,47 @@ model can be used to predict the age of new images of deer.
 
 Images gathered from the website were sized and cropped, making sure to include the
 full deer's body; non-square images were squared via cropping. The images were then resized amd interpolated to 224x224. The images were then split into training and test
-sets, with 80% of the images used for training and 20% for testing. The training
+sets, with 80% of 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+the images used for training and 20% for testing. The training
 set was then augmented using random rotations, flips, and brightness adjustments
 to increase the size of the training set and improve the model's performance. At the end of the analysis, transfer learning is also consider to enhance model accuracy. 
 
