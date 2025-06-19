@@ -2,6 +2,115 @@
 
 
 
+## v0.6.0 (2025-06-19)
+
+### Chore
+
+* chore: updated code base with no emojis and proper data pull ([`61e55d1`](https://github.com/ajpung/buck/commit/61e55d1955295d0c883b8e8f585e1ff29f724180))
+
+* chore: updating model, removing things that break ([`537df10`](https://github.com/ajpung/buck/commit/537df10df26054b548c1a24551b8ca9a40517dc8))
+
+* chore: catching up after switching Dropbox change ([`ebc03d2`](https://github.com/ajpung/buck/commit/ebc03d239639b24e0afa9232292e0d0214660327))
+
+* chore: updating and running network models ([`6250b9f`](https://github.com/ajpung/buck/commit/6250b9f78b8f61783ed7e4f7a99e6b21a74447c8))
+
+* chore: adding notebook modifications as models move forward ([`a0803b8`](https://github.com/ajpung/buck/commit/a0803b8b22a7172f2839788fb5df90e6d7a3d2a1))
+
+* chore: recording results and pushing on ([`7e64c5d`](https://github.com/ajpung/buck/commit/7e64c5d7f0e9f72a4f5489d2b49e6a91249e07a9))
+
+* chore: using 37 different network models ([`93b5759`](https://github.com/ajpung/buck/commit/93b57596db46739aee3b003891472d8a667742e3))
+
+* chore: added code to Jupyter notebook for correct analysis ([`40feea6`](https://github.com/ajpung/buck/commit/40feea6a3ba8e7640c8e9559238ff013395f6fbb))
+
+* chore: updating CUDA version of torch for CV ([`a19f490`](https://github.com/ajpung/buck/commit/a19f49055b9d7333d4818e31b5c8778ce2e7ed5d))
+
+* chore: removing time limits in most scripts ([`02746f2`](https://github.com/ajpung/buck/commit/02746f2a0ff20f11960374a0a0d279830823f077))
+
+* chore: speeding up remaining optimizers ([`9677895`](https://github.com/ajpung/buck/commit/96778953e0242bc6054b78603a58ed35226bdf81))
+
+* chore: updating slow voting classifier ([`222fc93`](https://github.com/ajpung/buck/commit/222fc93e0362cba70c4bdb42f558f234c995e04e))
+
+* chore: updating files to run more efficiently ([`b347143`](https://github.com/ajpung/buck/commit/b3471430551746254117a40e713daf7d6e17897d))
+
+* chore: Optimizing all scripts via claude, removing gradient boost ([`9856959`](https://github.com/ajpung/buck/commit/9856959f3b73bf9c629ffff7a6dd5fb7ba623150))
+
+* chore: adding progress bars to classifiers ([`8565c79`](https://github.com/ajpung/buck/commit/8565c79605fcfe89fd8496f29de773898360db0b))
+
+### Feature
+
+* feat: identified model providing 97.5% efficiency, and made major upgrades to Torch to run on CUDA. Updated .toml to reflect. ([`db00609`](https://github.com/ajpung/buck/commit/db0060934c39676eb20586223dee8fd83ce22c71))
+
+### Unknown
+
+* . ([`669ffd5`](https://github.com/ajpung/buck/commit/669ffd5bb8adbbbc83a84e9c17e176c1c08260c0))
+
+* . ([`bf3bf6d`](https://github.com/ajpung/buck/commit/bf3bf6d336a8dc8e76c9dcdc48cffdc46570159c))
+
+* . ([`4be587b`](https://github.com/ajpung/buck/commit/4be587bd93d347193f6b5ed3d0737f419c709389))
+
+* . ([`b5177b9`](https://github.com/ajpung/buck/commit/b5177b9a072d66f3ba3de06b32fd8126e41b4ba5))
+
+* Merge pull request #65 from ajpung/all-one
+
+chore: updating and running network models ([`f88523c`](https://github.com/ajpung/buck/commit/f88523c27583874fef04191872ba19eff4dfdc08))
+
+* Merge pull request #64 from ajpung/all-one
+
+chore: adding notebook modifications as models move forward ([`4e3755e`](https://github.com/ajpung/buck/commit/4e3755e2da2054df6afe0504f376af4e4022c7fc))
+
+* Merge pull request #63 from ajpung/all-one
+
+chore: recording results and pushing on ([`74da7df`](https://github.com/ajpung/buck/commit/74da7df828a63d8a210707043d11abba21cdc8a9))
+
+* Merge pull request #62 from ajpung/all-one
+
+chore: using 37 different network models ([`ca283dd`](https://github.com/ajpung/buck/commit/ca283dd56285a3d89bd13b9d03d9bdad5e07fb6e))
+
+* Update README.md ([`b9ab64d`](https://github.com/ajpung/buck/commit/b9ab64da446a409b493eea1fcac9cfc944c4d1e8))
+
+* Merge pull request #61 from ajpung/notebook-analysis
+
+chore: added code to Jupyter notebook for correct analysis ([`30cdd12`](https://github.com/ajpung/buck/commit/30cdd12eeccf3a2204b854531770c1c7d1019e0c))
+
+* Update README.md ([`3f5aace`](https://github.com/ajpung/buck/commit/3f5aacee21322a3e71b2624121cbb297043e8dd4))
+
+* Update README.md ([`ba06eeb`](https://github.com/ajpung/buck/commit/ba06eebf843a6274913cc16f235621b9239211e0))
+
+* Merge pull request #60 from ajpung/small-update
+
+chore: updating CUDA version of torch for CV ([`77894b7`](https://github.com/ajpung/buck/commit/77894b73a07eff4893382f58bb59d62207028017))
+
+* . ([`e9b0190`](https://github.com/ajpung/buck/commit/e9b0190b855a2712c79e30d772aff78ed3dff4c9))
+
+* . ([`0d72d95`](https://github.com/ajpung/buck/commit/0d72d958e0e344e1bf9742388ca51b3aa6a9a722))
+
+* . ([`d688bbd`](https://github.com/ajpung/buck/commit/d688bbda5df6eb81aa5a42914bcc03813a431550))
+
+* Merge pull request #59 from ajpung/end-classifiers
+
+chore: removing time limits in most scripts ([`bba80e8`](https://github.com/ajpung/buck/commit/bba80e8ef236ab45aa2ccd9e7c58a82da7f51211))
+
+* Merge pull request #58 from ajpung/speed-up
+
+chore: speeding up remaining optimizers ([`86533be`](https://github.com/ajpung/buck/commit/86533be03dc9a2b0aee6922d2bcebe9f52b5a7fa))
+
+* Merge pull request #57 from ajpung/update-voting
+
+chore: updating slow voting classifier ([`8ff4f14`](https://github.com/ajpung/buck/commit/8ff4f1468da851cd0f4de3c616584571505a8b1e))
+
+* Merge pull request #56 from ajpung/long-run
+
+chore: updating files to run more efficiently ([`1ec33ac`](https://github.com/ajpung/buck/commit/1ec33acbe6b01d7a9676f438658bd1fae4da4f53))
+
+* Merge pull request #55 from ajpung/claude-scripts
+
+chore: Optimizing all scripts via claude, removing gradient boost ([`41603f3`](https://github.com/ajpung/buck/commit/41603f3788c564f8c2aafa198a71648bb7f193ec))
+
+* Merge pull request #54 from ajpung/progress-bars
+
+chore: adding progress bars to classifiers ([`1fa33b7`](https://github.com/ajpung/buck/commit/1fa33b786ee48eb38bfe2dd352b2ae92a2a74662))
+
+
 ## v0.5.0 (2025-05-25)
 
 ### Chore
