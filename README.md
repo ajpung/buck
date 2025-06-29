@@ -38,8 +38,8 @@ institutions.
 
 BUCK is working with a small but growing dataset. Because of this, different models
 are built, compared, and optimized to find the best model for the task. The models
-include canned classifiers (e.g. NaiveBayes, RandomForest, etc.), but also include
-convolution neural networks (CNNs), transfer learning, and ensemble models. Each of these is built,
+include 20 canned classifiers (e.g. NaiveBayes, RandomForest, etc.) amd 35
+convolution neural networks (CNNs), implemented via transfer learning and ensemble models. Each of these is built,
 executed, and illustrated in separate Jupyter notebooks. The goal is to find the
 best model for the task, and to provide a framework for future work in this area.
 
