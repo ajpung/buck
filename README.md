@@ -48,6 +48,7 @@ prediction model with the highest possible accuracy, we also want to sanity chec
 our output compared to the expectations from normal people in the field. This is
 achieved by statistically comparing the age estimates from informed hunters compared
 with the model's "truth", which is determined by institutions mentioned above.
+Results have been published in BioRxiv.
 
 #### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
