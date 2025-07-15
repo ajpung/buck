@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4  # Updated from v2
       - name: Run Changelog CI
-        uses: saadmk11/changelog-ci@v1.1.2
+        uses: saadmk11/changelog-ci@v1.1.6  # Updated from v1.1.2
         with:
           committer_username: 'ajpung'
           committer_email: 'aaron.pung@gmail.com'
