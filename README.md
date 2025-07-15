@@ -120,14 +120,15 @@ python -m pip install --upgrade pip
 python -m pip install setuptools wheel
 
 # Install numpy explicitly (using a wheel)
-python -m pip install numpy
+python -m pip install numpy<2.2.
+0
 
 # Then install your package
 python -m pip install -e .
 
 # Install CUDA versions of Torch
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 --no-cache --force-reinstall
 pip install --upgrade --force-reinstall mpmath sympy timm
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --no-cache --force-reinstall
 
 # Install the environment in Jupyter
 python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
