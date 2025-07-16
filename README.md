@@ -60,47 +60,7 @@ model can be used to predict the age of new images of deer.
 
 Images gathered from the website were sized and cropped, making sure to include the
 full deer's body; non-square images were squared via cropping. The images were then resized amd interpolated to 224x224. The images were then split into training and test
-sets, with 80% of 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-the images used for training and 20% for testing. The training
+sets, with 80% of the images used for training and 20% for testing. The training
 set was then augmented using random rotations, flips, and brightness adjustments
 to increase the size of the training set and improve the model's performance. At the end of the analysis, transfer learning is also consider to enhance model accuracy. 
 
