@@ -80,8 +80,7 @@ python -m pip install --upgrade pip
 python -m pip install setuptools wheel
 
 # Install numpy explicitly (using a wheel)
-python -m pip install numpy<2.2.
-0
+python -m pip install numpy<2.2.0
 
 # Then install your package
 python -m pip install -e .
@@ -92,5 +91,6 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 # Install the environment in Jupyter
 python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
+jupyter notebook
 
 ```
