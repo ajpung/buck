@@ -50,7 +50,7 @@ achieved by statistically comparing the age estimates from informed hunters comp
 with the model's "truth", which is determined by institutions mentioned above.
 Results have been published in BioRxiv.
 
-#### CNN
+#### CNNs
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
 features from the images. The CNN is a type of deep learning model that is
 particularly well-suited for image classification tasks. The model is trained on
