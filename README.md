@@ -94,3 +94,14 @@ python -m ipykernel install --user --name=buck-env --display-name="BUCK Environm
 jupyter notebook
 
 ```
+
+## Starting with pre-built env
+# Installation!
+```
+# Activate the virtual environment
+.\buck-env\Scripts\activate
+
+# Open Jupyter Notebook
+jupyter notebook
+
+```
