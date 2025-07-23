@@ -50,7 +50,7 @@ achieved by statistically comparing the age estimates from informed hunters comp
 with the model's "truth", which is determined by institutions mentioned above.
 Results have been published in BioRxiv.
 
-#### CNNs
+#### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
 features from the images. The CNN is a type of deep learning model that is
 particularly well-suited for image classification tasks. The model is trained on
@@ -63,6 +63,9 @@ full deer's body; non-square images were squared via cropping. The images were t
 sets, with 80% of the images used for training and 20% for testing. The training
 set was then augmented using random rotations, flips, and brightness adjustments
 to increase the size of the training set and improve the model's performance. At the end of the analysis, transfer learning is also consider to enhance model accuracy. 
+
+However, image cropping is different for each analysis; AOTH utilizes square images, while
+post-mortem dental analysis (PDA) utilizes rectangular images in a 2:1 format.
 
 # Installation!
 *BUILT USING PYTHON 3.11.9*
