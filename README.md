@@ -15,7 +15,9 @@ A tool for predicting the age of male whitetail deer based on trail camera image
 # Buck aging
 ## Introduction
 There are many ways to predict the age a male whitetail deer. One common method is to
-look at the teeth structure and analyze their  wear and material patterning, but this requires the aid of a professional. Other techniques have been deeply investigated including antler characteristics (mass, size, etc.) as
+look at the teeth structure and analyze their  wear and material patterning, but this
+requires the aid of a professional. Other techniques have been deeply investigated
+including antler characteristics (mass, size, etc.) as
 well as body proportions.
 
 ## Antler characteristics
@@ -29,8 +31,7 @@ circumference, and tine length, but these suffer from the same issues as mass.
 ## Computer Vision
 ### BUCK
 Alternatively, the NDA has provided a set of images and ratings for a number of
-deer, which can be used to train a mo
-del to predict age based on images alone.
+deer, which can be used to train a model to predict age based on images alone.
 This is the method we will use in this project BUCK (Biometric Utilization of
 Cervid Kontours). Images of the deer were taken from numerous websites,
 publications, blog posts, videos, and tutorials from a multitude of 
@@ -39,16 +40,18 @@ institutions.
 BUCK is working with a small but growing dataset. Because of this, different models
 are built, compared, and optimized to find the best model for the task. The models
 include 20 canned classifiers (e.g. NaiveBayes, RandomForest, etc.) amd 35
-convolution neural networks (CNNs), implemented via transfer learning and ensemble models. Each of these is built,
-executed, and illustrated in separate Jupyter notebooks. The goal is to find the
-best model for the task, and to provide a framework for future work in this area.
+convolution neural networks (CNNs), implemented via transfer learning and ensemble
+models. Each of these is built, executed, and illustrated in separate Jupyter notebooks.
+The goal is to find the best model for the task, and to provide a framework for future
+work in this area.
 
 There is a statistical aspect, as well. Even though we desire to build an age
 prediction model with the highest possible accuracy, we also want to sanity check
 our output compared to the expectations from normal people in the field. This is
 achieved by statistically comparing the age estimates from informed hunters compared
 with the model's "truth", which is determined by institutions mentioned above.
-Results have been published in BioRxiv.
+Results for CNN-based AOTH have been published in [bioRxiv](https://www.biorxiv.org/content/10.1101/2025.07.01.662304v1).
+Results for CNN-based jawbone aging have been submitted to bioRxiv.
 
 #### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
@@ -59,10 +62,12 @@ recognize patterns in the images that are indicative of age. Once trained, the
 model can be used to predict the age of new images of deer.
 
 Images gathered from the website were sized and cropped, making sure to include the
-full deer's body; non-square images were squared via cropping. The images were then resized amd interpolated to 224x224. The images were then split into training and test
+full deer's body; non-square images were squared via cropping. The images were then
+resized amd interpolated to 224x224. The images were then split into training and test
 sets, with 80% of the images used for training and 20% for testing. The training
 set was then augmented using random rotations, flips, and brightness adjustments
-to increase the size of the training set and improve the model's performance. At the end of the analysis, transfer learning is also consider to enhance model accuracy. 
+to increase the size of the training set and improve the model's performance. At
+the end of the analysis, transfer learning is also consider to enhance model accuracy. 
 
 However, image cropping is different for each analysis; AOTH utilizes square images, while
 post-mortem dental analysis (PDA) utilizes rectangular images in a 2:1 format.
