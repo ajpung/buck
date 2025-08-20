@@ -1,0 +1,7 @@
+,Test_Accuracy,Test_Accuracy,Test_Accuracy,Test_Accuracy,Test_Accuracy,CV_Score,CV_Score,F1_Macro,F1_Macro
+,mean,std,min,max,count,mean,std,mean,std
+Architecture,,,,,,,,,
+efficientnet_b2,73.75,5.303,70.0,77.5,2,84.123,0.356,0.719,0.045
+mobilenetv2_100,60.0,,60.0,60.0,1,78.125,,0.584,
+resnet18,70.0,,70.0,70.0,1,78.125,,0.699,
+resnet34,67.5,,67.5,67.5,1,90.625,,0.615,

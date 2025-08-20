@@ -1,0 +1,2 @@
+Model,Architecture,Fold,CV_Score,Test_Accuracy,F1_Macro,F1_Weighted,Type
+Ensemble,Ensemble,All,,14.583333333333334,0.050909090909090904,0.03712121212121212,Ensemble
