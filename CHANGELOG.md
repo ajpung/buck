@@ -2,6 +2,179 @@
 
 
 
+## v0.7.0 (2025-08-21)
+
+### Chore
+
+* chore: examining different modeling results ([`b34324e`](https://github.com/ajpung/buck/commit/b34324e01eaa1e77711c48484f89f91024b66348))
+
+* chore: improving models, enhancing data ([`9b4e785`](https://github.com/ajpung/buck/commit/9b4e78599991846839aea04f82e8b615d426e7cd))
+
+* chore: updating weekly NDA data ([`b7a67e0`](https://github.com/ajpung/buck/commit/b7a67e085b5624aec2d7110a42db88013bda9dbc))
+
+* chore: trying multi-fold model approach ([`a569894`](https://github.com/ajpung/buck/commit/a569894ea24e848463ccb937cff6b776b7319df6))
+
+* chore: updating the modeling parameters ([`4191e53`](https://github.com/ajpung/buck/commit/4191e539638d16df6d5166c066dcdd23f77cedb0))
+
+* chore: trying single models to improve deer age predictions for both color and grayscale ([`9be803d`](https://github.com/ajpung/buck/commit/9be803de2913cfa814e40f5a6b9c14d6d892d3ec))
+
+* chore: adding data, updating notebooks ([`d557f14`](https://github.com/ajpung/buck/commit/d557f14615fe0e74432454e385cd49c0d903ef2b))
+
+* chore: updating BUCK data for thursdays ([`12e3138`](https://github.com/ajpung/buck/commit/12e31386fa9c024a1165b584c6da9eb3780583cb))
+
+* chore: modifying folder structure ([`5d88fae`](https://github.com/ajpung/buck/commit/5d88faef277ba4acc6f4bb45a35614714517ee79))
+
+* chore: updating images, heatmaps, and output data for paper ([`931df1c`](https://github.com/ajpung/buck/commit/931df1cb3229b2c61ab2b6a16b41d38e77b6d3bf))
+
+* chore: updating model without breaking GPU ([`d4013a5`](https://github.com/ajpung/buck/commit/d4013a535ce04750b12c878377ea4377740ea5a4))
+
+* chore: making teeth-based CNN more user friendly ([`edf58f8`](https://github.com/ajpung/buck/commit/edf58f8609b4cafcaa2c73c5cd9ce634df42b64d))
+
+* chore: working out memory issues ([`b90f273`](https://github.com/ajpung/buck/commit/b90f273112d6d1af988f01c75dc508b4f4fb66a5))
+
+* chore: fixing changelog ([`7bae913`](https://github.com/ajpung/buck/commit/7bae913ebe6006111ecd733c6e02aa50114b0d9f))
+
+* chore: continuing fifth fold ([`b1712d0`](https://github.com/ajpung/buck/commit/b1712d0b52e15d9e86d5a2ac0647a223ab55b183))
+
+* chore: fixing changelog ([`ee919e0`](https://github.com/ajpung/buck/commit/ee919e0c3e199e600c14c1b9ff93338391308009))
+
+* chore: updated install to ensure CUDA with Torch, running GPU analysis on teeth ([`93fdbf9`](https://github.com/ajpung/buck/commit/93fdbf9acfe5f9686aea718a222b2129202577c7))
+
+* chore: babysitting teeth model ([`9985dd2`](https://github.com/ajpung/buck/commit/9985dd2f9bcd066d05074488f8a8f4e5a1727a4a))
+
+* chore: adding first teeth analysis script ([`333c580`](https://github.com/ajpung/buck/commit/333c5804cc04f149b571c97dae60435e3218eaf6))
+
+* chore: updating model with latest model params ([`535f4a5`](https://github.com/ajpung/buck/commit/535f4a5f37559b2864cc3c6d32cf3ae5552a7953))
+
+* chore: updating model with latest model params ([`a39446a`](https://github.com/ajpung/buck/commit/a39446aa1d26742c747fadb15801e60161c9e75c))
+
+* chore: adding backup of data, adding recent data ([`29bee25`](https://github.com/ajpung/buck/commit/29bee2506bcfe931a1db8efcd2d0cc0174eb015e))
+
+* chore: modifying model build ([`5270d42`](https://github.com/ajpung/buck/commit/5270d424c1e4c4054f4226fbcc41ab579efe06d7))
+
+* chore: adding models and more interesting geometries per Claude discussion ([`286d460`](https://github.com/ajpung/buck/commit/286d4600dc575543c12bbb1e793cc46b9a8370d3))
+
+* chore: testing more CNNs ([`4d2aa79`](https://github.com/ajpung/buck/commit/4d2aa7919888ddec310014213eb65b4c3c927d22))
+
+* chore: updating iterative net run ([`f857198`](https://github.com/ajpung/buck/commit/f857198a221f0b7554ec2dfa5f404582c0b32fde))
+
+* chore: adding more tests to finish the set ([`2410b00`](https://github.com/ajpung/buck/commit/2410b0010114b6ba0a23da83d7fcbe18a13084f5))
+
+* chore: cleaning up and separating files ([`7b6ae5c`](https://github.com/ajpung/buck/commit/7b6ae5c9872153752c57712bb48731f1335c365a))
+
+* chore: Pushing final analysis before paper submission ([`5570cf5`](https://github.com/ajpung/buck/commit/5570cf56826170f7bb6dc07730d6cf63ee8986c4))
+
+### Feature
+
+* feat: established false-color model with 0.025 loss, and updating single model for all NDA images ([`5197d22`](https://github.com/ajpung/buck/commit/5197d226241ee6b7b33b17b86cc49b6720f4bcf9))
+
+### Unknown
+
+* . ([`1b7cc59`](https://github.com/ajpung/buck/commit/1b7cc596afa82a490db6f7e97ccb12caa563bbf5))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`d8cf4c2`](https://github.com/ajpung/buck/commit/d8cf4c2d656cd4d3c1c42392baded5e113a2f436))
+
+* Update README.md ([`ed31352`](https://github.com/ajpung/buck/commit/ed313525ab04301c38a5c28818385ed67d8782a2))
+
+* Update README.md ([`87d76f6`](https://github.com/ajpung/buck/commit/87d76f6a915d69a8fe364c1c20fb0cc66515e098))
+
+* . ([`c270720`](https://github.com/ajpung/buck/commit/c270720df0ea3a637ba74cc6b87d3b20eab510d7))
+
+* Merge pull request #83 from ajpung/model-update
+
+chore: modifying folder structure ([`8629376`](https://github.com/ajpung/buck/commit/8629376f3ba8c5b28302c9bc85a7b208f973abf9))
+
+* Merge pull request #82 from ajpung/model-update
+
+chore: updating images, heatmaps, and output data for paper ([`5b3cabc`](https://github.com/ajpung/buck/commit/5b3cabc2fc69e25aaa1847cb0dfd5aebbcfd790f))
+
+* Merge pull request #81 from ajpung/model-update
+
+chore: updating model without breaking GPU ([`60808a9`](https://github.com/ajpung/buck/commit/60808a9a2cc371b6dd2b135c0ae9c74cd3357f07))
+
+* Update README.md ([`b84936b`](https://github.com/ajpung/buck/commit/b84936b61bde1dea2e5ae2e3fb15c17e7a4e6658))
+
+* Merge pull request #80 from ajpung/model-update
+
+chore: making teeth-based CNN more user friendly ([`c765a6e`](https://github.com/ajpung/buck/commit/c765a6e1078adf07d675a126eea4e3e32999a3e4))
+
+* Merge pull request #79 from ajpung/model-update
+
+chore: working out memory issues ([`d4f795d`](https://github.com/ajpung/buck/commit/d4f795d24c80ae68b6a259b3fa97876b241cc73b))
+
+* Merge pull request #78 from ajpung/model-update
+
+chore: continuing fifth fold ([`765e0a0`](https://github.com/ajpung/buck/commit/765e0a0ae6f50c7032930a24692e0dae416285d6))
+
+* Merge pull request #77 from ajpung/model-update
+
+chore: updated install to ensure CUDA with Torch, running GPU analysi… ([`bc27d69`](https://github.com/ajpung/buck/commit/bc27d69d6decbb3399742234109ffe350a6fcd30))
+
+* Merge pull request #76 from ajpung/model-update
+
+chore: updating model with latest model params ([`4be4df1`](https://github.com/ajpung/buck/commit/4be4df1e8650a4f3bf46b256d669ad8036db98d1))
+
+* Merge pull request #75 from ajpung/model-update
+
+chore: updating model with latest model params ([`a01fa70`](https://github.com/ajpung/buck/commit/a01fa705fc81d300e8810e06201dfa2aec01636a))
+
+* Merge pull request #74 from ajpung/test-more
+
+chore: modifying model build ([`8b617e1`](https://github.com/ajpung/buck/commit/8b617e123fbce025a966c45b96249cff24db0fbf))
+
+* Merge pull request #73 from ajpung/test-more
+
+. ([`22f8346`](https://github.com/ajpung/buck/commit/22f8346893ef8e555ba01285c0f75ad067ab5b9b))
+
+* . ([`b234daa`](https://github.com/ajpung/buck/commit/b234daa523628b709bd45814b66e6328eecc6a7c))
+
+* Update README.md ([`50f3447`](https://github.com/ajpung/buck/commit/50f34473ce6c8b5ac8af64e0b82dee496eb91e53))
+
+* Update README.md ([`dff50b3`](https://github.com/ajpung/buck/commit/dff50b3e6f82fe29d090edc03e48a4550ed89028))
+
+* Update README.md ([`a8b7dbe`](https://github.com/ajpung/buck/commit/a8b7dbe77c4007e67a80a25c047f8c60157fb669))
+
+* Merge pull request #72 from ajpung/test-more
+
+chore: adding models and more interesting geometries per Claude discu… ([`989c169`](https://github.com/ajpung/buck/commit/989c169aa65b8f563dc8269a6382a61b6d07ff79))
+
+* Merge pull request #71 from ajpung/test-more
+
+chore: testing more CNNs ([`66378ec`](https://github.com/ajpung/buck/commit/66378ecded259f72ba2a8832c1c98c48bbc72fd3))
+
+* Update README.md ([`ad592fb`](https://github.com/ajpung/buck/commit/ad592fbdc83433b10334f8b3a0226cf52c7a726a))
+
+* Update README.md ([`6328ee2`](https://github.com/ajpung/buck/commit/6328ee2ea44961c273ef3931d48f365747ab16da))
+
+* Merge pull request #70 from ajpung/test-more
+
+. ([`35ca850`](https://github.com/ajpung/buck/commit/35ca8503fca97a21cde9dab9f824d5612a8e2a55))
+
+* . ([`1d7e322`](https://github.com/ajpung/buck/commit/1d7e32228be3e377d6a963c9aa8d8eb7bf519e83))
+
+* Merge pull request #69 from ajpung/test-more
+
+chore: updating iterative net run ([`50cdd08`](https://github.com/ajpung/buck/commit/50cdd089f2d93746dfeba632dea06982512d9077))
+
+* Merge pull request #68 from ajpung/test-more
+
+chore: adding more tests to finish the set ([`f16c563`](https://github.com/ajpung/buck/commit/f16c563d16f2ec5142cb22af2d3bf3ac71fa9f76))
+
+* Merge pull request #67 from ajpung/file-cleanup
+
+chore: cleaning up and separating files ([`a7ce3e9`](https://github.com/ajpung/buck/commit/a7ce3e9812ad2c86ea6120afdbb62b89735b24cc))
+
+* Merge pull request #66 from ajpung/final-analysis
+
+chore: Pushing final analysis before paper submission ([`42f044a`](https://github.com/ajpung/buck/commit/42f044add546321cf837b1af9215413500b43a83))
+
+* Update README.md ([`f4ea9db`](https://github.com/ajpung/buck/commit/f4ea9dbcfec9050d20a1fcec49a77cb4b687d6b4))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`17168fd`](https://github.com/ajpung/buck/commit/17168fdaf88952ad7a3a402b83aaaf87608f5760))
+
+* . ([`3a1e01a`](https://github.com/ajpung/buck/commit/3a1e01ac7a4770d70e35e444ccd80a9b7762d962))
+
+
 ## v0.6.0 (2025-06-19)
 
 ### Chore
