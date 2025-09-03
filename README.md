@@ -69,7 +69,7 @@ to increase the size of the training set and improve the model's performance. At
 the end of the analysis, transfer learning is also consider to enhance model accuracy. 
 
 However, image cropping is different for each analysis; AOTH utilizes square images, while
-post-mortem dental analysis (PDA) utilizes rectangular images in a 2:1 format.
+post-mortem dental analysis (PDA) utilizes rectangular images in a 2:1 format. On the website, the user is able to choose the analysis they wish to perform.
 
 # Installation!
 *BUILT USING PYTHON 3.11.9*
