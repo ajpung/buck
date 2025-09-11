@@ -75,29 +75,29 @@ post-mortem dental analysis (PDA) utilizes rectangular images in a 2:1 format. O
 *BUILT USING PYTHON 3.11.9*
 ```
 # Create a new virtual environment
-python -m venv buck-env
+py -m venv buck-env
 
 # Activate the virtual environment
 .\buck-env\Scripts\activate
 
 # Upgrade pip first
-python -m pip install --upgrade pip
+py -m pip install --upgrade pip
 
 # Install setuptools explicitly first
-python -m pip install setuptools wheel
+py -m pip install setuptools wheel
 
 # Install numpy explicitly (using a wheel)
-python -m pip install numpy<2.2.0
+py -m pip install numpy<2.2.0
 
 # Then install your package
-python -m pip install -e .
+py -m pip install -e .
 
 # Install CUDA versions of Torch
-python -m pip install --upgrade --force-reinstall mpmath sympy timm
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --no-cache --force-reinstall
+py -m pip install --upgrade --force-reinstall mpmath sympy timm
+py -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --no-cache --force-reinstall
 
 # Install the environment in Jupyter
-python -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
+py -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"
 jupyter notebook
 
 ```
