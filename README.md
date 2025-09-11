@@ -94,7 +94,7 @@ py -m pip install -e .
 
 # Install CUDA versions of Torch
 py -m pip install --upgrade --force-reinstall mpmath sympy timm
-py -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --no-cache --force-reinstall
+py -m pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 --no-cache --force-reinstall
 
 # Install the environment in Jupyter
 py -m ipykernel install --user --name=buck-env --display-name="BUCK Environment"

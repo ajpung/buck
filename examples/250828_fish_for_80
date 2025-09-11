@@ -13,47 +13,49 @@
   {
    "cell_type": "code",
    "execution_count": 1,
-   "id": "62247f7c-827d-4f33-99dd-bc10db9c0700",
+   "id": "507044e6-f291-460e-b4ba-d3e80b1bf2de",
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "PyTorch version: 2.5.1+cu121\n",
-      "CUDA available: True\n",
-      "CUDA version: 12.1\n",
-      "GPU count: 1\n",
-      "GPU name: NVIDIA GeForce RTX 5090\n",
-      "GPU memory: 31.8 GB\n"
-     ]
-    },
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "D:\\Dropbox\\AI Projects\\buck\\buck-env\\Lib\\site-packages\\torch\\cuda\\__init__.py:235: UserWarning: \n",
-      "NVIDIA GeForce RTX 5090 with CUDA capability sm_120 is not compatible with the current PyTorch installation.\n",
-      "The current PyTorch install supports CUDA capabilities sm_50 sm_60 sm_61 sm_70 sm_75 sm_80 sm_86 sm_90.\n",
-      "If you want to use the NVIDIA GeForce RTX 5090 GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/\n",
-      "\n",
-      "  warnings.warn(\n"
+      "PyTorch: 2.10.0.dev20250910+cu128\n",
+      "CUDA: 12.8\n",
+      "CUDA available: True\n"
      ]
     }
    ],
    "source": [
-    "# Check if CUDA\n",
     "import torch\n",
-    "print(f\"PyTorch version: {torch.__version__}\")\n",
-    "print(f\"CUDA available: {torch.cuda.is_available()}\")\n",
-    "print(f\"CUDA version: {torch.version.cuda}\")\n",
-    "print(f\"GPU count: {torch.cuda.device_count()}\")\n",
+    "print(f\"PyTorch: {torch.__version__}\")\n",
+    "print(f\"CUDA: {torch.version.cuda}\")\n",
+    "print(f\"CUDA available: {torch.cuda.is_available()}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "bb79c424-2c43-4bed-a7ef-f835f77fd1df",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Conv2d works after PyTorch update!\n"
+     ]
+    }
+   ],
+   "source": [
+    "import torch\n",
+    "import torch.nn as nn\n",
     "\n",
-    "if torch.cuda.is_available():\n",
-    "    print(f\"GPU name: {torch.cuda.get_device_name(0)}\")\n",
-    "    print(f\"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB\")\n",
-    "else:\n",
-    "    print(\"❌ CUDA not detected by PyTorch\")"
+    "# Test after PyTorch update\n",
+    "test_conv = nn.Conv2d(3, 64, kernel_size=3).cuda()\n",
+    "test_input = torch.randn(1, 3, 224, 224).cuda()\n",
+    "output = test_conv(test_input)\n",
+    "print(\"Conv2d works after PyTorch update!\")"
    ]
   },
   {
@@ -81,10 +83,10 @@
       "Loading color images...\n",
       "Loaded 201 color images\n",
       "Loading grayscale images...\n",
-      "Loaded 39 grayscale images\n",
-      "Total images: 240\n",
-      "Final dataset: 240 images\n",
-      "Age distribution: {2.5: 40, 3.5: 50, 4.5: 57, 5.5: 60, 1.5: 33}\n",
+      "Loaded 40 grayscale images\n",
+      "Total images: 241\n",
+      "Final dataset: 241 images\n",
+      "Age distribution: {2.5: 41, 3.5: 50, 4.5: 57, 5.5: 60, 1.5: 33}\n",
       "Using device: cuda\n",
       "GPU: NVIDIA GeForce RTX 5090\n",
       "GPU Memory: 34.2 GB\n",
@@ -97,27 +99,7 @@
       "  Fixed: adamw, lr=0.0001/0.0005, batch=64\n",
       "  Variable: wd=0.05, sched=cosine, smooth=0.15, aug=medium\n",
       "\n",
-      "  [Fold  1/25] Final class distribution: {np.int64(0): 2000, np.int64(1): 2000, np.int64(2): 2000, np.int64(3): 2000, np.int64(4): 2000}\n"
-     ]
-    },
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "Downloading: \"https://download.pytorch.org/models/efficientnet_b2_rwightman-c35c1473.pth\" to C:\\Users\\aaron/.cache\\torch\\hub\\checkpoints\\efficientnet_b2_rwightman-c35c1473.pth\n",
-      "100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 35.2M/35.2M [00:00<00:00, 58.0MB/s]\n"
-     ]
-    },
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "FAILED: DataLoader worker (pid(s) 27856, 9928, 2172, 25892, 12596, 3856, 24812, 9744) exited unexpectedly\n",
-      "\n",
-      "  [Fold  2/25] Final class distribution: {np.int64(0): 2000, np.int64(1): 2000, np.int64(2): 2000, np.int64(3): 2000, np.int64(4): 2000}\n",
-      "FAILED: DataLoader worker (pid(s) 23636, 20456, 28304, 24756, 6860, 13668, 23080, 6016) exited unexpectedly\n",
-      "\n",
-      "  [Fold  3/25] Final class distribution: {np.int64(0): 2000, np.int64(1): 2000, np.int64(2): 2000, np.int64(3): 2000, np.int64(4): 2000}\n"
+      "  [Fold  1/25] "
      ]
     }
    ],
@@ -163,7 +145,7 @@
     "IMAGE_SIZE = (384, 384)  # Increased from 224x224 to utilize more GPU power\n",
     "AUGMENTATION_TARGET = 2000  # Increased from 1000\n",
     "NUM_FOLDS = 25  # Increased from 20\n",
-    "NUM_WORKERS = 8  # Added for faster data loading\n",
+    "NUM_WORKERS = 0  # Added for faster data loading\n",
     "\n",
     "def detect_and_convert_image(image):\n",
     "    if len(image.shape) == 2:\n",
@@ -178,8 +160,8 @@
     "    return image\n",
     "\n",
     "def load_combined_data():\n",
-    "    color_path = \"G:\\\\Dropbox\\\\AI Projects\\\\buck\\\\images\\\\squared\\\\color\\\\*_NDA.png\"\n",
-    "    gray_path = \"G:\\\\Dropbox\\\\AI Projects\\\\buck\\\\images\\\\squared\\\\grayscale\\\\*_NDA.png\"\n",
+    "    color_path = \"D:\\\\Dropbox\\\\AI Projects\\\\buck\\\\images\\\\squared\\\\color\\\\*_NDA.png\"\n",
+    "    gray_path = \"D:\\\\Dropbox\\\\AI Projects\\\\buck\\\\images\\\\squared\\\\grayscale\\\\*_NDA.png\"\n",
     "    \n",
     "    images = []\n",
     "    ages = []\n",
@@ -352,7 +334,6 @@
     "            y_balanced.append(class_idx)\n",
     "    \n",
     "    final_counts = Counter(y_balanced)\n",
-    "    print(f\"Final class distribution: {dict(final_counts)}\")\n",
     "    assert len(set(final_counts.values())) == 1, \"Classes are not perfectly balanced!\"\n",
     "    \n",
     "    return np.array(X_balanced), np.array(y_balanced)\n",
@@ -680,14 +661,6 @@
    "cell_type": "code",
    "execution_count": null,
    "id": "3207e946-fe1c-4ccb-9d1d-9fe00a8aabb4",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a7644d1e-be41-4210-844f-cb3164103899",
    "metadata": {},
    "outputs": [],
    "source": []
