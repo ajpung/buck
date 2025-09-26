@@ -62,7 +62,6 @@ venv.bak/
 images/
 *.png
 *.jpg
-*.pptx
 
 # Unit test / coverage reports
 htmlcov/
