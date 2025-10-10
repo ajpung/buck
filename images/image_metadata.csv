@@ -1,47 +1,47 @@
-﻿Collected,Year_taken,Month_taken,Day_taken,Location,1.5,2.5,3.5,4.5,5.5,Correct,Justification
-251009,2024,11,13,MI,,,,,,,
-251002,2025,9,15,NY,8,54,24,9,5,2.5,"Neck size, boundary between neck and body, jacked-up hindquarters, long slender legs"
-250925,2025,9,12,GA,0,0,5,36,57,5.5,"Large body, short legs, prominent brisket, neck and brisket disconnected"
-250918,2024,11,11,WI,1,35,50,14,0,3.5,"long legs, lean, big neck, front-heavy, dark tarsals"
-250911,2024,11,14,MI,0,20,54,20,6,3.5,"front-heavy, thick neck, neck joins above brisket"
-250904,2024,12,10,MI,12,60,20,6,2,2.5,"Thick in the neck, large midsection. Deep neck, shallow chest.  Small front end."
-250828,2024,11,9,LA,0,13,55,27,5,4.5,"Prior to rut, big neck, deep chest, short legs. "
-250821,2024,11,7,WI,78,19,2,0,0,1.5,"Long legs, tall rear end, narrow neck, short neck, large ears, pointy snout"
-250814,2024,11,14,LA,0,1,19,55,25,5.5,"Short legs, big from nose to tail, shoulder-to-brisket depth, neck bridge, broad neck, wrinkled skin"
-250807,2024,10,30,NY,0,0,15,63,22,5.5,"Short legs, broad neck, deep brisket"
-250731,2024,10,14,SC,28,68,3,0,0,2.5,"Long legs, dainty hindquarters and shoulders, small stomach"
-250724,2024,10,13,OC,0,0,10,59,31,5.5,"OC is Ontario, Canada. Belly just round / low enough to break rectangular frame. Depth to the brisket and shoulder, deep neck. Skin wrinkles and a ""chin flap"""
-250717,2024,10,8,WI,0,26,63,10,0,3.5,"Front heavy; shoulders, chest, neck are more developed than hind quarters. Legs too long, neck to narrow for 4.5. Neck and body larger than expected for 2.5."
-250710,2024,11,1,MN,0,2,32,53,12,4.5,"Too thick in the stomach for 3.5, rectangular front end of 4.5, but back and belly are flat (not 5.5)"
-250703,2024,9,18,WI,6,78,15,0,0,2.5,"Long legs, high back end, slim neck, decent muscle development"
-250626,2025,6,26,NC,0,2,46,42,10,4.5,"Sheer body, neck size"
-250619,2025,6,19,OH,0,0,2,32,66,5.5,"Big body, short legs, no neck separation, large stomach"
-250612,2025,6,12,WI,0,6,58,31,5,3.5,"Heavy neck, bulky shoulders, deep chest. Lighter towards the rear, lean stomach, long legs, slim hindquarters."
-250605,2025,1,5,LA,82,16,1,0,0,1.5,
-250529,2024,10,30,MS,0,7,29,60,4,5.5,
-250522,2024,12,21,IN,0,23,64,11,1,3.5,
-250508,2024,11,9,NC,67,31,2,0,0,1.5,
-250501,2024,9,15,MN,0,27,57,14,0,3.5,"Too bulky for 2.5, long-legged and smooth to be a 4.5"
-250424,2025,1,1,MS,0,4,15,48,33,5.5,"Bulky body, short legs; large neck, small head; deep shoulders, big hindquarters; back slumps between high up and shoulder hump; visible scars"
-250417,2024,9,4,SC,0,24,69,7,0,3.5,"Front-heavy frame, long-legged and slim"
-250410,2024,9,16,VT,35,59,5,0,0,2.5,"Location, rut, muscle development"
-250403,2024,9,13,WI,5,55,32,7,0,3.5,"Neck size, big hindquarters, belly dips below the brisket"
-,2013,11,11,MI,1,15,45,29,10,3.5,
-,2011,1,18,GA,1,0,4,15,79,5.5,
-,2013,10,26,WI,31,57,7,4,1,2.5,
-,2007,10,16,TX,0,0,0,15,85,5.5,
-,2005,9,12,IN,1,0,3,74,22,4.5,
-,2013,12,23,LA,0,5,64,29,1,3.5,
-,2013,11,8,GA,1,41,51,7,0,3.5,
-,2009,11,9,OH,0,46,53,1,0,3.5,
-,2011,10,6,GA,0,0,4,43,53,4.5,
-,2011,9,18,SC,1,7,35,43,14,4.5,
-,2013,10,7,IL,7,54,34,5,0,3.5,
-,2011,10,27,KY,0,3,37,50,11,4.5,
-,2012,10,10,NC,0,0,6,63,31,5.5,
-,2019,8,12,MO,0,18,37,34,11,3.5,
-,2009,12,29,AL,2,0,0,0,98,5.5,
-,2019,10,18,MI,0,17,76,7,0,3.5,
-,2015,1,5,GA,0,14,67,15,4,3.5,
-,2012,11,13,WI,1,66,28,4,0,2.5,
-,2013,9,23,NY,90,10,0,0,0,1.5,
+﻿Collected,Year_taken,Month_taken,Day_taken,Location,1.5,2.5,3.5,4.5,5.5,Correct,Justification,,AgeMyDeer
+251009,2024,11,13,MI,,,,,,,,,
+251002,2025,9,15,NY,8,54,24,9,5,2.5,"Neck size, boundary between neck and body, jacked-up hindquarters, long slender legs",,2.5
+250925,2025,9,12,GA,0,0,5,36,57,5.5,"Large body, short legs, prominent brisket, neck and brisket disconnected",,3.5
+250918,2024,11,11,WI,1,35,50,14,0,3.5,"long legs, lean, big neck, front-heavy, dark tarsals",,3.5
+250911,2024,11,14,MI,0,20,54,20,6,3.5,"front-heavy, thick neck, neck joins above brisket",,2.5
+250904,2024,12,10,MI,12,60,20,6,2,2.5,"Thick in the neck, large midsection. Deep neck, shallow chest.  Small front end.",,2.5
+250828,2024,11,9,LA,0,13,55,27,5,4.5,"Prior to rut, big neck, deep chest, short legs. ",,4.5
+250821,2024,11,7,WI,78,19,2,0,0,1.5,"Long legs, tall rear end, narrow neck, short neck, large ears, pointy snout",,1.5
+250814,2024,11,14,LA,0,1,19,55,25,5.5,"Short legs, big from nose to tail, shoulder-to-brisket depth, neck bridge, broad neck, wrinkled skin",,
+250807,2024,10,30,NY,0,0,15,63,22,5.5,"Short legs, broad neck, deep brisket",,
+250731,2024,10,14,SC,28,68,3,0,0,2.5,"Long legs, dainty hindquarters and shoulders, small stomach",,
+250724,2024,10,13,OC,0,0,10,59,31,5.5,"OC is Ontario, Canada. Belly just round / low enough to break rectangular frame. Depth to the brisket and shoulder, deep neck. Skin wrinkles and a ""chin flap""",,
+250717,2024,10,8,WI,0,26,63,10,0,3.5,"Front heavy; shoulders, chest, neck are more developed than hind quarters. Legs too long, neck to narrow for 4.5. Neck and body larger than expected for 2.5.",,
+250710,2024,11,1,MN,0,2,32,53,12,4.5,"Too thick in the stomach for 3.5, rectangular front end of 4.5, but back and belly are flat (not 5.5)",,
+250703,2024,9,18,WI,6,78,15,0,0,2.5,"Long legs, high back end, slim neck, decent muscle development",,
+250626,2025,6,26,NC,0,2,46,42,10,4.5,"Sheer body, neck size",,
+250619,2025,6,19,OH,0,0,2,32,66,5.5,"Big body, short legs, no neck separation, large stomach",,
+250612,2025,6,12,WI,0,6,58,31,5,3.5,"Heavy neck, bulky shoulders, deep chest. Lighter towards the rear, lean stomach, long legs, slim hindquarters.",,
+250605,2025,1,5,LA,82,16,1,0,0,1.5,,,
+250529,2024,10,30,MS,0,7,29,60,4,5.5,,,
+250522,2024,12,21,IN,0,23,64,11,1,3.5,,,
+250508,2024,11,9,NC,67,31,2,0,0,1.5,,,
+250501,2024,9,15,MN,0,27,57,14,0,3.5,"Too bulky for 2.5, long-legged and smooth to be a 4.5",,
+250424,2025,1,1,MS,0,4,15,48,33,5.5,"Bulky body, short legs; large neck, small head; deep shoulders, big hindquarters; back slumps between high up and shoulder hump; visible scars",,
+250417,2024,9,4,SC,0,24,69,7,0,3.5,"Front-heavy frame, long-legged and slim",,
+250410,2024,9,16,VT,35,59,5,0,0,2.5,"Location, rut, muscle development",,
+250403,2024,9,13,WI,5,55,32,7,0,3.5,"Neck size, big hindquarters, belly dips below the brisket",,
+,2013,11,11,MI,1,15,45,29,10,3.5,,,
+,2011,1,18,GA,1,0,4,15,79,5.5,,,
+,2013,10,26,WI,31,57,7,4,1,2.5,,,
+,2007,10,16,TX,0,0,0,15,85,5.5,,,
+,2005,9,12,IN,1,0,3,74,22,4.5,,,
+,2013,12,23,LA,0,5,64,29,1,3.5,,,
+,2013,11,8,GA,1,41,51,7,0,3.5,,,
+,2009,11,9,OH,0,46,53,1,0,3.5,,,
+,2011,10,6,GA,0,0,4,43,53,4.5,,,
+,2011,9,18,SC,1,7,35,43,14,4.5,,,
+,2013,10,7,IL,7,54,34,5,0,3.5,,,
+,2011,10,27,KY,0,3,37,50,11,4.5,,,
+,2012,10,10,NC,0,0,6,63,31,5.5,,,
+,2019,8,12,MO,0,18,37,34,11,3.5,,,
+,2009,12,29,AL,2,0,0,0,98,5.5,,,
+,2019,10,18,MI,0,17,76,7,0,3.5,,,
+,2015,1,5,GA,0,14,67,15,4,3.5,,,
+,2012,11,13,WI,1,66,28,4,0,2.5,,,
+,2013,9,23,NY,90,10,0,0,0,1.5,,,
