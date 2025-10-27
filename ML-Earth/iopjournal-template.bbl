@@ -1,0 +1,93 @@
+\begin{thebibliography}{10}
+
+\bibitem{1999Demarais}
+S.~Demarais, D.~Stewart, and R.~N. Grifﬁn.
+\newblock A hunter’s guide to aging and judging live white-tailed deer in the
+  southeast., 1999.
+
+\bibitem{2019favorskaya}
+Margarita Favorskaya and Andrey Pakhirka.
+\newblock Animal species recognition in the wildlife based on muzzle and shape
+  features using joint cnn.
+\newblock {\em Procedia Computer Science}, 159:933--942, 2019.
+\newblock Knowledge-Based and Intelligent Information & Engineering Systems:
+  Proceedings of the 23rd International Conference KES2019.
+
+\bibitem{2014Gee}
+Kenneth~L. Gee, Stephen~L. Webb, and John~H. Holman.
+\newblock Accuracy and implications of visually estimating age of male
+  white‐tailed deer using physical characteristics from photographs.
+\newblock {\em Wildlife Society Bulletin}, 38(1):96–102, Oct 2014.
+
+\bibitem{2008Hellickson}
+Mickey~W Hellickson, Karl~V Miller, Charles~A DeYoung, R.~Larry Marchinton,
+  Stuart~W Stedman, and Robert~E Hall.
+\newblock Physical characteristics for age estimation of male white-tailed deer
+  in southern texas.
+\newblock page 40–45, 2008.
+
+\bibitem{2023hindarto}
+Djarot Hindarto.
+\newblock Use resnet50v2 deep learning model to classify five animal species.
+\newblock {\em Jurnal JTIK (Jurnal Teknologi Informasi dan Komunikasi)},
+  7(4):758--768, 2023.
+
+\bibitem{1978Knowlton}
+Frederick~F Knowlton, Marshall White, and John~G Kie.
+\newblock Weight patterns of wild white-tailed deer in southern texas.
+\newblock {\em Proceedings of the First Welder Wildlife Foundation Symposium},
+  1978.
+
+\bibitem{1996Kroll}
+James~C. Kroll and Mike Biggs.
+\newblock {\em Aging and judging trophy whitetails}.
+\newblock Center for Applied Studies in Forestry, College of Forestry, Stephen
+  F. Austin State University, 1996.
+
+\bibitem{2022mazurek}
+Szymon Mazurek, Maciej Wielgosz, Jakub Caputa, Rafał Frączek, Michał
+  Karwatowski, Jakub Grzeszczyk, Daria Łukasik, Anna Śmiech, Paweł Russek,
+  Ernest Jamro, Agnieszka Dąbrowska-Boruch, Marcin Pietroń, Sebastian
+  Koryciak, and Kazimierz Wiatr.
+\newblock Canine age classification using deep learning as a step toward
+  preventive medicine in animals.
+\newblock In {\em 2022 17th Conference on Computer Science and Intelligence
+  Systems (FedCSIS)}, pages 169--172, 2022.
+
+\bibitem{2022qi}
+Yu~Qi, Han Su, Rong Hou, Hangxing Zang, Peng Liu, Mengnan He, Ping Xu, Zhihe
+  Zhang, and Peng Chen.
+\newblock Giant panda age recognition based on a facial image deep learning
+  system.
+\newblock {\em Ecology and Evolution}, 12(12):e9507, 2022.
+\newblock e9507 ECE-2022-02-00185.R3.
+
+\bibitem{2003Richards}
+Dave Richards and Al~Brothers.
+\newblock {\em Observing \& evaluating whitetails}.
+\newblock D. Richards, 2003.
+
+\bibitem{2025Roca}
+Agustin Roca, Gastón Castro, Gabriel Torre, Leonardo~J. Colombo, Ignacio Mas,
+  Javier Pereira, and Juan~I. Giribet.
+\newblock Detection of endangered deer species using uav imagery: A comparative
+  study between efficient deep learning approaches.
+\newblock In {\em 2025 International Conference on Unmanned Aircraft Systems
+  (ICUAS)}, page 83–90. IEEE, May 2025.
+
+\bibitem{2023saini}
+Shubham Saini, Saurabh Shukla, Prashant~Singh Rana, Guneet Kohli, Jaskaran
+  Singh, and Gaurav~Kumar Singh.
+\newblock Pugnet: A cnn architecture to predict the gender and age of blackbuck
+  using pugmarks.
+\newblock In {\em 2023 International Conference on Advancement in Computation &
+  Computer Technologies (InCACCT)}, pages 213--220, 2023.
+
+\bibitem{2024sharma}
+Sandhya Sharma, Suresh Timilsina, Bishnu~Prasad Gautam, Shinya Watanabe,
+  Satoshi Kondo, and Kazuhiko Sato.
+\newblock Enhancing sika deer identification: Integrating cnn-based siamese
+  networks with svm classification.
+\newblock {\em Electronics}, 13(11), 2024.
+
+\end{thebibliography}
