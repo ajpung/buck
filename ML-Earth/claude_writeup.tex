@@ -52,7 +52,7 @@ The trail camera dataset comprises 248 color and grayscale images collected from
 % V---- FIX DISTRIBUTION NUMBERS FOR LATEST MODEL
 Age distribution within the dataset reflected natural collection patterns: $30$ yearlings ($1.5$ years), $36$ images each of $2.5$ and $3.5$ year-olds, $52$ images of $4.5$ year-olds, and $43$ images of $5.5+$ year-olds. Deer aged $\geq5.5$ years were grouped into a single class, following standard wildlife management practice where age-related morphological changes become less distinct in mature animals.
 
-Images were standardized through cropping to square format, capturing maximum deer body coverage while excluding extraneous background. Cropped images were resized to $224\cross224$ pixels to meet the expected ResNet-18 format. Backgrounds remained unmodified to ensure the model learns biological features rather than imaging artifacts.
+Images were standardized through cropping to square format, capturing maximum deer body coverage while excluding extraneous background. Cropped images were resized to $224\times224$ pixels to meet the expected ResNet-18 format. Backgrounds remained unmodified to ensure the model learns biological features rather than imaging artifacts.
 
 Data augmentation was used to address the limited dataset size. The training set ($80\%$, $157$ images) was expanded $40$-fold through rotations ($\pm10°\deg$), horizontal flipping, brightness adjustments ($0.8-1.2×$), contrast variation ($0.8-1.2x$), and Gaussian noise addition ($\sigma=0.01$). Each transformation simulates natural field variation (ex. lighting changes throughout the day, deer orientation, and varying camera angles) without distorting body proportions. The test set ($20\%$, $40$ images) remained held out and non-augmented to provide unbiased evaluation.
 
@@ -75,7 +75,7 @@ Inference utilizes Test-Time Augmentation (TTA), in which each model predicted o
 The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ cross-validation accuracy and $97.5\%$ test accuracy. The test set performance likely reflects overfitting to the small dataset, making cross-validation the more reliable metric. Critically, the $76.7\%$ cross-validation accuracy exceeds human expert assessment ($60.6\%$), morphometric models ($63\%$), and the $70\%$ threshold required for management decisions.
 
 % NEED FIGURE: MODEL PERFORMANCE
-Performance varied by age class (Figure 2). Yearlings ($1.5$ years) and mature deer (5.5+ years) achieved near-perfect classification ($100\%$ precision, recall, F1-score). Middle age classes showed lower performance: 2.5-year deer (F1: 93\%), 3.5-year deer (F1: 100\%), and 4.5-year deer (F1: 95\%). The confusion matrix revealed only one misclassification: a single 4.5-year buck predicted as 2.5 years, interestingly the same age class (4.5 years) that challenges human assessors most ($52.5\%$ human accuracy) \cite{2013gee}.
+Performance varied by age class (Figure 2). Yearlings ($1.5$ years) and mature deer (5.5+ years) achieved near-perfect classification ($100\%$ precision, recall, F1-score). Middle age classes showed lower performance: 2.5-year deer (F1: 93\%), 3.5-year deer (F1: $100\%$), and 4.5-year deer (F1: 95\%). The confusion matrix revealed only one misclassification: a single 4.5-year buck predicted as 2.5 years, interestingly the same age class (4.5 years) that challenges human assessors most ($52.5\%$ human accuracy) \cite{2013gee}.
 
 % NEED FIGURE: ATTENTION MAP
 Attention map analysis (Figure 3) demonstrated that ResNet-18 focuses on biologically relevant morphological features. For yearlings, attention concentrated on key indicators of youth like the neck and chest. For 2.5 year old deer, focus distributed across neck, chest, and body. For mature deer ($\geq5.5$ years), attention emphasized the stomach region, a primary characteristic experts use to identify aged bucks. Critically, attention maps largely ignored antlers across all age classes, aligning with expert guidance that antlers are unreliable age indicators \cite{1999demarais, 2003richards}.
@@ -105,22 +105,22 @@ Age distribution within the jawbone images included 39 fawns (0.5 years), 62 yea
 Similar to trail camera images, dental images underwent a standardization process. Annotations, markings, and labels were removed using editing tools on a Samsung Galaxy S25 Ultra, and the resulting image was cropped to a 2:1 aspect ratio ensuring all visible teeth were included in each image. Original image backgrounds and lighting were preserved. Some images retained fingertips to simulate field submission conditions.
 
 % v------------------------------------- START HERE -------------------------------------v
-
-Data split followed 80/20 train/test stratification with proportional age representation. The training set (80\%, 194 images) was augmented through rotations (±10°), horizontal flipping, brightness adjustments (0.8-1.2×), and contrast variation (0.8-1.2×), expanding each age class to 1,200 balanced samples. The test set (20\%, 49 images) remained non-augmented.
+% FIX IMAGE RATIOS
+The data were split following an $80/20$ train/test stratification with proportional age representation. With the test data held out, the training set ($80\%$, 194 images) was augmented through rotations (\pm10\{^o}), horizontal flipping, brightness adjustments ($0.8-1.2\times$), and contrast variation ($0.8-1.2\times$), expanding each age class to 1,200 balanced samples. The test set ($20\%$, 49 images) remained non-augmented.
 
 \subsection{Model Architecture and Training}
 
-EfficientNet \cite{tan2019efficientnet} was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization.
+EfficientNet \cite{2019tan} was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization.
 
-Transfer learning froze the stem convolution and first three blocks (0-2), preserving low- to mid-level features (edges, textures, shapes). Blocks 3-6 remained trainable for domain adaptation to dental features. The classification head was replaced with a 6-class output (including 0.5-year fawns).
+Transfer learning froze the stem convolution and first three blocks ($0-2$), preserving low- to mid-level features like edges, textures, and shapes. Blocks $3-6$ remained trainable to allow the domain to adapt to dental features. The classification head was replaced with a 6-class output (including 0.5-year fawns).
 
-A 5-fold nested cross-validation ensemble was implemented. Training data were stratified into five folds (155 training, 39 validation per fold). Each fold's training data underwent balanced augmentation to 1,200 samples per class.
+Similar to the trail camera model, a 5-fold nested cross-validation ensemble was implemented. Training data were stratified into five folds (155 training, 39 validation per fold), and each fold's training data underwent balanced augmentation to 1,200 samples per class.
 
-Architecture selection occurred per-fold, choosing among EfficientNet-B0, B1, and B2 based on validation accuracy. The final ensemble comprised: two B2 models (folds 1 and 4) and three B0 models (folds 2, 3, and 5). This heterogeneous ensemble captures different feature hierarchies—B0 emphasizes efficiency while B2 captures finer details.
+Architecture selection occurred per-fold, choosing among EfficientNet-B0, B1, and B2 based on validation accuracy. The final ensemble comprised two B2 models (folds 1 and 4) and three B0 models (folds 2, 3, and 5), capturing different feature hierarchies: B0 emphasizes efficiency while B2 captures finer details due to its larger number of parameters.
 
-Training employed AdamW optimization with differential learning rates (0.0003 for frozen layers, 0.001 for trainable layers). Learning rates followed cosine annealing (Tmax=80, ηmin=1×10⁻⁶). Label smoothing (α=0.1) and dropout (p=0.3) provided regularization. Cross-entropy loss with mixed precision training accelerated convergence. Early stopping used 20-epoch patience. Training required approximately 536 minutes total (40-60 epochs per fold on NVIDIA RTX 2060).
+Training utilized AdamW optimization with differential learning rates ($0.0003$ for frozen layers and $0.001$ for trainable layers). Learning rates followed cosine annealing defined by $T_{max}=80$ and $η_{min}=1\times10^{-6}$. Label smoothing ($\sigma=0.1$) and dropout ($p=0.3$) provided regularization, cross-entropy loss with mixed precision training were used to accelerate convergence, and early stopping with 20-epoch patience was used for efficiency. Training the model on an NVIDIA RTX 2060 GPU required approximately 536 minutes total at 40-60 epochs per fold).
 
-Inference utilized TTA (original and horizontally flipped images) with cross-validation score weighting: predictions from each model were weighted by its validation accuracy before ensemble averaging.
+Similar to the trail camera model, inference utilized TTA with cross-validation score weighting: predictions from each model were weighted by its validation accuracy before ensemble averaging.
 
 \subsection{Results}
 
