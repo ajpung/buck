@@ -8,7 +8,7 @@
 % The following packages are required by iopjournal.cls and do not need to be declared again:
 %  graphicx
 %  fancyhdr
-%  xcolor
+%  xcolora
 %  hyperref
 %
 \begin{document}
@@ -106,19 +106,19 @@ Similar to trail camera images, dental images underwent a standardization proces
 
 % v------------------------------------- START HERE -------------------------------------v
 % FIX IMAGE RATIOS
-The data were split following an $80/20$ train/test stratification with proportional age representation. With the test data held out, the training set ($80\%$, 194 images) was augmented through rotations (\pm10\{^o}), horizontal flipping, brightness adjustments ($0.8-1.2\times$), and contrast variation ($0.8-1.2\times$), expanding each age class to 1,200 balanced samples. The test set ($20\%$, 49 images) remained non-augmented.
+The data were split following an $80/20$ train/test stratification with proportional age representation. With the test data held out, the training set ($80\%$, 194 images) was augmented through rotations ($\pm 10^o$), horizontal flipping, brightness adjustments ($0.8-1.2\times$), and contrast variation ($0.8-1.2\times$), expanding each age class to 1,200 balanced samples. The test set ($20\%$, 49 images) remained non-augmented.
 
 \subsection{Model Architecture and Training}
 
 EfficientNet \cite{2019tan} was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization.
 
-Transfer learning froze the stem convolution and first three blocks ($0-2$), preserving low- to mid-level features like edges, textures, and shapes. Blocks $3-6$ remained trainable to allow the domain to adapt to dental features. The classification head was replaced with a 6-class output (including 0.5-year fawns).
+Transfer learning froze the stem convolution and first three blocks (0-2), preserving low- to mid-level features like edges, textures, and shapes. Blocks 3-6 remained trainable to allow the domain to adapt to dental features. The classification head was replaced with a 6-class output (including 0.5-year fawns).
 
 Similar to the trail camera model, a 5-fold nested cross-validation ensemble was implemented. Training data were stratified into five folds (155 training, 39 validation per fold), and each fold's training data underwent balanced augmentation to 1,200 samples per class.
 
 Architecture selection occurred per-fold, choosing among EfficientNet-B0, B1, and B2 based on validation accuracy. The final ensemble comprised two B2 models (folds 1 and 4) and three B0 models (folds 2, 3, and 5), capturing different feature hierarchies: B0 emphasizes efficiency while B2 captures finer details due to its larger number of parameters.
 
-Training utilized AdamW optimization with differential learning rates ($0.0003$ for frozen layers and $0.001$ for trainable layers). Learning rates followed cosine annealing defined by $T_{max}=80$ and $η_{min}=1\times10^{-6}$. Label smoothing ($\sigma=0.1$) and dropout ($p=0.3$) provided regularization, cross-entropy loss with mixed precision training were used to accelerate convergence, and early stopping with 20-epoch patience was used for efficiency. Training the model on an NVIDIA RTX 2060 GPU required approximately 536 minutes total at 40-60 epochs per fold).
+Training utilized AdamW optimization with differential learning rates (0.0003 for frozen layers and 0.001 for trainable layers). Learning rates followed cosine annealing defined by $T_{max}=80$ and $\eta_{min}=1\times10^{-6}$. Label smoothing ($\sigma=0.1$) and dropout ($\rho=0.3$) provided regularization, cross-entropy loss with mixed precision training were used to accelerate convergence, and early stopping with 20-epoch patience was used for efficiency. Training the model on an NVIDIA RTX 2060 GPU required approximately 536 minutes total at 40-60 epochs per fold).
 
 Similar to the trail camera model, inference utilized TTA with cross-validation score weighting: predictions from each model were weighted by its validation accuracy before ensemble averaging.
 
@@ -132,12 +132,12 @@ Per-class performance (Figure 4) showed perfect classification for fawns (0.5 ye
 % NEED FIGURE: ATTENTION MAP
 Attention map analysis (Figure 5) confirmed the model learns dental-specific features matching TRW criteria:
 \begin{itemize}
-    \item \textbf{Fawns (0.5 years)}: Attention concentrated on molars, consistent with tooth count assessment
-    \item \textbf{Yearlings (1.5 years)}: Focus shifted to premolars, matching crest-counting criteria  
-    \item \textbf{2.5 years}: Distributed attention across molar region, corresponding to M1 DER evaluation
-    \item \textbf{3.5 years}: Focus on posterior molars (M2-M3 region), consistent with sequential DER assessment
-    \item \textbf{4.5 years}: Attention distributed across molar region
-    \item \textbf{5.5+ years}: Model highlighted extensive wear and flattening characteristics across all teeth
+	\item \textbf{Fawns (0.5 years)}: Attention concentrated on molars, consistent with tooth count assessment
+	\item \textbf{Yearlings (1.5 years)}: Focus shifted to premolars, matching crest-counting criteria  
+ 	\item \textbf{2.5 years}: Distributed attention across molar region, corresponding to M1 DER evaluation
+	\item \textbf{3.5 years}: Focus on posterior molars (M2-M3 region), consistent with sequential DER assessment
+	\item \textbf{4.5 years}: Attention distributed across molar region
+	\item \textbf{5.5+ years}: Model highlighted extensive wear and flattening characteristics across all teeth
 \end{itemize}
 
 Critically, attention maps focused exclusively on dental features despite variable backgrounds, finger presence, and jawbone orientations, confirming the model ignores artifacts and learns genuine biological aging signatures.
@@ -206,6 +206,6 @@ The success of transfer learning with limited datasets demonstrates broader impl
 \ack{The author acknowledges the wildlife management organizations, state agencies, and educational institutions that provided trail camera and post-mortem dental analysis training materials used in dataset construction. Particular appreciation is extended to the wildlife professionals who developed these educational resources, enabling this interdisciplinary application of computer vision to wildlife biology. Appreciation is also extended to the open-source community for the deep learning frameworks and tools that enabled this work.}
 
 \funding{This research received no external funding.}
-% This section is a list of funder names and grant numbers
+ This section is a list of funder names and grant numbers
 
 \end{document}
