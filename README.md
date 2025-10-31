@@ -44,13 +44,13 @@ models. Each of these is built, executed, and illustrated in separate Jupyter no
 The goal is to find the best model for the task, and to provide a framework for future
 work in this area.
 
-There is a statistical aspect, as well. Even though we desire to build an age
+There is a statistical aspect as well. Even though we desire to build an age
 prediction model with the highest possible accuracy, we also want to sanity check
 our output compared to the expectations from normal people in the field. This is
 achieved by statistically comparing the age estimates from informed hunters compared
 with the model's "truth", which is determined by institutions mentioned above.
 Results for CNN-based AOTH have been published in [bioRxiv](https://www.biorxiv.org/content/10.1101/2025.07.01.662304v1).
-Results for CNN-based jawbone aging have been submitted to bioRxiv.
+Results for CNN-based jawbone aging have been submitted to bioRxiv. A follow-up summary publication was submitted to Machine Learning: Earth.
 
 #### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
