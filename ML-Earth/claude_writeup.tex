@@ -64,23 +64,24 @@ Data augmentation was used to address the limited dataset size. The training set
 
 \subsection{Model Architecture and Training}
 
-Following a preliminary evaluation of traditional methods and $>60$ traditional ML architectures and alternative CNNs (EfficientNet \cite{2020tan}, DenseNet \cite{2017huang}), ResNet-18 \cite{2015he} was selected based on held-out test accuracy.
+Following a preliminary evaluation of traditional methods and $>60$ traditional ML architectures and alternative CNNs (EfficientNet \cite{2020tan}, DenseNet \cite{2018huang}), ResNet-18 \cite{2015he} was selected based on held-out test accuracy.
 
 \begin{figure}[h! tbp]
 \centering
-\includegraphics[width=\textwidth]{images/Fig4_ResNet18Model.jpg}
+\includegraphics[width=\textwidth]{images/Fig2_ResNet18Model.jpg}
 \caption{Human prediction accuracy for each age class are presented in the form of (left) a bar chart, and (right) a confusion matrix.}
-\label{fig:human_accuracy_per_class}
+\label{fig:resnetmodel}
 \end{figure}
 
-The ResNet-18 architecture (Figure 1) consists of an initial convolution layer followed by four residual blocks and a fully connected classifier. Transfer learning was implemented by freezing the initial convolution, batch normalization, and first three residual blocks preserving pre-trained low- to mid-level feature extraction (edges, textures, shapes). The fourth residual block remained trainable to adapt high-level features to deer-specific morphology. The classifier head was replaced with a 5-class output layer.
+% v------------------------------------- START HERE -------------------------------------v
 
-% CORRECT AGE RATIOS
-A 5-fold cross-validation ensemble approach maximized data utilization. Training data were stratified into five folds maintaining proportional age representation. Each fold was split into training (125 images) and validation (32 images) subsets. Training images underwent 40× augmentation, yielding 5,000 samples per fold.
+The ResNet-18 architecture (Figure \ref{fig:resnetmodel}) consists of an initial convolution layer followed by four residual blocks and a fully connected classifier. Transfer learning was implemented by freezing the initial convolution, batch normalization, and first three residual blocks preserving pre-trained low- to mid-level feature extraction (edges, textures, shapes). The fourth residual block remained trainable to adapt high-level features to deer-specific morphology. The classifier head was replaced with a 5-class output layer.
 
-Five independent ResNet-18 models were trained using AdamW optimization with differential learning rates: $0.0003$ for frozen layers and $0.001$ for trainable layers. Learning rates followed exponential decay ($\gamma=0.95$). Label smoothing ($\alpha=0.1$) provided regularization. Cross-entropy loss served as the objective function. Early stopping with 20-epoch patience prevented overfitting. Training converged after approximately 40 epochs per fold (~45 minutes total on NVIDIA RTX 2060).
+A 5-fold cross-validation ensemble approach maximized data utilization. Training data were stratified into five folds each maintaining proportional age representation. Each fold was split into training (125 images) and validation (32 images) subsets. Training images underwent $40\times$ augmentation, yielding 5,000 samples per fold.
 
-Inference utilizes Test-Time Augmentation (TTA), in which each model predicted on both the original image and its horizontal flip, and the average predictions used. The five models' TTA-averaged predictions were ensemble-averaged using softmax normalization to produce final probabilities.
+Five independent ResNet-18 models were trained using AdamW optimization with differential learning rates of $0.0003$ for frozen layers and $0.001$ for trainable layers. Learning rates followed exponential decay ($\gamma=0.95$). Label smoothing ($\alpha=0.1$) provided regularization and cross-entropy loss served as the objective function. Early stopping with 20-epoch patience was used to prevent overfitting. Training converged after approximately 40 epochs per fold (~45 minutes total on NVIDIA RTX 2060).
+
+Following model development, inference utilizes Test-Time Augmentation (TTA), in which each model predicted on both the original image and its horizontal flip, using the average predictions used. The five models' TTA-averaged predictions were ensemble-averaged using softmax normalization to produce final classification probabilities.
 
 \subsection{Results}
 
@@ -116,13 +117,12 @@ Age distribution within the jawbone images included 39 fawns (0.5 years), 62 yea
 
 Similar to trail camera images, dental images underwent a standardization process. Annotations, markings, and labels were removed using editing tools on a Samsung Galaxy S25 Ultra, and the resulting image was cropped to a 2:1 aspect ratio ensuring all visible teeth were included in each image. Original image backgrounds and lighting were preserved. Some images retained fingertips to simulate field submission conditions.
 
-% v------------------------------------- START HERE -------------------------------------v
 % FIX IMAGE RATIOS
 The data were split following an $80/20$ train/test stratification with proportional age representation. With the test data held out, the training set ($80\%$, 194 images) was augmented through rotations ($\pm 10^o$), horizontal flipping, brightness adjustments ($0.8-1.2\times$), and contrast variation ($0.8-1.2\times$), expanding each age class to 1,200 balanced samples. The test set ($20\%$, 49 images) remained non-augmented.
 
 \subsection{Model Architecture and Training}
 
-EfficientNet \cite{2019tan} was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization.
+EfficientNet was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization.
 
 Transfer learning froze the stem convolution and first three blocks (0-2), preserving low- to mid-level features like edges, textures, and shapes. Blocks 3-6 remained trainable to allow the domain to adapt to dental features. The classification head was replaced with a 6-class output (including 0.5-year fawns).
 
@@ -212,7 +212,7 @@ Attention map validation confirms both models learn biologically relevant featur
 
 The success of transfer learning with limited datasets demonstrates broader implications: domain experts across wildlife biology can leverage pre-trained CNNs to develop specialized analysis tools without requiring massive data collection efforts or extensive machine learning expertise. As wildlife agencies and researchers adopt these approaches, automated age estimation could transform how deer populations are monitored and managed across North America.
 
-\bibliographystyle{plain}
+\bibliographystyle{unsrt}
 \bibliography{iopbib}
 
 \ack{The author acknowledges the wildlife management organizations, state agencies, and educational institutions that provided trail camera and post-mortem dental analysis training materials used in dataset construction. Particular appreciation is extended to the wildlife professionals who developed these educational resources, enabling this interdisciplinary application of computer vision to wildlife biology. Appreciation is also extended to the open-source community for the deep learning frameworks and tools that enabled this work.}

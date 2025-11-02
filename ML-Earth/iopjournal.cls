@@ -36,7 +36,6 @@
 
 \RequirePackage{graphicx}
 
-
 %Options for the class file
 
 \newif\if@anonymous
