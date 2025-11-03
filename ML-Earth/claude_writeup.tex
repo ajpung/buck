@@ -24,74 +24,99 @@
 \keywords{machine learning, computer vision, neural network, deer, age, classification, prediction, dental analysis, tooth wear, wildlife, management, automation, assessment}
 
 \begin{abstract}
-Accurate age estimation of white-tailed deer remains a critical challenge for wildlife management, with existing methods limited by low accuracy, high cost, or extensive processing delays. This study presents a two-fold computer vision approach to white-tailed deer aging, addressing both field scenarios (trail camera imagery) and post-harvest scenarios (dental analysis). Using transfer learning with Convolutional Neural Networks, two complementary systems were developed: a ResNet-18 ensemble for trail camera images achieving $76.7\% \pm 5.9\%$ cross-validation accuracy, and an EfficientNet ensemble for jawbone images achieving $90.7\% \pm 2.6\%$ cross-validation accuracy. Both systems substantially outperform traditional methods including human visual assessment ($60.6\%$), morphometric models ($63\%$), and manual tooth wear analysis. Crucially, each model also exceed the $70\%$ accuracy threshold required for wildlife management decisions. Attention map analysis confirms both models learn biologically relevant features including body morphology (neck, chest, stomach) for trail cameras and dental characteristics (tooth eruption, wear patterns) for jawbone images. Together, these approaches offer wildlife professionals practical, efficient, and automated tools to reduce assessment workload while maintaining or exceeding current accuracy standards, potentially transforming deer population monitoring across North America.
+Accurate age estimation of white-tailed deer remains a critical challenge for wildlife management, with existing methods limited by low accuracy, high cost, or extensive processing delays. This study presents a two-fold computer vision approach to white-tailed deer aging, addressing both field scenarios (trail camera imagery) and post-harvest scenarios (dental analysis). Using transfer learning with Convolutional Neural Networks, two complementary systems were developed: a ResNet-18 ensemble for trail camera images achieving $76.7\% \pm 5.9\%$ cross-validation accuracy, and an EfficientNet ensemble for jawbone images achieving $90.7\% \pm 2.6\%$ cross-validation accuracy. Both models substantially outperform traditional methods including human visual assessment ($60.6\%$), morphometric models ($63\%$), and manual tooth wear analysis; they also exceed the $70\%$ accuracy threshold required for wildlife management decisions. Attention map analysis confirms both models learn biologically relevant features including body morphology (neck, chest, and stomach) for trail camera images and dental characteristics (tooth eruption, wear patterns) for jawbone images. Together, these approaches offer wildlife professionals practical, efficient, and automated tools to reduce assessment workload while maintaining high accuracy standards, transforming deer population research and monitoring across North America.
 \end{abstract}
 
 \section{Introduction}
 \subsection{The Challenge of Deer Aging}
 Accurate age estimation of white-tailed deer (\textit{Odocoileus virginianus}) is fundamental to effective wildlife management due to its significant impact on harvest regulations, population modeling, and conservation strategies across North America. However, current aging methods suffer from significant limitations in accuracy, scalability, or accessibility.
 
-For live deer, wildlife professionals and hunters rely on "aging on the hoof" (AOTH), a set of guidelines to visually assess body proportions, antler characteristics, and behavior from trail camera images or field observations. First documented in 1978 \cite{1978knowlton}, AOTH attempts to predict deer age based on morphological features including chest depth, stomach sag, neck thickness, and leg proportions \cite{1996kroll, 1999demarais, 2003richards, 2008hellickson}. Despite extensive training materials, however, human accuracy remains problematic -- in an extensive and detailed study on AOTH accuracy, Gee et al. \cite{2013gee} found wildlife enthusiasts and trained professionals achieved only $36\%$ age prediction accuracy in systematic testing with individual scores ranging between $16-56\%$. In the smaller dataset collected for this study, average human prediction accuracy was found to be slightly higher, at $60.46\%$ \cite{2025pung}; in both datasets, prediction accuracy was found to decrease as the age of the buck increased. Neither group approaches the $70\%$ threshold professionals themselves identify as necessary for management decisions or the $80\%$ threshold required for research applications \cite{2013gee}.
+For live deer, wildlife professionals and outdoor enthusiasts rely on "aging on the hoof" (AOTH), a set of guidelines to visually assess body proportions, antler characteristics, and behavior from trail camera images or field observations. First documented in 1978 \cite{1978knowlton}, AOTH attempts to predict deer age based on morphological features including chest depth, stomach sag, neck thickness, and leg proportions \cite{1996kroll, 1999demarais, 2003richards, 2008hellickson}. Despite extensive training materials, however, human accuracy remains problematic -- in an extensive study on AOTH accuracy, Gee et al. \cite{2013gee} found wildlife enthusiasts and trained professionals achieved only $36\%$ age prediction accuracy in systematic testing with individual scores ranging between $16-56\%$. In the smaller dataset collected for this study (summarized in Figure \ref{fig:human-prediction}), average human prediction accuracy was found to be slightly higher at $60.6\%$ \cite{2025pung}. Both studies further found that prediction accuracy decreases as the age of the buck increases, and neither group achieved the $70\%$ threshold professionals themselves identify as necessary for management decisions much less the $80\%$ threshold required for research applications \cite{2013gee}.
 
-Morphometric approaches offer marginal improvement. Flinn's complex model based on 64 body measurement ratios achieved $63\%$ accuracy during post-breeding periods \cite{2010flinn}, still inadequate for practical applications. One fundamental constraint of morphometric predictions is that body morphology varies substantially with nutrition, genetics, and environmental conditions, making visual assessment inherently unreliable \cite{2013gee}.
+\begin{figure}[htbp!]
+\centering
+\includegraphics[width=\linewidth]{images/Fig0_HumanConfusionMatrix.jpg}
+\caption{Human prediction accuracy is illustrated in the form of (left) a bar chart (right) a confusion matrix}
+\label{fig:human-prediction}
+\end{figure}
 
-For harvested deer, postmortem dental analysis provides two additional aging options: tooth replacement and wear (TRW) and cementum annuli (CA). TRW examines tooth eruption patterns and wear characteristics following established criteria \cite{1949severinghaus, 1980larson}. Alternatively, CA counts growth rings in tooth cementum cross-sections formed via annual cementum deposition \cite{1949severinghaus, 1963low, 1966ransom, 1989jacobson, 2006meares, 2020adams}. Both methods require specialized expertise and suffer from inconsistencies. TRW accuracy varies with soil abrasiveness and analyst experience \cite{1966gilbert, 1967ludwig, 1979cook}, while CA faces technical challenges including indistinct, incomplete, or condensed annulus patterns \cite{1966ransom,1979cook} and processing delays, with professional laboratories requiring weeks per sample \cite{2012nda}. Studies comparing TRW and CA show mixed results: some report equivalent performance \cite{1989jacobson}, others favor CA \cite{2000hamlin, 2013cooper}, while still others demonstrate TRW superiority even when CA is performed in specialized laboratories \cite{1979cook}. The lack of consensus and accessibility constraints limit practical deployment.
+Morphometric approaches offer marginal improvement. In 2010, Flinn developed simple and complex models based on 64 body measurement ratios, achieving $63\%$ accuracy during post-breeding periods \cite{2010flinn}. The improved model falls short of practical application thresholds, and is likely constrained body morphology variation due to nutrition, genetics, and environmental conditions, making visual assessment inherently unreliable \cite{2013gee}.
+
+For harvested deer, postmortem dental analysis provides two additional aging options: tooth replacement and wear (TRW) and cementum annuli (CA). TRW examines tooth eruption patterns and wear characteristics following established criteria \cite{1949severinghaus, 1980larson}. CA counts growth rings in tooth cementum cross-sections formed by annual cementum deposition \cite{1949severinghaus, 1963low, 1966ransom, 1989jacobson, 2006meares, 2020adams}. Both methods require specialized expertise and suffer from inconsistencies: TRW accuracy varies with soil abrasiveness and analyst experience \cite{1966gilbert, 1967ludwig, 1979cook}, while CA faces technical challenges including indistinct, incomplete, or condensed annulus patterns \cite{1966ransom,1979cook}. CA also suffers from processing delays, with professional laboratories requiring weeks to analyze individual samples \cite{2012nda}. Studies comparing TRW and CA show mixed results. Some publications report equivalent performance \cite{1989jacobson}, while others favor CA \cite{2000hamlin, 2013cooper}; still others demonstrate TRW superiority even when CA is performed in specialized laboratories \cite{1979cook}. The lack of consensus and accessibility constraints limit practical deployment for both techniques.
 
 \subsection{Computer Vision as a Solution}
+Machine learning (ML) and computer vision (CV) have revolutionized classification tasks across domains from medical imaging to autonomous vehicles. Unlike morphometric models, Convolutional Neural Networks (CNNs) automatically extract hierarchical features from images, eliminating laborious manual feature engineering. CNNs are further enabled via transfer learning, which leverages CNNs pre-trained on large datasets like ImageNet which comprises 14 million images. Pre-trained models like EfficientNet \cite{2020tan}, DenseNet \cite{2018huang}, and ResNet-18 \cite{2015he} enable high accuracy even with limited domain-specific data, avoiding a key obstacle in wildlife research.
 
-Machine learning (ML) and computer vision (CV) have revolutionized classification tasks across domains from medical imaging to autonomous vehicles. Within the realm of ML, Convolutional Neural Networks (CNNs) automatically extract hierarchical features from images, eliminating laborious manual feature engineering. Additionally, transfer learning leverages pre-trained CNNs; based on large datasets like ImageNet, these models enable high accuracy even with limited domain-specific data, avoiding a key obstacle in wildlife research.
-
-This study presents the first comprehensive application of deep learning to white-tailed deer age estimation, developing complementary systems for both field (trail camera) and post-harvest (dental) scenarios. The results demonstrate that transfer learning with CNN ensembles achieves breakthrough accuracy for both modalities while learning biologically interpretable features that align with human expert knowledge.
+This study presents the first comprehensive application of deep learning to white-tailed deer age estimation, developing complementary models for both field (trail camera) and post-harvest (dental) scenarios. The results demonstrate that transfer learning with CNN ensembles achieves breakthrough accuracy for both modalities while learning biologically interpretable features that align with human expert knowledge.
 
 \section{Trail Camera Assessment}
 
 \subsection{Dataset}
 
-The trail camera dataset comprises 197 color images collected from National Deer Association (NDA) products. While many of the images meet NDA quality standards (broadside head-up posture, minimal body movement, good lighting, etc.), screen captures taken from NDA videos and other media do not meet the same criteria, ultimately improving the variation of white-tailed buck images within the dataset. Due to their large readership base, images in the NDA dataset cover 14 states. Importantly, no metadata (image date, time, or location) are provided to the model, forcing predictions to rely solely on visual morphology. A small sample of the trail camera dataset is illustrated in Figure \ref{fig:trail_camera_sample}.
+The trail camera dataset comprises 197 color images collected from National Deer Association (NDA) products. While many of the images meet NDA quality standards (broadside head-up posture, minimal body movement, good lighting, etc.), screen captures taken from NDA videos and other media do not meet the same criteria, expanding the variation of white-tailed buck images within the dataset. Due to their large readership base, images in the NDA dataset cover 14 states.
 
-\begin{figure}[h! tbp]
+Although image metadata like date, time, and location are stored for each image, these parameters are not provided to the model, forcing predictions to rely solely on visual morphology.
+
+Age distribution within the dataset reflected natural collection patterns, with more images of mature deer than younger bucks: $30$ yearlings ($1.5$ years), $36$ images each of $2.5$ and $3.5$ year-olds, $52$ images of $4.5$ year-olds, and $43$ images of $5.5+$ year-olds. Deer aged $\geq5.5$ years were grouped into a single class following standard wildlife management practice where age-related morphological changes become less distinct in mature animals.
+
+Images were standardized through cropping to square format, capturing maximum deer body coverage while maintaining the expected aspect ratio for ResNet models. Cropped images were resized to $224\times224$ pixels to meet the expected ResNet-18 format. Backgrounds remained unmodified to ensure the model learns biological features rather than imaging artifacts. A small sample of the standardized trail camera images is illustrated in Figure \ref{fig:trail_camera_sample}.
+
+\begin{figure}[htbp!]
 \centering
-\includegraphics[width=9cm]{images/Fig1_TrailCamSamples.jpg}
-\caption{Human prediction accuracy for each age class are presented in the form of (left) a bar chart, and (right) a confusion matrix.}
+\includegraphics[width=9.5cm]{images/Fig1_TrailCamSamples.jpg}
+\caption{A small sample of the standardized trail camera dataset.}
 \label{fig:trail_camera_sample}
 \end{figure}
 
-Age distribution within the dataset reflected natural collection patterns: $30$ yearlings ($1.5$ years), $36$ images each of $2.5$ and $3.5$ year-olds, $52$ images of $4.5$ year-olds, and $43$ images of $5.5+$ year-olds. Deer aged $\geq5.5$ years were grouped into a single class following standard wildlife management practice where age-related morphological changes become less distinct in mature animals.
-
-Images were standardized through cropping to square format, capturing maximum deer body coverage while maintaining the expected aspect ratio for ResNet models. Cropped images were resized to $224\times224$ pixels to meet the expected ResNet-18 format. Backgrounds remained unmodified to ensure the model learns biological features rather than imaging artifacts.
-
-Data augmentation was used to address the limited dataset size. The training set ($80\%$, $157$ images) was expanded $40$-fold through rotations ($\pm10°\deg$), horizontal flipping, brightness adjustments ($0.8-1.2\times$), contrast variation ($0.8-1.2\times$), and Gaussian noise addition ($\sigma=0.01$). Each transformation simulates natural field variation (ex. lighting changes throughout the day, deer orientation, and varying camera angles) without distorting body proportions. The test set ($40$ images) remained held out and non-augmented to provide unbiased evaluation.
+Data augmentation was used to expand the limited dataset size. The training set ($80\%$, $157$ images) was expanded $40$-fold through rotations ($\pm10°\deg$), horizontal flipping, brightness adjustments ($0.8-1.2\times$), contrast variation ($0.8-1.2\times$), and Gaussian noise addition ($\sigma=0.01$). Each transformation simulates natural field variation without distorting body proportions; for instance, brightness adjustments mimic lighting changes throughout the day and image rotations mimic differences in deer position and camera placement. The test set ($40$ images) remained held out and non-augmented to provide unbiased evaluation.
 
 \subsection{Model Architecture and Training}
+Following a preliminary evaluation of traditional methods and $>60$ ML architectures ResNet-18 was selected based on held-out test accuracy.
 
-Following a preliminary evaluation of traditional methods and $>60$ traditional ML architectures and alternative CNNs (EfficientNet \cite{2020tan}, DenseNet \cite{2018huang}), ResNet-18 \cite{2015he} was selected based on held-out test accuracy.
-
-\begin{figure}[h! tbp]
+\begin{figure}[htpb!]
 \centering
 \includegraphics[width=\textwidth]{images/Fig2_ResNet18Model.jpg}
-\caption{Human prediction accuracy for each age class are presented in the form of (left) a bar chart, and (right) a confusion matrix.}
+\caption{The ResNet-18 architecture.}
 \label{fig:resnetmodel}
 \end{figure}
 
+The ResNet-18 architecture (Figure \ref{fig:resnetmodel}) consists of an initial convolution layer (Conv1) followed by four residual blocks (Layers 1-4) and a fully connected classifier (FC). Transfer learning was implemented by freezing the initial convolution, batch normalization (BN), and first three residual blocks preserving pre-trained low- to mid-level feature extraction like edges, textures, and shapes. The fourth residual block remained trainable to adapt high-level features to deer-specific morphology. The classifier head was replaced with a 5-class output layer.
+
+A 5-fold cross-validation ensemble approach was used to maximize data utilization. Training data were stratified into five folds each maintaining equal proportional age representation. Each fold was split into training (125 images) and validation (32 images) subsets. Training images underwent $40\times$ augmentation, yielding 5,000 samples per fold.
+
+Five independent ResNet-18 models were trained using AdamW optimization with differential learning rates of $0.0003$ for frozen layers and $0.001$ for trainable layers. Learning rates followed exponential decay ($\gamma=0.95$), label smoothing ($\alpha=0.1$) provided regularization, and cross-entropy loss served as the objective function. Early stopping with 20-epoch patience was used to prevent overfitting. Training converged after approximately 40 epochs per fold, or ~45 minutes total on NVIDIA RTX 2060.
+
+\begin{figure}[htpb!]
+\centering
+\includegraphics[width=\textwidth]{images/Fig3_EnsembleInference.jpg}
+\caption{The ResNet-18 ensemble inference process.}
+\label{fig:ensemble-inference}
+\end{figure}
+
+Illustrated in Figure \ref{fig:ensemble-inference}, inference makes use of Test-Time Augmentation (TTA). In TTA, each model makes a prediction on both the original image and its horizontal flip, using the average of the two predictions. The five models' TTA-averaged predictions were ensemble-averaged using softmax normalization to produce final classification probabilities. This process is illustrated in .
+
 % v------------------------------------- START HERE -------------------------------------v
-
-The ResNet-18 architecture (Figure \ref{fig:resnetmodel}) consists of an initial convolution layer followed by four residual blocks and a fully connected classifier. Transfer learning was implemented by freezing the initial convolution, batch normalization, and first three residual blocks preserving pre-trained low- to mid-level feature extraction (edges, textures, shapes). The fourth residual block remained trainable to adapt high-level features to deer-specific morphology. The classifier head was replaced with a 5-class output layer.
-
-A 5-fold cross-validation ensemble approach maximized data utilization. Training data were stratified into five folds each maintaining proportional age representation. Each fold was split into training (125 images) and validation (32 images) subsets. Training images underwent $40\times$ augmentation, yielding 5,000 samples per fold.
-
-Five independent ResNet-18 models were trained using AdamW optimization with differential learning rates of $0.0003$ for frozen layers and $0.001$ for trainable layers. Learning rates followed exponential decay ($\gamma=0.95$). Label smoothing ($\alpha=0.1$) provided regularization and cross-entropy loss served as the objective function. Early stopping with 20-epoch patience was used to prevent overfitting. Training converged after approximately 40 epochs per fold (~45 minutes total on NVIDIA RTX 2060).
-
-Following model development, inference utilizes Test-Time Augmentation (TTA), in which each model predicted on both the original image and its horizontal flip, using the average predictions used. The five models' TTA-averaged predictions were ensemble-averaged using softmax normalization to produce final classification probabilities.
-
 \subsection{Results}
 
-The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ cross-validation accuracy and $97.5\%$ test accuracy. The test set performance likely reflects overfitting to the small dataset, making cross-validation the more reliable metric. Critically, the $76.7\%$ cross-validation accuracy exceeds human expert assessment ($60.6\%$), morphometric models ($63\%$), and the $70\%$ threshold required for management decisions.
+The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ cross-validation accuracy and $97.5\%$ test accuracy. The test set performance likely reflects overfitting to the small dataset, making cross-validation the more reliable metric. Nonetheless, the $76.7\%$ cross-validation accuracy exceeds human expert assessment ($60.6\%$), morphometric models ($63\%$), and the $70\%$ threshold required for management decisions.
 
-% NEED FIGURE: MODEL PERFORMANCE
-Performance varied by age class (Figure 2). Yearlings ($1.5$ years) and mature deer (5.5+ years) achieved near-perfect classification ($100\%$ precision, recall, F1-score). Middle age classes showed lower performance: 2.5-year deer (F1: 93\%), 3.5-year deer (F1: $100\%$), and 4.5-year deer (F1: 95\%). The confusion matrix revealed only one misclassification: a single 4.5-year buck predicted as 2.5 years, interestingly the same age class (4.5 years) that challenges human assessors most ($52.5\%$ human accuracy) \cite{2013gee}.
+\begin{figure}[htpb!]
+\centering
+\includegraphics[width=14cm]{images/Fig4_CNNAccuracy.jpg}
+\caption{Model accuracy is illustrated in the form of (left) a bar chart (right) a confusion matrix}
+\label{fig:trail-camera-accuracy}
+\end{figure}
 
-% NEED FIGURE: ATTENTION MAP
-Attention map analysis (Figure 3) demonstrated that ResNet-18 focuses on biologically relevant morphological features. For yearlings, attention concentrated on key indicators of youth like the neck and chest. For 2.5 year old deer, focus distributed across neck, chest, and body. For mature deer ($\geq5.5$ years), attention emphasized the stomach region, a primary characteristic experts use to identify aged bucks. Critically, attention maps largely ignored antlers across all age classes, aligning with expert guidance that antlers are unreliable age indicators \cite{1999demarais, 2003richards}.
+Similar to human predictions, model performance varied by age class (Figure \ref{fig:trail-camera-accuracy}). Yearlings ($1.5$ years) and mature deer (5.5+ years) achieved near-perfect classification ($100\%$ precision, recall, F1-score) while middle age classes showed lower performance, particularly in 2.5- and 4.5-year old deer (F1=93\% and 95\% respectively). The confusion matrix further details the misclassification, predicting a 4.5-year old buck as a 2.5-year old. Interestingly, this is the same age class that challenges human assessors most \cite{2013gee, 2025pung}.
+
+Attention map analysis (Figure \ref{fig:attention-maps}) demonstrated that ResNet-18 focuses on biologically relevant morphological features. For yearlings, attention concentrated on key indicators of youth like the neck and chest. For 2.5 year old deer, focus distributed across neck, chest, and body. For mature deer ($\geq5.5$ years), attention emphasized the stomach region, a primary characteristic experts use to identify aged bucks. Critically, attention maps largely ignored antlers across all age classes, aligning with expert guidance that antlers are unreliable age indicators \cite{1999demarais, 2003richards}.
+
+\begin{figure}[htpb!]
+\centering
+\includegraphics[width=\textwidth]{images/Fig6_Heatmap.jpg}
+\caption{(Left) Original standardized images from the dataset are (right) overlayed with attention maps produced by the model}
+\label{fig:attention-maps}
+\end{figure}
 
 
 \section{Dental Assessment}
