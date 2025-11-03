@@ -31,9 +31,9 @@ Accurate age estimation of white-tailed deer remains a critical challenge for wi
 \subsection{The Challenge of Deer Aging}
 Accurate age estimation of white-tailed deer (\textit{Odocoileus virginianus}) is fundamental to effective wildlife management due to its significant impact on harvest regulations, population modeling, and conservation strategies across North America. However, current aging methods suffer from significant limitations in accuracy, scalability, or accessibility.
 
-For live deer, wildlife professionals and outdoor enthusiasts rely on "aging on the hoof" (AOTH), a set of guidelines to visually assess body proportions, antler characteristics, and behavior from trail camera images or field observations. First documented in 1978 \cite{1978knowlton}, AOTH attempts to predict deer age based on morphological features including chest depth, stomach sag, neck thickness, and leg proportions \cite{1996kroll, 1999demarais, 2003richards, 2008hellickson}. Despite extensive training materials, however, human accuracy remains problematic -- in an extensive study on AOTH accuracy, Gee et al. \cite{2013gee} found wildlife enthusiasts and trained professionals achieved only $36\%$ age prediction accuracy in systematic testing with individual scores ranging between $16-56\%$.
+For live deer, wildlife professionals and outdoor enthusiasts rely on "aging on the hoof" (AOTH), a set of guidelines to visually assess body proportions, antler characteristics, and behavior from trail camera images or field observations. First documented in 1978 \cite{1978knowlton}, AOTH attempts to predict deer age based on morphological features including chest depth, stomach sag, neck thickness, and leg proportions \cite{1996kroll, 1999demarais, 2003richards, 2008hellickson}. Despite extensive training materials, human accuracy remains problematic. In an extensive study, Gee et al. \cite{2013gee} found wildlife enthusiasts and trained professionals achieved only $36\%$ age prediction accuracy in systematic testing, with individual scores ranging between $16-56\%$.
 
-Data for this study were obtained from the National Deer Association's (NDA) "Age This!" survey. Given the scarcity of publicly available known-age deer data, this study assumes NDA age determinations are correct. As shown in Figure \ref{fig:human-prediction}, human AOTH prediction accuracy from the survey revealed a low correct prediction rate ($58.64\%$) and an inverse relationship between accuracy and buck age, consistent with previous studies \cite{2013gee, 2025pung}. While Figure \ref{fig:human-prediction} identifies 4.5-year-old bucks as most challenging, the confusion matrix provides additional insight. Incorrect predictions for 2.5-year-old deer split nearly evenly between 1.5 and 3.5 years, whereas incorrect predictions for 3.5- and 4.5-year-old deer overwhelmingly skew younger. For deer 5.5 years or older, incorrect predictions drop to 4.5 years nearly half the time and to 3.5 years approximately $10\%$ of the time. No groups in either study achieved the $70\%$ threshold professionals identify as necessary for management decisions, much less the $80\%$ threshold required for research applications.
+Recent data from the National Deer Association's (NDA) "Age This!" survey confirm these accuracy challenges. Given the scarcity of publicly available known-age deer data, this study uses NDA age determinations as ground truth labels for the supervised computer vision model. As shown in Figure \ref{fig:human-prediction}, human AOTH prediction accuracy revealed a correct prediction rate of $58.64\%$ and an inverse relationship between accuracy and buck age, consistent with previous studies \cite{2013gee, 2025pung}. While Figure \ref{fig:human-prediction} identifies 4.5-year-old bucks as most challenging, the confusion matrix provides additional insight. Incorrect predictions for 2.5-year-old deer split nearly evenly between 1.5 and 3.5 years, whereas incorrect predictions for 3.5- and 4.5-year-old deer overwhelmingly skew younger. For deer 5.5 years or older, incorrect predictions drop to 4.5 years nearly half the time and to 3.5 years approximately $10\%$ of the time. No groups in either study achieved the $70\%$ threshold professionals identify as necessary for management decisions, much less the $80\%$ threshold required for research applications.
 
 \begin{figure}[htbp!]
 \centering
@@ -97,48 +97,52 @@ Five independent ResNet-18 models were trained using AdamW optimization with dif
 
 Illustrated in Figure \ref{fig:ensemble-inference}, inference makes use of Test-Time Augmentation (TTA). In TTA, each model makes a prediction on both the original image and its horizontal flip, using the average of the two predictions. The five models' TTA-averaged predictions were ensemble-averaged using softmax normalization to produce final classification probabilities. This process is illustrated in .
 
-% v------------------------------------- START HERE -------------------------------------v
 \subsection{Results}
-
-The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ cross-validation accuracy and $97.5\%$ test accuracy. The test set performance likely reflects overfitting to the small dataset, making cross-validation the more reliable metric. Nonetheless, the $76.7\%$ cross-validation accuracy exceeds human expert assessment ($60.6\%$), morphometric models ($63\%$), and the $70\%$ threshold required for management decisions.
 
 \begin{figure}[htpb!]
 \centering
-\includegraphics[width=14cm]{images/Fig4_CNNAccuracy.jpg}
+\includegraphics[width=12cm]{images/Fig4_CNNAccuracy.jpg}
 \caption{Model accuracy is illustrated in the form of (left) a bar chart (right) a confusion matrix}
 \label{fig:trail-camera-accuracy}
 \end{figure}
 
-Similar to human predictions, model performance varied by age class (Figure \ref{fig:trail-camera-accuracy}). Yearlings ($1.5$ years) and mature deer (5.5+ years) achieved near-perfect classification ($100\%$ precision, recall, F1-score) while middle age classes showed lower performance, particularly in 2.5- and 4.5-year old deer (F1=93\% and 95\% respectively). The confusion matrix further details the misclassification, predicting a 4.5-year old buck as a 2.5-year old. Interestingly, this is the same age class that challenges human assessors most \cite{2013gee, 2025pung}.
+The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ cross-validation accuracy and $97.5\%$ test accuracy. The test set performance likely reflects overfitting to the small dataset, making cross-validation the more reliable metric. Nonetheless, the $76.7\%$ cross-validation accuracy exceeds human expert assessment ($60.6\%$), morphometric models ($63\%$), and the $70\%$ threshold required for management decisions.
 
-Attention map analysis (Figure \ref{fig:attention-maps}) demonstrated that ResNet-18 focuses on biologically relevant morphological features. For yearlings, attention concentrated on key indicators of youth like the neck and chest. For 2.5 year old deer, focus distributed across neck, chest, and body. For mature deer ($\geq5.5$ years), attention emphasized the stomach region, a primary characteristic experts use to identify aged bucks. Critically, attention maps largely ignored antlers across all age classes, aligning with expert guidance that antlers are unreliable age indicators \cite{1999demarais, 2003richards}.
+Unlike human AOTH predictions, model performance remained strong for each age class (Figure \ref{fig:trail-camera-accuracy}) with the exception of 4.5 year old bucks, in which the model incorrectly predicted the age of a 4.5-year old buck as 2.5 years old. Interestingly, this is the same age class that challenges human assessors most \cite{2013gee, 2025pung}.
 
 \begin{figure}[htpb!]
 \centering
 \includegraphics[width=\textwidth]{images/Fig6_Heatmap.jpg}
-\caption{(Left) Original standardized images from the dataset are (right) overlayed with attention maps produced by the model}
+\caption{(Top) Standardized images are compared against (bottom) the model's attention map derived for the same images. NDA-predicted ages for each deer are listed above each column.}
 \label{fig:attention-maps}
 \end{figure}
 
+Attention map analysis (Figure \ref{fig:attention-maps}) confirms the model's ability to identify and utilize biologically relevant morphological features in raw trail camera images. For yearlings, the model focused on key indicators of young bucks like the neck and chest. For 2.5 year old deer, focus distributed across neck, chest, and body. For mature deer $\geq5.5$ years, attention emphasized the stomach region, a primary characteristic experts use to identify aged bucks. Critically, attention maps largely ignored antlers across all age classes, aligning with expert guidance that antlers are unreliable age indicators \cite{1999demarais, 2003richards}.
+
+% v------------------------------------- START HERE -------------------------------------v
 
 \section{Dental Assessment}
 
 \subsection{Tooth Replacement and Wear}
-
-Traditional whitetail dental aging relies on sequential decision trees based on tooth count, premolar crest structure, and dentine-to-enamel ratios (DER) of molar teeth \cite{1949severinghaus, 1980larson}. The standard protocol follows:
+Traditional whitetail dental aging relies on sequential decision trees based on tooth count, premolar crest structure, and dentine-to-enamel ratios (DER) of molar teeth \cite{1949severinghaus, 1980larson}. The standard protocol is as follows:
 
 \begin{enumerate}
-    \item Count teeth (newborns have 4, fawns <6, mature deer have 6)
-    \item Examine third premolar (P3) crests: 3 crests indicate 1.5 years, 2 crests indicate $\geq2.5$ years
-    \item Assess molar DER sequentially: first molar (M1) for 2.5 years, second molar (M2) for 3.5 years, third molar (M3) for 4.5 years
-    \item Evaluate M1 flattening for deer $\geq6.5$ years
+    \item Count the number of teeth in the jawbone. Newborn deer will only have four teeth.
+    \item If there are fewer than six teeth but more than four, the deer is a fawn (0.5 years old).
+    \item If there are six teeth, count the crests on $P_3$. If three crests are present, the deer is 1.5 years old.
+    \item If $P_3$ has two crests, the deer is at least 2.5 years old. 
+    \item Examine the DER of the sharp ridges of the inside portion of $M_1$. If $DER_{M_1}<2$, the deer is 2.5 years old.
+    \item If $DER_{M_1}>2$ and $DER_{M_2}<2$, the deer is 3.5 years old. 
+    \item If $DER_{M_1}>2$ and $DER_{M_2}>2$ and $DER_{M_3}<2$, the deer is 4.5 years old.
+    \item If $DER_{M_1}>2$ and $DER_{M_2}>2$ and $DER_{M_3}>2$, the deer is at least 5.5 years old.
+    \item Re-examine $M_1$. If $M_1$ has started to flatten, the deer is at least 6.5 years old. 
 \end{enumerate}
 
-This protocol assumes wear progresses predictably, but DER reliability has been questioned. Meares et al. \cite{2006meares} found DER could not reliably separate 2.5-4.5 year classes due to individual variation, undermining steps 5-8 of the decision tree.
+This protocol assumes wear progresses predictably, but DER reliability remains questionable, as Meares et al. \cite{2006meares} found DER could not reliably separate 2.5-4.5 year classes due to individual variation, undermining steps 5-8 of the decision tree.
 
 \subsection{Dataset}
 
-Jawbone data comprised 243 colored images collected from 17 independent sources: Quality Deer Management Association, National Deer Association, state wildlife agencies, and university wildlife programs. No geographic restrictions or sex filters were applied. Images were captured from online educational materials (videos, tutorials, blogs) and processed to remove text annotations that might provide age information to the model.
+The jawbone image dataset comprises 243 colored images collected from 17 independent sources: Quality Deer Management Association, National Deer Association, state wildlife agencies, and university wildlife programs. Unlike trail camera images, no restrictions were placed on geographic region or sex. Images were captured from online educational materials (videos, tutorials, blogs) and processed to remove text annotations that might provide age information to the model.
 
 Age distribution within the jawbone images included 39 fawns (0.5 years), 62 yearlings (1.5 years), 33 images of 2.5 year olds, 29 images of 3.5 year olds, 20 images of 4.5 year old deer, 22 images of 5.5 year old deer, and 38 images from deer aged 6.5-16.5 years (all grouped as 5.5+ years). Deer confirmed as $\geq9.5$ years were sourced exclusively from NDA documentation.
 
