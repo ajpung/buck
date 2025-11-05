@@ -55,7 +55,7 @@ This study presents the first comprehensive application of deep learning to whit
 
 \subsection{Dataset}
 
-The trail camera dataset comprises 197 color images collected from National Deer Association (NDA) products. While many of the images meet NDA quality standards (broadside head-up posture, minimal body movement, good lighting, etc.), screen captures taken from NDA videos and other media do not meet the same criteria, expanding the variation of white-tailed buck images within the dataset. Due to their large readership base, images in the NDA dataset cover 14 states.
+The trail camera dataset contains 197 color images collected from National Deer Association (NDA) products. While many of the images meet NDA quality standards (broadside head-up posture, minimal body movement, good lighting, etc.), screen captures taken from NDA videos and other media do not meet the same criteria, expanding the variation of white-tailed buck images within the dataset. Due to their large readership base, images in the NDA dataset cover 14 states.
 
 Although image metadata like date, time, and location are stored for each image, these parameters are not provided to the model, forcing predictions to rely solely on visual morphology.
 
@@ -66,7 +66,7 @@ Images were standardized through cropping to square format, capturing maximum de
 \begin{figure}[htbp!]
 \centering
 \includegraphics[width=9cm]{images/Fig1_TrailCamSamples.jpg}
-\caption{A small sample of the standardized trail camera dataset.}
+\caption{A sample of the standardized trail camera dataset.}
 \label{fig:trail_camera_sample}
 \end{figure}
 
@@ -140,19 +140,24 @@ The steps for TRW assume tooth wear progresses predictably. Work by Meares et al
 
 \subsection{Dataset}
 
-The jawbone image dataset comprises 243 colored images collected from 17 independent sources including Quality Deer Management Association, National Deer Association, state wildlife agencies, and university wildlife programs. Unlike trail camera images, no restrictions were placed on geographic region, sex, or data source. Images were extracted from online educational materials like videos, tutorials, and blogs.
+The jawbone image dataset contains 243 color images collected from 17 independent agencies including Quality Deer Management Association, National Deer Association, state wildlife agencies, and university wildlife programs via videos, tutorials, and blogs. Unlike trail camera images, no restrictions were placed on geographic region, sex, or data source.
 
 Age distribution within the dataset included 39 fawns (0.5 years), 62 yearlings (1.5 years), 33 images of 2.5 year olds, 29 images of 3.5 year olds, 20 images of 4.5 year old deer, 22 images of 5.5 year old deer, and 38 images from deer aged 6.5-16.5 years (all grouped as 5.5+ years). Deer confirmed as $\geq9.5$ years were exclusively collected from NDA documentation.
 
-Similar to trail camera images, raw dental images underwent a standardization process. Annotations, markings, and labels on the jawbone and other locations were removed using editing tools on a Samsung Galaxy S25 Ultra; the resulting images were cropped to a 2:1 aspect ratio ensuring all visible teeth were included in each image. Original image backgrounds and lighting were preserved, with multiple images retained fingertips of the person holding the jawbone to simulate realistic field submission conditions.
+\begin{figure}[htbp!]
+\centering
+\includegraphics[width=12cm]{images/Fig8_jawbone-dataset.png}
+\caption{A sample of the standardized jawbone dataset.}
+\label{fig:jawbone_sample}
+\end{figure}
+
+Similar to trail camera images, raw dental images underwent a standardization process. Annotations, markings, and labels on the jawbone were removed using editing tools on a Samsung Galaxy S25 Ultra. The resulting images were cropped to a 2:1 aspect ratio, ensuring all visible teeth were included in each image. Original backgrounds and lighting were preserved, and multiple images contained fingertips of the person holding the jawbone to simulate realistic field submission conditions.
 
 The data were split following an $80/20$ train/test stratification with proportional age representation. With the test data held out, the training set ($80\%$, 194 images) was augmented through rotations ($\pm 10^o$), horizontal flipping, brightness adjustments ($0.8-1.2\times$), and contrast variation ($0.8-1.2\times$), expanding each age class to 1,200 class-balanced samples. The test set ($20\%$, 49 images) remained non-augmented.
 
 \subsection{Model Architecture and Training}
 
-EfficientNet was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization. Transfer learning froze the stem convolution and first three blocks, preserving low- to mid-level features like edges, textures, and shapes. The subsequent three blocks remained trainable to allow the model to adapt to dental features. The classification head was replaced with a 6-class output to include 0.5-year-old fawns.
-
-Similar to the trail camera model, a 5-fold nested cross-validation ensemble was used. Training data were stratified into five folds (155 training, 39 validation per fold), and each fold's training data underwent balanced augmentation to 1,200 samples per class.
+EfficientNet was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization. Transfer learning froze the stem convolution and first three blocks, preserving low- to mid-level features like edges, textures, and shapes. The subsequent three blocks remained trainable to allow the model to adapt to dental features. The classification head was replaced with a 6-class output to include 0.5-year-old fawns. A 5-fold nested cross-validation ensemble was used. Training data were stratified into five folds (155 training, 39 validation per fold), and each fold's training data underwent balanced augmentation to 1,200 samples per class. \cite{2025pungjaw}
 
 % v------------------------------------- START HERE -------------------------------------v
 
