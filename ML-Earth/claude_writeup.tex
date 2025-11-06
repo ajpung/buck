@@ -87,7 +87,6 @@ The ResNet-18 architecture (Figure \ref{fig:resnetmodel}) consists of an initial
 A 5-fold cross-validation ensemble approach was used to maximize data utilization. Training data were stratified into five folds each maintaining equal proportional age representation. Each fold was split into training (125 images) and validation (32 images) subsets. Training images underwent $40\times$ augmentation, yielding 5,000 samples per fold.
 
 Five independent ResNet-18 models were trained using AdamW optimization with differential learning rates of $0.0003$ for frozen layers and $0.001$ for trainable layers. Learning rates followed exponential decay ($\gamma=0.95$), label smoothing ($\alpha=0.1$) provided regularization, and cross-entropy loss served as the objective function. Early stopping with 20-epoch patience was used to prevent overfitting. Training converged after approximately 40 epochs per fold, or ~45 minutes total on NVIDIA RTX 2060.
-
 \begin{figure}[htpb!]
 \centering
 \includegraphics[width=13 cm]{images/Fig3_EnsembleInference.jpg}
@@ -159,8 +158,6 @@ The data were split following an $80/20$ train/test stratification with proporti
 
 EfficientNet was selected for dental assessment based on its compound scaling approach and computational efficiency. The architecture employs seven MBConv (Mobile Inverted Bottleneck Convolution) blocks with squeeze-and-excitation optimization. Transfer learning froze the stem convolution and first three blocks, preserving low- to mid-level features like edges, textures, and shapes. The subsequent three blocks remained trainable to allow the model to adapt to dental features. The classification head was replaced with a 6-class output to include 0.5-year-old fawns. A 5-fold nested cross-validation ensemble was used. Training data were stratified into five folds (155 training, 39 validation per fold), and each fold's training data underwent balanced augmentation to 1,200 samples per class. \cite{2025pungjaw}
 
-% v------------------------------------- START HERE -------------------------------------v
-
 \begin{figure}[htpb!]
 \centering
 \includegraphics[width=\textwidth]{images/Fig7_dental-ensemble.png}
@@ -170,25 +167,39 @@ EfficientNet was selected for dental assessment based on its compound scaling ap
 
 Architecture selection occurred per-fold, choosing among EfficientNet-B0, B1, and B2 based on validation accuracy. Illustrated in Figure \ref{fig:dental-ensemble}, the final ensemble comprised two B2 models (folds 1 and 4) and three B0 models (folds 2, 3, and 5), capturing different feature hierarchies: B0 emphasizes efficiency while B2 captures finer details due to its larger number of parameters.
 
-Training utilized AdamW optimization with differential learning rates ($0.0003$ for frozen layers and $0.001$ for trainable layers). Learning rates followed cosine annealing defined by $T_{max}=80$ and $\eta_{min}=1\times10^{-6}$. Label smoothing ($\sigma=0.1$) and dropout ($\rho=0.3$) provided regularization, cross-entropy loss with mixed precision training were used to accelerate convergence, and early stopping with 20-epoch patience was used for efficiency. Training the model on an NVIDIA RTX 2060 GPU required approximately 536 minutes total at 40-60 epochs per fold). Inference utilized TTA with cross-validation score weighting, wherein predictions from each model were weighted by its validation accuracy before ensemble averaging.
+Training utilized AdamW optimization with differential learning rates ($0.0003$ for frozen layers and $0.001$ for trainable layers). Learning rates followed cosine annealing defined by $T_{max}=80$ and $\eta_{min}=1\times10^{-6}$. Label smoothing ($\sigma=0.1$) and dropout ($\rho=0.3$) provided regularization, cross-entropy loss with mixed precision training were used to accelerate convergence, and early stopping with 20-epoch patience was used for efficiency. Training the model on an NVIDIA RTX 2060 GPU required approximately 536 minutes total at 40-60 epochs per fold). Inference utilized TTA with cross-validation score weighting, wherein predictions from each model were weighted by its validation accuracy before ensemble averaging.\cite{2025pungjaw}
 
 \subsection{Results}
 
+\begin{figure}[htpb!]
+\centering
+\includegraphics[width=12cm]{images/Fig9_jawbone-results.jpg}
+\caption{Jawbone model accuracy is illustrated in the form of (left) a bar chart (right) a confusion matrix}
+\label{fig:jawbone-accuracy}
+\end{figure}
+
 The EfficientNet ensemble achieved $90.7\% ± 2.6\%$ cross-validation accuracy and $77.6\%$ test accuracy. The $13.1\%$ discrepancy likely reflects specimen-level data leakage (multiple images from the same resource appearing in both training and test sets) and limited test set size. The more conservative test accuracy ($77.6\%$) still exceeds traditional TRW and CA performance while surpassing the $70\%$ management threshold.
 
-% NEED FIGURE: MODEL PERFORMANCE
-Per-class performance (Figure 4) showed perfect classification for fawns (0.5 years), yearlings (1.5 years), and 4.5-year deer (100\% F1-score). Lower performance occurred for 2.5-year (F1: 37.5\%), 3.5-year (F1: 50\%), and 5.5+ year deer (F1: 87\%). The confusion matrix revealed the model's primary challenge: distinguishing 2.5 and 3.5 year classes, predicting 2.5 years 42.9\% of the time when true age was 2.5 years, and distributing predictions among 1.5, 2.5, and 3.5 years for true 3.5-year deer. This difficulty aligns with Meares et al.'s finding that DER cannot reliably separate these age classes \cite{2006meares}.
+Per-class performance metrics are illustrated in Figure \ref{fig:jawbone-accuracy}. Although classifications for 0.5, 1.5, 4.5, and 5.5+ years old all exceeded the $80\%$ accuracy threshold for research, ages 2.5 and 3.5 years old caused significant issues. For a true age of 2.5 years, the ensemble predicted the specimens to be 1.5 and 2.5 years of age with the same frequency. For a true age of 3.5 years, the model predicted 2.5 years old half the time, correctly guessing the true age one third of the time. The model's difficulty in this age regime aligns with Meares et al.'s finding that DER cannot reliably separate these age classes \cite{2006meares}.
 
-% NEED FIGURE: ATTENTION MAP
-Attention map analysis (Figure 5) confirmed the model learns dental-specific features matching TRW criteria:
+% v------------------------------------- START HERE -------------------------------------v
+
+Attention map analysis (Figure \ref{fig:jawbone-attention-maps}) confirmed the model learns dental-specific features matching TRW criteria:
 \begin{itemize}
-	\item \textbf{Fawns (0.5 years)}: Attention concentrated on molars, consistent with tooth count assessment
-	\item \textbf{Yearlings (1.5 years)}: Focus shifted to premolars, matching crest-counting criteria  
- 	\item \textbf{2.5 years}: Distributed attention across molar region, corresponding to M1 DER evaluation
-	\item \textbf{3.5 years}: Focus on posterior molars (M2-M3 region), consistent with sequential DER assessment
+	\item \textbf{0.5 years}: Attention in fawn jawbones is concentrated on molars, consistent with tooth count assessment
+	\item \textbf{1.5 years}: For yearlings, focus is shifted to premolars, matching crest-counting criteria  
+ 	\item \textbf{2.5 years}: Distributed attention across molar region, corresponding to $M_1$ DER evaluation
+	\item \textbf{3.5 years}: Focus on posterior molars ($M_2$-$M_3$), consistent with sequential DER assessment
 	\item \textbf{4.5 years}: Attention distributed across molar region
-	\item \textbf{5.5+ years}: Model highlighted extensive wear and flattening characteristics across all teeth
+	\item \textbf{5.5+ years}: Model highlights extensive wear and flattening characteristics across all teeth
 \end{itemize}
+
+\begin{figure}[htpb!]
+\centering
+\includegraphics[width=\linewidth]{images/Fig10_jawbone-attention-maps.jpg}
+\caption{(Left) Standardized jawbone images are compared against (right) the model's attention maps derived for the same images.}
+\label{fig:jawbone-attention-maps}
+\end{figure}
 
 Critically, attention maps focused exclusively on dental features despite variable backgrounds, finger presence, and jawbone orientations, confirming the model ignores artifacts and learns genuine biological aging signatures.
 
