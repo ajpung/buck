@@ -184,13 +184,13 @@ Per-class performance metrics are illustrated in Figure \ref{fig:jawbone-accurac
 
 % v------------------------------------- START HERE -------------------------------------v
 
-Attention map analysis (Figure \ref{fig:jawbone-attention-maps}) confirmed the model learns dental-specific features matching TRW criteria:
+Attention map analysis (Figure \ref{fig:jawbone-attention-maps}) confirmed the model's ability to learn dental-specific features matching TRW criteria:
 \begin{itemize}
-	\item \textbf{0.5 years}: Attention in fawn jawbones is concentrated on molars, consistent with tooth count assessment
-	\item \textbf{1.5 years}: For yearlings, focus is shifted to premolars, matching crest-counting criteria  
- 	\item \textbf{2.5 years}: Distributed attention across molar region, corresponding to $M_1$ DER evaluation
-	\item \textbf{3.5 years}: Focus on posterior molars ($M_2$-$M_3$), consistent with sequential DER assessment
-	\item \textbf{4.5 years}: Attention distributed across molar region
+	\item \textbf{0.5 years}: Attention is concentrated on molars, consistent with tooth count assessment
+	\item \textbf{1.5 years}: Attention is focused on premolars, matching crest-counting criteria  
+ 	\item \textbf{2.5 years}: Attention is distributed across the molar region, corresponding to $M_1$ DER evaluation
+	\item \textbf{3.5 years}: Focus targets posterior molars ($M_2$-$M_3$), consistent with sequential DER assessment
+	\item \textbf{4.5 years}: Attention remains focused on the molar region
 	\item \textbf{5.5+ years}: Model highlights extensive wear and flattening characteristics across all teeth
 \end{itemize}
 
@@ -201,65 +201,39 @@ Attention map analysis (Figure \ref{fig:jawbone-attention-maps}) confirmed the m
 \label{fig:jawbone-attention-maps}
 \end{figure}
 
-Critically, attention maps focused exclusively on dental features despite variable backgrounds, finger presence, and jawbone orientations, confirming the model ignores artifacts and learns genuine biological aging signatures.
+In each case, attention maps focused exclusively on dental features despite variable backgrounds, finger presence, and jawbone orientations, confirming the model's ability to identify and ignore artifacts, learning genuine biological aging signatures.
 
 \section{Discussion}
 
-\subsection{Complementary Deployment Scenarios}
+Together, the trail camera and jawbone computer vision systems address distinct wildlife management needs. The ability to quickly and accurate estimate the age of whitetail bucks from tail camera imagery enables efficient non-invasive monitoring of live deer populations. Wildlife agencies and outdoor enthusiasts can estimate age structure without harvest data, supporting pre-season population assessments and real-time management decisions. The $76.7\%$ accuracy exceeds human performance and meets the $70\%$ threshold for management applications. Although the approach inherently suffers from AOTH's fundamental limitation (morphological variation due to nutrition and genetics), the model's plausability is demonstrated by its ability to identify and analyze genuine age-related features.
 
-These two systems address distinct wildlife management needs:
+Alternatively, the dental assessment model provides higher accuracy ($90.7\%$ cross-validation, $77.6\%$ test) for harvested specimens. State wildlife agencies processing hundreds to thousands of jaw samples annually could deploy this system for rapid initial screening, flagging ambiguous cases  with low confidence scores for expert review. The approach dramatically reduces manual TRW analysis time while maintaining or exceeding traditional accuracy. Unlike CA, it requires no specialized laboratory processing or multi-week delays. The automated system enables consistent, repeatable analysis without inter-observer variation, can be used in the field, and naturally handles variations in background, lighting, and jawbone rotation.
 
-\textbf{Trail camera assessment} enables non-invasive monitoring of live deer populations. Wildlife agencies and hunters can estimate age structure without harvest data, supporting pre-season population assessments and real-time management decisions. The 76.7\% accuracy exceeds human performance and meets the 70\% threshold for management applications. However, this approach inherits AOTH's fundamental limitation: morphological variation due to nutrition and genetics. The model's biological plausibility—focusing on chest, neck, and stomach rather than antlers—suggests it learns genuine age-related features, but cannot overcome individual variation.
-
-\textbf{Dental assessment} provides higher accuracy (90.7\% cross-validation, 77.6\% test) for harvested specimens. State wildlife agencies processing hundreds to thousands of jaw samples annually could deploy this system for rapid initial screening, flagging ambiguous cases (low confidence scores) for expert review. The approach dramatically reduces manual TRW analysis time while maintaining or exceeding traditional accuracy. Unlike CA, it requires no specialized laboratory processing or multi-week delays. The automated system enables consistent, repeatable analysis without inter-observer variation.
-
-\subsection{Biological Validation}
-
-Attention map analysis provides critical validation that both models learn biologically meaningful features rather than spurious correlations. For trail cameras, the focus on body morphology (neck, chest, stomach) while ignoring antlers directly matches expert recommendations \cite{1999demarais, 2003richards}. For dental analysis, the progression from tooth count (fawns) to premolar structure (yearlings) to sequential molar wear (mature deer) precisely follows the TRW decision tree \cite{1949severinghaus, 1980larson}—despite never being explicitly programmed with these rules.
-
-This biological plausibility distinguishes our approach from pure "black box" machine learning. The models discover and apply the same anatomical features wildlife biologists use, lending credibility to their predictions and facilitating acceptance by wildlife management professionals.
+In both computer vision systems, attention map analysis provides critical validation that both models learn biologically meaningful features rather than spurious correlations. For trail cameras, the focus on body morphology like the neck, chest, and stomach; antlers are ignored altogether, directly matches expert recommendations \cite{1999demarais, 2003richards}. For dental analysis, the progression from tooth count in fawns to premolar structure in yearlings to sequential molar wear in mature deer precisely follows the TRW decision tree \cite{1949severinghaus, 1980larson} despite never being explicitly programmed with these rules. This biological plausibility distinguishes our approach from pure "black box" machine learning -- the models discover and apply the same anatomical features wildlife biologists use, lending credibility to their predictions and facilitating acceptance by wildlife management professionals.
 
 \subsection{Limitations and Future Work}
 
-Several constraints warrant acknowledgment:
+Despite the model's advantages, there are several constraints to consider. First, the size of both datasets (197 and 243 images) remains modest compared to typical deep learning applications. The scarcity of known-age deer data ultimately results in specimen-level leakage; because of this, the dental dataset likely contains multiple images from individual specimens split across training and test sets. While attention maps suggest the model learns biological features rather than specimen-specific artifacts, future work should implement specimen-level splitting to eliminate this potential issue. On the other hand, the same data scarcity reflects the practical reality of wildlife research: professionally verified data are expensive and time-consuming to obtain. Data augmentation and transfer learning mitigate this limitation, but larger datasets from institutional collections would likely improve performance. The
 
-\textbf{Dataset size}: Both datasets (197 and 243 images) remain modest compared to typical deep learning applications. This reflects the practical reality of wildlife research—professionally verified data are expensive and time-consuming to obtain. Data augmentation and transfer learning mitigate this limitation, but larger datasets from institutional collections would likely improve performance.
+Although both datasets span multiple geographic regions, systematic validation across different states, habitats, and subspecies would further confirm the model's generalization. Body morphology and tooth wear patterns may vary with local nutrition, genetics, and environmental conditions.
 
-\textbf{Geographic validation}: Both datasets span multiple regions, but systematic validation across different states, habitats, and subspecies would confirm generalization. Body morphology and tooth wear patterns may vary with local nutrition, genetics, and environmental conditions.
+From an analysis point of view, both models show reduced performance for 2.5-3.5 year classes, reflecting the genuine biological challenge of distinguishing deer in transitional growth phases. The same limitation also affects human experts and may represent an inherent ceiling on classification accuracy. Although deploying CV systems may conserve resources, they would also benefit from calibrated confidence scores, enabling automated flagging of ambiguous cases for expert review.
 
-\textbf{Specimen-level leakage}: The dental dataset likely contains multiple images from individual specimens split across training and test sets. While attention maps suggest the model learns biological features rather than specimen-specific artifacts, future work should implement specimen-level splitting to eliminate this potential confound.
-
-\textbf{Middle age classes}: Both models show reduced performance for 2.5-3.5 year classes, reflecting the genuine biological challenge of distinguishing deer in transitional growth phases. This limitation also affects human experts and may represent an inherent ceiling on classification accuracy.
-
-\textbf{Uncertainty quantification}: Deploying these systems would benefit from calibrated confidence scores, enabling automated flagging of ambiguous cases for expert review. This would create a hybrid human-AI workflow maximizing both accuracy and efficiency.
-
-Future development should prioritize: (1) collaboration with state agencies and research institutions to access larger, specimen-tracked datasets, (2) geographic validation studies, (3) integration with existing wildlife management databases and workflows, (4) extension to other cervid species where similar aging principles apply (mule deer, elk), and (5) development of uncertainty quantification for deployment.
+Based on these limitations, future development of similar models should prioritize collaboration with state agencies and research institutions to access larger, specimen-tracked datasets. The models would also benefit from geographic validation studies and integration with existing wildlife management databases and workflows. Once established, similar models could be extended and specialized for other cervid species where similar aging principles apply like mule deer, elk, and moose.
 
 \subsection{Practical Implications}
 
-These systems offer immediate practical value:
+These systems offer immediate practical value for many organizations. For wildlife agencies, automated dental analysis could process the backlog of jaw samples most agencies face during hunting season, providing timely age-structure data for next-year harvest regulation. Similarly, trail camera analysis enables population monitoring without harvest data. For academics and researchers, the $90.7\%$ cross-validation accuracy of the dental model well exceeds the $80\%$ threshold for research applications, particularly when combined with manual review of low-confidence cases. Standardized, repeatable analysis eliminates inter-observer variation. 
 
-\textbf{For wildlife agencies}: Automated dental analysis could process the backlog of jaw samples most agencies face during hunting season, providing timely age-structure data for next-year harvest regulation. Trail camera analysis enables population monitoring without harvest data.
-
-\textbf{For researchers}: The 90.7\% dental accuracy approaches the 80\% threshold for research applications, particularly when combined with manual review of low-confidence cases. Standardized, repeatable analysis eliminates inter-observer variation.
-
-\textbf{For hunters and enthusiasts}: Accessible trail camera analysis tools could improve selective harvest decisions, supporting quality deer management goals. Educational applications could help hunters develop better visual assessment skills.
-
-\textbf{For small organizations}: This work demonstrates that effective computer vision tools can be developed using publicly available educational resources, potentially democratizing access to automated analysis capabilities previously available only to well-funded institutions.
-
-\subsection{Technical Accessibility}
-
-A critical insight from this work: transfer learning dramatically lowers the data requirements for specialized applications. Despite limited datasets, both systems achieve professional-grade performance by leveraging CNNs pre-trained on millions of general images. This approach enables domain experts without extensive machine learning expertise to develop practical tools for their field.
-
-The biological interpretability provided by attention maps further bridges the gap between machine learning and domain expertise. Rather than accepting opaque "black box" predictions, wildlife professionals can verify that models focus on anatomically relevant features, building trust and facilitating adoption.
+For hunters and enthusiasts, accessible trail camera analysis tools could improve selective harvest decisions, supporting quality deer management goals. Educational applications could help hunters develop better visual assessment skills and improve the overall well being of whitetail populations. For small organizations, this work demonstrates that effective computer vision tools can be developed using publicly available educational resources, potentially democratizing access to automated analysis capabilities previously available only to well-funded institutions.
 
 \section{Conclusions}
 
-This study presents the first comprehensive computer vision approach to white-tailed deer age estimation, demonstrating that transfer learning with CNN ensembles achieves breakthrough performance for both field (trail camera) and post-harvest (dental) scenarios. The ResNet-18 ensemble (76.7\% ± 5.9\% cross-validation accuracy) exceeds human AOTH performance and morphometric models while meeting management accuracy thresholds. The EfficientNet ensemble (90.7\% ± 2.6\% cross-validation accuracy, 77.6\% test accuracy) substantially outperforms traditional dental analysis in accuracy, speed, and repeatability.
+This study presents the first comprehensive computer vision approach to white-tailed deer age estimation, demonstrating that transfer learning with CNN ensembles achieves breakthrough performance for both field (trail camera) and post-harvest (dental) scenarios. The ResNet-18 ensemble ($76.7\% \pm 5.9\%$ cross-validation accuracy) exceeds human AOTH performance and morphometric models while meeting management accuracy thresholds. The EfficientNet ensemble ($90.7\% \pm 2.6\%$ cross-validation accuracy, $77.6\%$ test accuracy) substantially outperforms traditional dental analysis in accuracy, speed, and repeatability.
 
-Attention map validation confirms both models learn biologically relevant features—body morphology for trail cameras and dental characteristics for jawbones—that align with expert knowledge, lending credibility to their predictions and facilitating professional acceptance. These complementary systems offer wildlife managers practical tools to reduce assessment workload while maintaining or exceeding current accuracy standards.
+Attention map validation confirms that both models learn biologically relevant features that align with expert knowledge, lending credibility to their predictions and facilitating professional acceptance. These complementary systems offer wildlife managers practical tools to reduce assessment workload while maintaining or exceeding current accuracy standards.
 
-The success of transfer learning with limited datasets demonstrates broader implications: domain experts across wildlife biology can leverage pre-trained CNNs to develop specialized analysis tools without requiring massive data collection efforts or extensive machine learning expertise. As wildlife agencies and researchers adopt these approaches, automated age estimation could transform how deer populations are monitored and managed across North America.
+Furthermore, the success of transfer learning with limited datasets demonstrates broader implications. For instance, domain experts across wildlife biology can leverage pre-trained CNNs to develop specialized analysis tools without requiring massive data collection efforts or extensive machine learning expertise. As wildlife agencies and researchers adopt these approaches, automated age estimation could transform how deer populations are monitored and managed across North America.
 
 \bibliographystyle{unsrt}
 \bibliography{iopbib}
@@ -267,6 +241,5 @@ The success of transfer learning with limited datasets demonstrates broader impl
 \ack{The author acknowledges the wildlife management organizations, state agencies, and educational institutions that provided trail camera and post-mortem dental analysis training materials used in dataset construction. Particular appreciation is extended to the wildlife professionals who developed these educational resources, enabling this interdisciplinary application of computer vision to wildlife biology. Appreciation is also extended to the open-source community for the deep learning frameworks and tools that enabled this work.}
 
 \funding{This research received no external funding.}
- This section is a list of funder names and grant numbers
 
 \end{document}
