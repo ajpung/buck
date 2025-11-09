@@ -75,7 +75,7 @@
 \fancyhfoffset[L]{27mm}
 \fancyhead[L]{{\small \sf IOP Publishing}\hspace{5mm} {\it Journal} {\bf vv} (yyyy)}
 \fancyhead[C]{}
-\fancyhead[R]{Author {\it et al}\ }
+\fancyhead[R]{Pung}
 \fancyfoot[LR]{}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.5pt}
