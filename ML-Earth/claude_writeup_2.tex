@@ -75,7 +75,7 @@ Image standardization followed a minimal preprocessing approach. Original images
 
 \begin{figure}[htpb!]
 \centering
-\includegraphics[width=\linewidth]{images/Fig1_TrailCamSamples.jpg}
+\includegraphics[width=11cm]{images/Fig1_TrailCamSamples.jpg}
 \caption{Representative sample from the standardized trail camera dataset, demonstrating variation in deer age, pose, lighting conditions, background environments, and image quality}
 \label{fig:trail-camera-sample}
 \end{figure}
@@ -112,8 +112,6 @@ Training utilized AdamW optimization with differential learning rates, $0.0003$ 
 
 Inference utilized test-time augmentation (TTA) with ensemble averaging (Figure \ref{fig:resnet18-inference}). For each test image, all five models generated predictions on both the original image and its horizontal flip. Within each model, predictions from original and flipped versions were averaged. The five TTA-averaged predictions were then ensemble-averaged using softmax normalization to produce final classification probabilities. The multi-stage process was chosen to reduce prediction variance and improves robustness to minor pose variations.
 
-% -------------------- START HERE --------------------
-
 \subsection{Trail Camera Results}
 
 The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ mean cross-validation accuracy across five folds and $97.5\%$ test accuracy. The substantial test performance likely reflects overfitting to the small dataset, making cross-validation the more reliable metric for expected real-world performance. Nonetheless, the cross-validation accuracy exceeds human expert assessment ($58.6\%$), morphometric models ($63\%$), and the $70\%$ threshold required for management decisions.
@@ -125,22 +123,20 @@ The ResNet-18 ensemble achieved $76.7\% \pm 5.9\%$ mean cross-validation accurac
 \label{fig:trail-camera-results}
 \end{figure}
 
-shows strong performance across all age categories except 4.5 years, where one test specimen was misclassified as 2.5 years---the same age class most challenging for human assessors. (Right) Confusion matrix demonstrates near-perfect classification with minimal off-diagonal errors. The model achieves $100\%$ accuracy for yearlings (1.5 years), 2.5 years, 3.5 years, and mature deer ($\geq 5.5$ years) on the test set.
-
 Per-class performance (Figure \ref{fig:trail-camera-results}) remained strong across all age categories with one notable exception: a single 4.5-year-old buck was misclassified as 2.5 years old on the test set. Interestingly, 4.5 years is also the age class most challenging for human assessors \cite{2013gee}, suggesting this may represent a genuinely difficult specimen exhibiting atypical morphology for its age rather than a systematic model failure. All other age classes achieved $100\%$ test accuracy, though this should be interpreted cautiously given the small test set size.
 
 \subsection{Biological Interpretation via Attention Maps}
 
-Beyond classification accuracy, understanding \textit{which} image features drive predictions is critical for biological validation and professional acceptance. Attention map analysis visualizes spatial regions the model deems most important for classification decisions. Figure \ref{fig:trail-camera-attention} shows attention maps for representative specimens from each age class.
-5
+Beyond classification accuracy, understanding \textit{which} image features drive model predictions is critical for biological validation and professional acceptance. Attention map analysis visualizes spatial regions the model deems most important for classification decisions. Figure \ref{fig:trail-camera-attention} shows original images and their associated attention maps for representative specimens from each age class.
+
 \begin{figure}[htpb!]
 \centering
 \includegraphics[width=\linewidth]{images/Fig5_Heatmap.jpg}
-\caption{Attention map analysis for trail camera images. (Top row) Original images labeled with NDA-determined age. (Bottom row) Attention heatmaps overlaid on original images, with red/yellow indicating high attention and blue indicating low attention.}
+\caption{Attention map analysis for trail camera images including (top row) original images labeled with NDA-determined age and (bottom row) attention heatmaps overlaid on original images. Red and yellow indicating high attention and blue indicates low attention.}
 \label{fig:trail-camera-attention}
 \end{figure}
 
-Despite variation in background, pose, and lighting, attention maps consistently focus on biologically relevant morphological features. In 1.5 year old bucks (yearlings), attention concentrates on neck and chest regions, key indicators of immature body conformation. Young bucks exhibit narrow chests and thin necks relative to body size. For 2.5 year old bucks, focus distributes across the neck, chest, and body, reflecting the transitional growth phase where proportions shift toward mature conformation but remain incomplete. In mature deer, $\geq 5.5$ years, attention strongly emphasizes the stomach region, a primary characteristic experts use for identifying aged bucks. Pronounced stomach sag results from accumulated body mass and age-related changes in body composition.
+Despite variation in background, pose, and lighting, attention maps consistently focus on biologically relevant morphological features. In 1.5 year old bucks, attention concentrates on neck and chest regions, key indicators of immature body conformation. Young bucks exhibit narrow chests and thin necks relative to body size. For 2.5 year old bucks, focus distributes across the neck, chest, and body, reflecting the transitional growth phase where proportions shift toward mature conformation but remain incomplete. In mature deer 5.5 years or older, attention strongly emphasizes the stomach region, a primary characteristic experts use for identifying aged bucks. Pronounced stomach sag results from accumulated body mass and age-related changes in body composition.
 
 Critically, attention maps largely ignore antlers across all age classes, aligning with expert guidance that antler size is an unreliable age indicator due to high variation with genetics, nutrition, and injury history \cite{1999demarais, 2003richards}. Despite never being explicitly instructed to do so, the model's spontaneous focus on body morphology rather than antlers provides compelling evidence that learned features reflect genuine age-related biological patterns rather than spurious correlations.
 
@@ -150,15 +146,15 @@ Critically, attention maps largely ignore antlers across all age classes, aligni
 
 White-tailed deer dental aging exploits two fundamental biological processes: predictable tooth eruption sequences during development and systematic tooth wear progression throughout life. Fawns are born with four deciduous premolars, with permanent premolars and molars erupting following a genetically determined schedule. By 1.5 years, the full adult dentition has erupted, with the third premolar ($P_3$) exhibiting a diagnostic three-crested structure. Deer $\geq 2.5$ years show two-crested $P_3$, providing clear separation between yearlings and older animals \cite{1949severinghaus, 1980larson}.
 
-For deer $\geq 2.5$ years, aging relies on tooth wear patterns driven by masticatory mechanics. White-tailed deer are browsers and grazers, consuming vegetation with varying abrasiveness. Chewing mechanics produce predictable wear progression: the first molar ($M_1$) erupts earliest and experiences the longest wear period, followed sequentially by $M_2$ and $M_3$. As enamel wears away on occlusal surfaces, the underlying dentine becomes increasingly exposed. Therefore, the dentine-to-enamel ratio (DER) of each molar increases systematically with age, providing quantitative aging criteria.
+For deer $\geq 2.5$ years, aging relies on tooth wear patterns driven by masticatory mechanics. White-tailed deer are browsers and grazers, consuming vegetation with varying abrasiveness. Chewing mechanics produce predictable wear progression. The first molar ($M_1$) erupts earliest and experiences the longest wear period, followed sequentially by $M_2$ and $M_3$. As enamel wears away on occlusal surfaces, the underlying dentine becomes increasingly exposed. Therefore, the dentine-to-enamel ratio (DER) of each molar increases systematically with age, providing quantitative aging criteria.
 
-Traditional tooth replacement and wear (TRW) protocols follow a sequential decision tree based on tooth count (fawns vs. older deer), $P_3$ crest structure (1.5 years vs. $\geq 2.5$ years), and progressive DER thresholds for $M_1$, $M_2$, and $M_3$ to separate older age classes. However, work by Meares et al. \cite{2006meares} demonstrated that individual variation in tooth wear rates undermines DER reliability for separating 2.5-4.5 year classes, suggesting this age range represents a fundamental biological challenge for dental aging.
+Traditional tooth replacement and wear (TRW) protocols follow a sequential decision tree based on tooth count, $P_3$ crest structure, and progressive DER thresholds for $M_1$, $M_2$, and $M_3$ to separate older age classes. However, work by Meares et al. \cite{2006meares} demonstrated that individual variation in tooth wear rates undermines DER reliability for separating 2.5-4.5 year classes, suggesting this age range represents a fundamental biological challenge for dental aging.
 
 \subsection{Dataset Collection and Preparation}
 
 The jawbone dataset comprises 243 color images collected from 17 independent sources including Quality Deer Management Association, National Deer Association, state wildlife agencies, and university wildlife programs via educational videos, training tutorials, and published guides. Unlike trail camera images, no restrictions were placed on geographic region or deer sex, as dental aging principles apply broadly across white-tailed deer populations. Age distribution included 39 fawns (0.5 years), 62 yearlings (1.5 years), 33 images of 2.5 year-olds, 29 images of 3.5 year-olds, 20 images of 4.5 year-olds, 22 images of 5.5 year-olds, and 38 images from deer aged 6.5-16.5 years (grouped as $5.5+$ years). Specimens confirmed as $\geq 9.5$ years were exclusively sourced from NDA documentation.
 
-Jawbone image standardization followed similar principles to trail camera processing but was adapted for dental specimens. Raw images often contained annotations, age labels, or measurement markings added during original educational material creation. These were digitally removed using editing tools on a Samsung Galaxy S25 Ultra to prevent the model from exploiting text information rather than learning dental features. Images were cropped to 2:1 aspect ratio ensuring all visible teeth remained in frame. Original backgrounds and lighting were preserved, and fingertips holding jawbones were retained in some images to simulate realistic field submission conditions where enthusiasts or agency personnel would photograph specimens in-hand. Figure \ref{fig:jawbone-sample} illustrates the standardized dataset's variation in jawbone orientation, lighting, background, and presentation.
+Jawbone image standardization followed similar principles to trail camera processing but was adapted for dental specimens. Raw images often contained annotations, age labels, or measurement markings added during original educational material creation. These were digitally removed using editing tools on a Samsung Galaxy S25 Ultra to prevent the model from exploiting text information rather than learning dental features. Images were cropped to 2:1 (width:height) aspect ratio ensuring all visible teeth remained in frame. Original backgrounds and lighting were preserved, and fingertips holding jawbones were retained in some images to simulate realistic field submission conditions where enthusiasts or agency personnel would photograph specimens in-hand. Figure \ref{fig:jawbone-sample} illustrates the standardized dataset's variation in jawbone orientation, lighting, background, and presentation.
 
 \begin{figure}[htpb!]
 \centering
@@ -166,6 +162,8 @@ Jawbone image standardization followed similar principles to trail camera proces
 \caption{Representative sample from the standardized jawbone dataset, demonstrating variation in jawbone orientation, tooth condition, lighting, background, and imaging context.}
 \label{fig:jawbone-sample}
 \end{figure}
+
+% -------------------- START HERE --------------------
 
 Data splitting followed 80/20 train/test stratification with proportional age representation in each. Training data ($80\%$, 194 images) underwent balanced augmentation to 1200 samples per class through rotations ($\pm 10^{\circ}$), horizontal flipping (simulating imaging either side of the jaw), brightness adjustments ($0.8-1.2\times$), and contrast variation ($0.8-1.2\times$). Unlike trail camera augmentation, no Gaussian noise was added given that jawbone images are typically captured under more controlled conditions. The test set ($20\%$, 49 images) remained non-augmented.
 
