@@ -50,7 +50,7 @@ our output compared to the expectations from normal people in the field. This is
 achieved by statistically comparing the age estimates from informed hunters compared
 with the model's "truth", which is determined by institutions mentioned above.
 Results for CNN-based AOTH have been published in [bioRxiv](https://www.biorxiv.org/content/10.1101/2025.07.01.662304v1).
-Results for CNN-based jawbone aging have been submitted to bioRxiv. A follow-up summary publication was recently submitted to Machine Learning: Earth.
+Results for CNN-based jawbone aging have been submitted to bioRxiv. A follow-up summary publication was recently submitted to a journal, Machine Learning: Earth.
 
 #### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
