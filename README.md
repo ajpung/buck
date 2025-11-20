@@ -39,8 +39,8 @@ institutions.
 BUCK is working with a small but growing dataset. Because of this, different models
 are built, compared, and optimized to find the best model for the task. The models
 include 20 canned classifiers (e.g. NaiveBayes, RandomForest, etc.) amd 35
-convolution neural networks (CNNs), implemented via transfer learning and ensemble
-models. Each of these is built, executed, and illustrated in separate Jupyter notebooks.
+convolution neural networks (CNNs), implemented via transfer learning and ensemble models. Each of these is built, executed, and illustrated in separate Jupyter notebooks.
+
 The goal is to find the best model for the task, and to provide a framework for future
 work in this area.
 
@@ -50,7 +50,7 @@ our output compared to the expectations from normal people in the field. This is
 achieved by statistically comparing the age estimates from informed hunters compared
 with the model's "truth", which is determined by institutions mentioned above.
 Results for CNN-based AOTH have been published in [bioRxiv](https://www.biorxiv.org/content/10.1101/2025.07.01.662304v1).
-Results for CNN-based jawbone aging have been submitted to bioRxiv. A follow-up summary publication was submitted to Machine Learning: Earth.
+Results for CNN-based jawbone aging have been submitted to bioRxiv. A follow-up summary publication was recently submitted to a journal, Machine Learning: Earth.
 
 #### CNN
 To perform its analysis, BUCK uses a convolutional neural network (CNN) to extract
