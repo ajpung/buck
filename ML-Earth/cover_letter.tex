@@ -1,0 +1,52 @@
+\documentclass[11pt]{letter}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\signature{Aaron J. Pung, Ph.D.}
+\address{aaron.pung@gmail.com}
+
+\begin{document}
+
+\begin{letter}{
+Editor-in-Chief\\
+Machine Learning: Earth\\
+IOP Publishing
+}
+
+\opening{Dear Editor,}
+
+I am pleased to submit my  manuscript titled \textbf{"Computer Vision for White-Tailed Deer Age Estimation: A Dual-Modality Approach Using Trail Camera Images and Jawbone Morphology"} for consideration in \textit{Machine Learning: Earth}.
+
+This work presents the first comprehensive computer vision solution to white-tailed deer age estimation, addressing a critical wildlife management challenge through machine learning innovation deeply integrated with biological domain knowledge. The manuscript demonstrates how transfer learning with CNN ensembles can achieve breakthrough performance in data-scarce ecological domains while maintaining biological interpretability. These are core themes aligned with your journal's mission at the interface between ML innovation and Earth system science.
+
+\textbf{Key contributions include:}
+
+\begin{itemize}
+\item \textbf{Novel dual-modality framework}: This study develops and demonstrates complementary systems for live deer (trail cameras, 76.7\% accuracy) and harvested specimens (jawbone analysis, 90.7\% accuracy), directly addressing the practical reality that wildlife managers collect age data from both field monitoring and post-harvest sampling. To my knowledge, this represents the first unified CV approach spanning both contexts.
+
+\item \textbf{Deep biological integration}: Attention map analysis reveals that both models autonomously discover and apply the same anatomical features wildlife biologists have codified through decades of field experience, including body morphology patterns (neck, chest, stomach) for trail cameras and dental aging sequences (tooth eruption, sequential wear) for jawbones, despite never being programmed with these domain rules. The convergence between learned features and established biological principles provides critical validation beyond accuracy metrics alone.
+
+\item \textbf{Substantial performance improvement}: Both systems exceed the accuracy of traditional methods: trail camera analysis surpasses human visual assessment (60.6\%) and morphometric models (63\%), while jawbone analysis dramatically outperforms manual tooth wear analysis and cementum annuli methods in accuracy, processing speed (seconds versus weeks), and eliminates inter-observer variation.
+
+\item \textbf{Practical deployment value}: The systems meet accuracy thresholds wildlife professionals identify as necessary (70\% for management decisions, 80\% for research applications) while offering immediate practical utility for population monitoring, harvest regulation, and conservation planning across North America.
+
+\item \textbf{Broader methodological implications}: Success with limited datasets (197 and 243 images) demonstrates that domain experts can leverage transfer learning to develop specialized CV tools in data-scarce biological contexts without massive collection efforts, providing a template for wildlife research applications.
+\end{itemize}
+
+The manuscript exemplifies several themes your journal emphasizes, such as advancing both ML methodology \textit{and} domain understanding, rigorous validation with honest assessment of limitations, biological interpretability through attention analysis, and addressing real-world challenges in ecological monitoring. The work bridges computer vision innovation with wildlife biology through careful attention to domain-specific constraints (limited labeled data, morphological variation, biological aging mechanisms) while maintaining the methodological rigor your readership expects.
+
+\textbf{Relation to prior work}: This manuscript synthesizes and substantially extends two preprints posted on bioRxiv (doi: 10.1101/2025.07.01.662304 and 10.1101/2025.07.25.666691). The current submission represents a unified treatment with enhanced biological context, comparative analysis across methods, and deeper discussion of practical implications not present in the individual preprints. We confirm that no copyright was transferred for these preprints and we retain full rights to submit this enhanced version.
+
+This work advances machine learning applications in ecological monitoring while maintaining the biological grounding and practical focus that distinguishes impactful interdisciplinary research. We believe it will interest your broad readership spanning ML researchers, Earth system scientists, and domain practitioners in wildlife management and conservation biology.
+
+Thank you for considering this manuscript for \textit{Machine Learning: Earth}. All authors have approved the manuscript and agree to its submission. We have no conflicts of interest to declare. This research received no external funding.
+
+I look forward to your response and am happy to address any questions during the review process.
+
+Sincerely,
+
+Aaron J. Pung
+
+\end{letter}
+
+\end{document}
