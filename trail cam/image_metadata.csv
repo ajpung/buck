@@ -1,5 +1,6 @@
 ﻿Collected,Year_taken,Month_taken,Day_taken,Location,1.5,2.5,3.5,4.5,5.5,Correct,Justification,AgeMyDeer,Confidence,
-251218,2025,10,8,IA,,,,,,,,5.5,41%,
+260108,2025,11,7,MN,,,,,,,,3.5,90%,
+251218,2025,10,8,IA,0,1,22,54,23,4.5,"Rectangular frame, flat back, flat stomach, long legs, slight neck-to-brisket curve",5.5,41%,
 251211,2025,10,21,WI,87,11,1,0,0,1.5,"Bottleneck where neck joins body, lack of neck muscle development, long legs, slim mid-section, underdeveloped hindquarters and shoulders, short face.",1.5,51%,
 251204,2024,12,10,MS,0,2,26,46,26,5.5,"Neck joins body at brisket, belly dips below level of sternum, giant body, short legs, pear-shaped body",2.5,39%,
 251120,2025,10,28,WI,5,53,34,7,0,2.5,"thick mid-section, thick hindquarters, location, neck joins body at distinct point, long slim legs",4.5,62%,
