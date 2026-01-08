@@ -10,11 +10,11 @@
 
 
 # Introduction
-A tool for predicting the age of male whitetail deer based on trail camera images.
+BUCK is a tool for predicting the age of male whitetail deer based on trail camera images.
 
 # Buck aging
 ## Introduction
-There are many ways to predict the age a male whitetail deer. One common method is to
+There are many ways to predict the age a male whitetail deer. One method is to
 look at the teeth structure and analyze their  wear and material patterning, but this
 requires the aid of a professional. Other techniques have been deeply investigated
 including antler characteristics (mass, size, etc.) as well as body proportions.
