@@ -25,6 +25,7 @@ practical for the average hunter. Other characteristics include average beam len
 circumference, and tine length, but these suffer from the same issues as mass.
 
 ## Computer Vision
+
 ### BUCK
 Alternatively, the NDA has provided a set of images and ratings for a number of
 deer, which can be used to train a model to predict age based on images alone.
