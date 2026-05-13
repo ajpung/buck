@@ -10,7 +10,7 @@
 
 
 # Introduction
-BUCK is an Artificial Intelligence (AI) tool for predicting the age of male whitetail deer based on trail camera and jawbone imagery.
+BUCK is an AI tool for predicting the age of male whitetail deer based on trail camera and jawbone imagery.
 
 # Buck age analysis 
 ## Introduction
