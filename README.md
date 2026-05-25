@@ -8,7 +8,6 @@
     Biometric Utilization of Cervid Kontours
 </h2>
 
-
 # Introduction
 BUCK is an AI/ML/CV tool for predicting the age of male whitetail deer based on trail camera and jawbone imagery.
 
