@@ -13,7 +13,7 @@ BUCK is an AI/ML/CV tool for predicting the age of male whitetail deer based on 
 
 # Buck age analysis 
 ## Introduction
-Two conventional ways to predict the age a male whitetail deer are through dental records and body shape. Looking at the teeth structure and analyze their  wear and material patterning, but this requires the aid of a professional. Other techniques have been deeply investigated including antler characteristics (mass, length, etc.) as well as body proportions.
+Two conventional ways to predict the age of a male whitetail deer (buck) are through dental records and body shape. Looking at the teeth structure and analyze their  wear and material patterning, but this requires the aid of a professional. Other techniques have been deeply investigated including antler characteristics (mass, length, etc.) as well as body proportions.
 
 ## Antler characteristics
 Lindsay's studies have shown an increase in average antler mass as a function of
