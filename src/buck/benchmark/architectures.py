@@ -208,7 +208,11 @@ def build_model(name, num_classes, dropout=0.3, pretrained=True):
     else:
         raise RuntimeError(f"no head-attachment rule for {name}")
 
-    _freeze_stem(model, name, freeze)
+    # Freezing only makes sense over transferred weights. Without pretraining
+    # the early blocks are random projections, and freezing them would starve
+    # the model of its own stem rather than preserve anything.
+    if pretrained:
+        _freeze_stem(model, name, freeze)
     return model
 
 

@@ -78,7 +78,14 @@ TRAIN_DEFAULTS = dict(
     patience=15,
     augmentation="medium",
     train_multiplier=8,
+    pretrained=True,
 )
+
+# Training from scratch at the fine-tuning backbone LR would rig the comparison:
+# 1e-4 is chosen to *avoid* disturbing transferred features, which is exactly
+# the wrong rate for weights that start as noise. Raise it with the backbone
+# unfrozen so the no-pretraining arm gets a fair shot.
+SCRATCH_BACKBONE_LR = 1e-3
 
 
 def set_seed(seed):
@@ -170,7 +177,10 @@ def train_fold(
     )
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
-    model = arch.build_model(model_name, num_classes, config["dropout"]).to(device)
+    model = arch.build_model(
+        model_name, num_classes, config["dropout"],
+        pretrained=config["pretrained"],
+    ).to(device)
 
     backbone, head = [], []
     for name, param in model.named_parameters():
@@ -279,6 +289,13 @@ def run_holdout(args, records, groups, class_ages, device):
         config["augmentation"] = args.augmentation
         config["batch_size"] = _batch_size(model_name, args)
         config["train_multiplier"] = args.train_multiplier
+        config["pretrained"] = not args.no_pretrained
+        if args.backbone_lr is not None:
+            config["backbone_lr"] = args.backbone_lr
+        elif args.no_pretrained:
+            config["backbone_lr"] = SCRATCH_BACKBONE_LR
+        if args.no_pretrained:
+            print(f"   [scratch] random init, backbone lr {config['backbone_lr']:.0e}")
 
         fold_metrics, fold_states = [], []
         started = time.time()
@@ -407,7 +424,11 @@ def _score_on_test(args, results, records, labels, test_idx, class_ages, device)
         ckpt_dir = args.output / "checkpoints" / model_name
         prob_sum, y_true = None, None
         for ckpt in sorted(ckpt_dir.glob("fold*.pth")):
-            model = arch.build_model(model_name, len(class_ages), TRAIN_DEFAULTS["dropout"])
+            # Weights are overwritten by the checkpoint, so skip the download.
+            model = arch.build_model(
+                model_name, len(class_ages), TRAIN_DEFAULTS["dropout"],
+                pretrained=False,
+            )
             model.load_state_dict(torch.load(ckpt, map_location="cpu")["model_state_dict"])
             model.to(device).eval()
 
@@ -499,7 +520,12 @@ def run_temporal(args, records, groups, class_ages, device):
             augmentation=args.augmentation,
             batch_size=_batch_size(model_name, args),
             train_multiplier=args.train_multiplier,
+            pretrained=not args.no_pretrained,
         )
+        if args.backbone_lr is not None:
+            config["backbone_lr"] = args.backbone_lr
+        elif args.no_pretrained:
+            config["backbone_lr"] = SCRATCH_BACKBONE_LR
 
         print(f"\n{'=' * 70}\n{model_name} rolling backtest over {len(targets)} weeks\n{'=' * 70}")
         rows = []
@@ -534,7 +560,9 @@ def run_temporal(args, records, groups, class_ages, device):
                 verbose=False,
             )
 
-            model = arch.build_model(model_name, len(class_ages), config["dropout"])
+            model = arch.build_model(
+                model_name, len(class_ages), config["dropout"], pretrained=False,
+            )
             model.load_state_dict(state)
             model.to(device)
             loader = DataLoader(
@@ -707,6 +735,15 @@ def parse_args(argv=None):
     p.add_argument("--epochs", type=int, default=TRAIN_DEFAULTS["max_epochs"])
     p.add_argument("--patience", type=int, default=TRAIN_DEFAULTS["patience"])
     p.add_argument("--augmentation", choices=["light", "medium", "heavy"], default="medium")
+    p.add_argument("--no-pretrained", action="store_true",
+                   help="random init instead of ImageNet weights, and train the "
+                        "whole backbone. Raises the backbone LR to "
+                        f"{SCRATCH_BACKBONE_LR:.0e} unless --backbone-lr is given, "
+                        "so the comparison is not rigged by a fine-tuning rate.")
+    p.add_argument("--backbone-lr", type=float, default=None,
+                   help=f"override the backbone learning rate (default "
+                        f"{TRAIN_DEFAULTS['backbone_lr']:.0e} pretrained, "
+                        f"{SCRATCH_BACKBONE_LR:.0e} scratch)")
     p.add_argument("--image-size", type=int, default=None,
                    help="override input size where the architecture allows it")
     p.add_argument("--batch-scale", type=float, default=1.0,
