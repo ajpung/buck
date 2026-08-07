@@ -26,6 +26,14 @@ __pycache__/
 *.pkl
 *.json
 
+# Benchmark run artefacts (checkpoints, per-run results) are reproducible.
+benchmark_runs/
+
+# ...but the locked test-set manifest is NOT reproducible and must be
+# versioned. It is the record of which images are held out; if it is lost,
+# every held-out score ever reported becomes incomparable.
+!trail cam/splits/*.json
+
 # Literature
 literature/
 
