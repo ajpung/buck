@@ -56,6 +56,7 @@ from buck.benchmark.data import (
     decode_images,
     drop_rare_classes,
     load_or_create_holdout,
+    load_vote_targets,
     load_records,
 )
 from buck.benchmark.deployment import (
@@ -86,6 +87,34 @@ TRAIN_DEFAULTS = dict(
 # the wrong rate for weights that start as noise. Raise it with the backbone
 # unfrozen so the no-pretraining arm gets a fair shot.
 SCRATCH_BACKBONE_LR = 1e-3
+
+
+def target_matrix(num_classes, loss="ce", smoothing=0.1, sigma=0.65):
+    """Row ``c`` is the training target distribution for true class ``c``.
+
+    ``ce`` reproduces ``CrossEntropyLoss(label_smoothing=smoothing)`` exactly,
+    so switching the loss path on cannot by itself change a result.
+
+    ``ordinal`` replaces the one-hot with a Gaussian kernel over neighbouring
+    classes. Plain CE scores "predicted 2.5 for a 5.5-year-old" identically to
+    "predicted 4.5"; for an ordinal target it is not the same mistake, and a
+    decayed target puts that ordering into the gradient. ``sigma`` is in class
+    units -- as it approaches 0 this converges back on hard CE.
+    """
+    if loss == "ce":
+        t = torch.eye(num_classes) * (1.0 - smoothing) + smoothing / num_classes
+    elif loss == "ordinal":
+        idx = torch.arange(num_classes, dtype=torch.float32)
+        t = torch.exp(-((idx[None, :] - idx[:, None]) ** 2) / (2 * sigma ** 2))
+        t = t / t.sum(1, keepdim=True)
+    else:
+        raise ValueError(f"unknown loss {loss!r}")
+    return t
+
+
+def soft_ce(logits, targets):
+    """Cross-entropy against a full target distribution rather than an index."""
+    return -(targets * torch.log_softmax(logits.float(), dim=1)).sum(1).mean()
 
 
 def set_seed(seed):
@@ -143,6 +172,8 @@ def train_fold(
     select_metric="qwk",
     tta=False,
     verbose=True,
+    train_soft=None,
+    train_soft_mask=None,
 ):
     """Train one fold. Returns (best_state_dict, best_val_metrics, epochs_run).
 
@@ -153,8 +184,11 @@ def train_fold(
     set_seed(seed)
     num_classes = len(class_ages)
 
+    use_soft = train_soft is not None and train_soft_mask is not None \
+        and bool(np.any(train_soft_mask))
     train_ds = TrainDataset(
-        train_images, train_labels, config["augmentation"], seed=seed
+        train_images, train_labels, config["augmentation"], seed=seed,
+        return_index=use_soft,
     )
     val_ds = EvalDataset(val_images, val_labels)
 
@@ -198,7 +232,21 @@ def train_fold(
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=config["max_epochs"], eta_min=1e-6
     )
-    criterion = nn.CrossEntropyLoss(label_smoothing=config["label_smoothing"])
+    targets_by_class = target_matrix(
+        num_classes, config.get("loss", "ce"),
+        config["label_smoothing"], config.get("ordinal_sigma", 0.65),
+    ).to(device)
+    mixup_alpha = config.get("mixup", 0.0)
+
+    # Per-sample targets: the measured poll distribution where the weekly vote
+    # covers an image, the class-level target everywhere else.
+    if use_soft:
+        per_sample = targets_by_class[torch.as_tensor(train_labels, dtype=torch.long,
+                                                      device=device)].clone()
+        voted = torch.as_tensor(train_soft_mask, dtype=torch.bool, device=device)
+        per_sample[voted] = torch.as_tensor(
+            train_soft[train_soft_mask], dtype=per_sample.dtype, device=device
+        )
 
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
@@ -207,13 +255,29 @@ def train_fold(
 
     for epoch in range(config["max_epochs"]):
         model.train()
-        for images, labels in train_loader:
+        for batch in train_loader:
+            if use_soft:
+                images, labels, sample_idx = batch
+                targets = per_sample[sample_idx.to(device, non_blocking=True)]
+            else:
+                images, labels = batch
+                targets = None
             images = images.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
 
+            if targets is None:
+                targets = targets_by_class[labels]
+            if mixup_alpha > 0:
+                # Mixup on the *target distributions*, so it composes with the
+                # ordinal kernel instead of fighting it.
+                lam = float(np.random.beta(mixup_alpha, mixup_alpha))
+                perm = torch.randperm(images.size(0), device=images.device)
+                images = lam * images + (1.0 - lam) * images[perm]
+                targets = lam * targets + (1.0 - lam) * targets[perm]
+
             optimizer.zero_grad(set_to_none=True)
             with torch.amp.autocast("cuda", enabled=use_amp):
-                loss = criterion(model(images), labels)
+                loss = soft_ce(model(images), targets)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
@@ -273,6 +337,14 @@ def run_holdout(args, records, groups, class_ages, device):
         splitter.split(np.zeros(len(dev_idx)), labels[dev_idx], groups[dev_idx])
     )
 
+    if args.soft_labels:
+        vote_targets, vote_mask = load_vote_targets(records, class_ages)
+        # Votes are training signal only. Validation and test are always scored
+        # against the recorded label, or the metric would change meaning.
+        vote_mask = vote_mask & np.isin(np.arange(len(records)), dev_idx)
+    else:
+        vote_targets = vote_mask = None
+
     results = []
     for model_name in args.models:
         size = arch.input_size(model_name, args.image_size)
@@ -290,6 +362,9 @@ def run_holdout(args, records, groups, class_ages, device):
         config["batch_size"] = _batch_size(model_name, args)
         config["train_multiplier"] = args.train_multiplier
         config["pretrained"] = not args.no_pretrained
+        config["loss"] = args.loss
+        config["ordinal_sigma"] = args.ordinal_sigma
+        config["mixup"] = args.mixup
         if args.backbone_lr is not None:
             config["backbone_lr"] = args.backbone_lr
         elif args.no_pretrained:
@@ -314,6 +389,8 @@ def run_holdout(args, records, groups, class_ages, device):
                 select_metric=args.select_metric,
                 tta=args.tta,
                 verbose=args.verbose,
+                train_soft=None if vote_targets is None else vote_targets[train_idx],
+                train_soft_mask=None if vote_mask is None else vote_mask[train_idx],
             )
             print(
                 f"      best val: acc {metrics['accuracy']:.3f}  "
@@ -521,6 +598,9 @@ def run_temporal(args, records, groups, class_ages, device):
             batch_size=_batch_size(model_name, args),
             train_multiplier=args.train_multiplier,
             pretrained=not args.no_pretrained,
+            loss=args.loss,
+            ordinal_sigma=args.ordinal_sigma,
+            mixup=args.mixup,
         )
         if args.backbone_lr is not None:
             config["backbone_lr"] = args.backbone_lr
@@ -735,6 +815,18 @@ def parse_args(argv=None):
     p.add_argument("--epochs", type=int, default=TRAIN_DEFAULTS["max_epochs"])
     p.add_argument("--patience", type=int, default=TRAIN_DEFAULTS["patience"])
     p.add_argument("--augmentation", choices=["light", "medium", "heavy"], default="medium")
+    p.add_argument("--soft-labels", action="store_true",
+                   help="train against the NDA weekly poll's vote distribution "
+                        "where it exists, instead of the one-hot label. "
+                        "Training signal only; scoring is unchanged.")
+    p.add_argument("--loss", choices=["ce", "ordinal"], default="ce",
+                   help="'ordinal' trains against a distance-decayed target "
+                        "over neighbouring age classes instead of a one-hot")
+    p.add_argument("--ordinal-sigma", type=float, default=0.65,
+                   help="width of the ordinal target kernel, in class units")
+    p.add_argument("--mixup", type=float, default=0.0,
+                   help="mixup alpha (0 disables). Mixes target distributions, "
+                        "so it composes with --loss ordinal")
     p.add_argument("--no-pretrained", action="store_true",
                    help="random init instead of ImageNet weights, and train the "
                         "whole backbone. Raises the backbone LR to "

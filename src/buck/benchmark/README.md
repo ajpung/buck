@@ -58,6 +58,49 @@ from buck.benchmark.compare_architectures import main
 main(["--quick"])
 ```
 
+## One run is not a result
+
+Training is **nondeterministic even at a fixed seed**: `cudnn.benchmark`, TF32
+and AMP all admit run-to-run variation. Measured over three seeds on the same
+configuration (`convnext_tiny`, 224px, defaults):
+
+| metric | mean | across-run SD | observed range |
+|---|---|---|---|
+| accuracy | 0.675 | ±0.023 | 0.656 – 0.701 |
+| qwk | 0.823 | ±0.021 | 0.799 – 0.837 |
+
+So an unmodified baseline can hand you anything from 0.799 to 0.837 qwk while
+nothing has changed. **A single-run difference smaller than about 0.04 qwk is
+not evidence of anything.** This has already produced two false positives: a
+"+0.034 qwk" for `--loss ordinal` and a "+0.010" for `--soft-labels`, both of
+which vanished under repetition.
+
+Note this is a *different* quantity from the `+/-` printed in the leaderboard,
+which is the spread across CV folds within one run. That column says nothing
+about whether the run would reproduce.
+
+Use `sweep.py rep <preset> <n>` in the repo root to run a configuration under
+several seeds and get the across-run SD. Judge changes against that.
+
+The one effect that has survived repetition so far is `--loss ordinal` on
+within-one-year accuracy: 0.925 -> 0.946, perfectly separated across three
+seeds. It does **not** move exact accuracy (t = -0.01).
+
+## Loss and target options
+
+| Flag | Effect |
+|---|---|
+| `--loss ordinal` | Trains against a Gaussian kernel over neighbouring age classes instead of a one-hot. Errors land next door rather than two classes away. `--loss ce` (default) is numerically identical to the previous `CrossEntropyLoss(label_smoothing=)` path. |
+| `--ordinal-sigma` | Width of that kernel in class units; as it approaches 0 it converges back on hard CE. |
+| `--mixup ALPHA` | Mixes target *distributions*, so it composes with `--loss ordinal` rather than fighting it. |
+| `--soft-labels` | Uses the NDA weekly poll's vote distribution as the training target where it exists (63 of 284 images). Training signal only -- validation and test still score against the recorded label. |
+| `--no-pretrained` | Random init, whole backbone trainable, backbone LR raised to 1e-3 so the comparison is not rigged by a fine-tuning rate. Costs 12-17 accuracy points; see below. |
+
+Transfer learning is not optional on this corpus. Measured over 5 folds with a
+*doubled* epoch budget for the scratch arm: resnet18 0.643 -> 0.524, and
+efficientnet_b0 0.661 -> 0.489. That is 15x the run-to-run noise floor and the
+only unambiguous effect the harness has ever measured.
+
 ## Reading the output
 
 Rank architectures by the **CV columns**. That is the whole point of the

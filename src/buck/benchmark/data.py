@@ -27,6 +27,7 @@ decimal point, and ``source`` is the labelling institution.
 
 from __future__ import annotations
 
+import csv
 import glob
 import hashlib
 import json
@@ -85,6 +86,63 @@ def _parse_yymmdd(token: str):
         return date(2000 + yy, mm, dd)
     except ValueError:
         return None
+
+
+DEFAULT_METADATA = Path(__file__).resolve().parents[3] / "trail cam" / "image_metadata.csv"
+
+
+def load_vote_targets(records, class_ages, csv_path=None):
+    """Per-image target distribution from the NDA weekly poll.
+
+    The poll records how many voters chose each age class for that week's deer.
+    That distribution is a measured statement about how ambiguous the animal
+    is, which a one-hot label throws away: an image where 82% of voters said
+    1.5 and one where 32% said 3.5 carry very different amounts of evidence.
+
+    Returns:
+        (targets, has_vote) where ``targets`` is (N, K) float64 -- vote shares
+        for images the poll covered, zeros elsewhere -- and ``has_vote`` is an
+        (N,) bool mask. Rows are matched on the collection date that opens each
+        filename, which is unique per weekly deer.
+    """
+    csv_path = Path(csv_path or DEFAULT_METADATA)
+    ages = list(class_ages)
+    targets = np.zeros((len(records), len(ages)), dtype=np.float64)
+    has_vote = np.zeros(len(records), dtype=bool)
+    if not csv_path.exists():
+        print(f"[votes] {csv_path} not found; falling back to hard labels")
+        return targets, has_vote
+
+    by_week = {}
+    with open(csv_path, newline="", encoding="utf-8-sig") as fh:
+        for row in csv.DictReader(fh):
+            try:
+                votes = np.array([float(row[str(a)]) for a in ages])
+                answer = float(row["Correct"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if votes.sum() <= 0 or answer not in ages:
+                continue
+            by_week[row["Collected"].strip()] = (votes / votes.sum(), answer)
+
+    skipped = 0
+    for i, rec in enumerate(records):
+        week = Path(rec.path).name.split("_")[0]
+        entry = by_week.get(week)
+        if entry is None:
+            continue
+        votes, answer = entry
+        # Guard against a week holding two different deer: only trust the vote
+        # row when its answer agrees with the label on the file itself.
+        if abs(min(answer, MAX_AGE) - rec.age) > 1e-6:
+            skipped += 1
+            continue
+        targets[i] = votes
+        has_vote[i] = True
+
+    print(f"[votes] {has_vote.sum()} of {len(records)} images carry a poll "
+          f"distribution" + (f"; {skipped} skipped on answer mismatch" if skipped else ""))
+    return targets, has_vote
 
 
 def load_records(image_root, sources=("NDA",), channels=("color", "grayscale")):
@@ -458,12 +516,14 @@ class TrainDataset(Dataset):
     stops minority images being memorised through sheer repetition.
     """
 
-    def __init__(self, images, labels, strength="medium", seed=0):
+    def __init__(self, images, labels, strength="medium", seed=0,
+                 return_index=False):
         if len(images) != len(labels):
             raise ValueError("images and labels differ in length")
         self.images = images
         self.labels = np.asarray(labels, dtype=np.int64)
         self.strength = strength
+        self.return_index = return_index
         self._rng = random.Random(seed)
 
     def __len__(self):
@@ -471,7 +531,12 @@ class TrainDataset(Dataset):
 
     def __getitem__(self, idx):
         image = augment(self.images[idx].copy(), self.strength, self._rng)
-        return _to_tensor(image), int(self.labels[idx])
+        tensor = _to_tensor(image)
+        # The index lets the caller attach a per-sample training target without
+        # this class needing to know anything about the loss.
+        if self.return_index:
+            return tensor, int(self.labels[idx]), int(idx)
+        return tensor, int(self.labels[idx])
 
     def class_weights(self):
         """Per-sample weights that equalise class frequency during sampling."""
