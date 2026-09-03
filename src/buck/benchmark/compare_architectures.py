@@ -67,7 +67,12 @@ from buck.benchmark.deployment import (
 from buck.benchmark.metrics import bootstrap_ci, confusion, ordinal_metrics
 
 DEFAULT_IMAGE_ROOT = Path(__file__).resolve().parents[3] / "trail cam" / "images" / "squared"
-DEFAULT_MANIFEST = Path(__file__).resolve().parents[3] / "trail cam" / "splits" / "holdout_test_v1.json"
+# v2, not v1: the corrected same-animal grouping in ``data.build_groups``
+# showed 11 of v1's clusters straddling the wall, so roughly a fifth of that
+# test set had a sibling frame in training. v1 is kept in the repo as the
+# record of what earlier reported numbers were measured against; it must not
+# be used for new ones.
+DEFAULT_MANIFEST = Path(__file__).resolve().parents[3] / "trail cam" / "splits" / "holdout_test_v2.json"
 
 TRAIN_DEFAULTS = dict(
     backbone_lr=1e-4,
@@ -216,11 +221,11 @@ def train_fold(
         pretrained=config["pretrained"],
     ).to(device)
 
-    backbone, head = [], []
-    for name, param in model.named_parameters():
-        if not param.requires_grad:
-            continue
-        (head if any(k in name for k in ("classifier", "fc", "head")) else backbone).append(param)
+    # Split on module identity, not on parameter names -- see
+    # ``architectures.head_parameter_ids``. The name test this replaces routed
+    # every squeeze-excitation ``fc1``/``fc2`` in the backbone to the head
+    # learning rate.
+    backbone, head = arch.split_parameters(model)
 
     optimizer = optim.AdamW(
         [

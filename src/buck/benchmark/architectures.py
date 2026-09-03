@@ -160,6 +160,60 @@ def _head(in_features, num_classes, dropout):
     )
 
 
+# Marker attribute stamped on whatever module ``build_model`` newly attached.
+# The trainer needs to tell freshly-initialised parameters from transferred
+# ones so it can give them different learning rates, and the module object is
+# the only reliable way to know: parameter *names* do not carry the
+# distinction. torchvision's squeeze-excitation blocks are named ``fc1``/
+# ``fc2``, so a name test for "fc" pulls 64 of EfficientNet-B0's 70
+# head-group tensors, 108 of RegNet-Y-1.6GF's 114 and 32 of MobileNetV3-Large's
+# 38 out of the backbone and trains them at the head rate. That silently gave
+# every SE-based family a different optimisation regime from ConvNeXt, Swin,
+# ViT, ResNet and DenseNet, which is most of EFFICIENT_SUITE -- the very table
+# used to choose a model to ship.
+HEAD_MARKER = "_buck_head"
+
+
+def _mark(module):
+    """Tag ``module`` as a newly-initialised head and return it."""
+    setattr(module, HEAD_MARKER, True)
+    return module
+
+
+def head_parameter_ids(model):
+    """``id()`` of every parameter inside a head attached by ``build_model``.
+
+    Identity rather than name, so no backbone tensor can be captured by a
+    coincidental substring.
+
+    Raises:
+        RuntimeError: no marked head found, meaning the model did not come
+            from :func:`build_model`. Raised rather than falling back to a
+            name test, which is the failure this replaces.
+    """
+    ids = set()
+    for module in model.modules():
+        if getattr(module, HEAD_MARKER, False):
+            ids.update(id(p) for p in module.parameters())
+    if not ids:
+        raise RuntimeError(
+            "no head marker found on this model; parameter groups cannot be "
+            "split safely. Build it with buck.benchmark.architectures.build_model()."
+        )
+    return ids
+
+
+def split_parameters(model):
+    """Partition trainable parameters into (backbone, head) lists."""
+    head_ids = head_parameter_ids(model)
+    backbone, head = [], []
+    for param in model.parameters():
+        if not param.requires_grad:
+            continue
+        (head if id(param) in head_ids else backbone).append(param)
+    return backbone, head
+
+
 def build_model(name, num_classes, dropout=0.3, pretrained=True):
     """Instantiate ``name`` with an ImageNet backbone and a fresh head.
 
@@ -181,30 +235,33 @@ def build_model(name, num_classes, dropout=0.3, pretrained=True):
     # --- Attach the head, dispatching on the actual module layout.
     if name.startswith(("vit_",)):
         in_features = model.heads.head.in_features
-        model.heads.head = _head(in_features, num_classes, dropout)
+        model.heads.head = _mark(_head(in_features, num_classes, dropout))
     elif name.startswith(("swin", "maxvit")):
         # Swin exposes .head; MaxViT ends its classifier Sequential with Linear.
         if isinstance(getattr(model, "head", None), nn.Linear):
-            model.head = _head(model.head.in_features, num_classes, dropout)
+            model.head = _mark(_head(model.head.in_features, num_classes, dropout))
         elif isinstance(getattr(model, "classifier", None), nn.Sequential):
             in_features = model.classifier[-1].in_features
-            model.classifier[-1] = _head(in_features, num_classes, dropout)
+            model.classifier[-1] = _mark(_head(in_features, num_classes, dropout))
         else:
             raise RuntimeError(f"cannot locate classifier head on {name}")
     elif name.startswith("convnext"):
         in_features = model.classifier[2].in_features
-        model.classifier = nn.Sequential(
+        # The whole block is marked, not just ``_head``: this LayerNorm
+        # replaces ConvNeXt's own and starts from default init, so it is a
+        # fresh parameter too and belongs at the head learning rate.
+        model.classifier = _mark(nn.Sequential(
             nn.Flatten(1),
             nn.LayerNorm(in_features),
             _head(in_features, num_classes, dropout),
-        )
+        ))
     elif name.startswith(("resnet", "regnet", "shufflenet")):
-        model.fc = _head(model.fc.in_features, num_classes, dropout)
+        model.fc = _mark(_head(model.fc.in_features, num_classes, dropout))
     elif name.startswith(("efficientnet", "mobilenet", "mnasnet")):
         in_features = _first_linear_in_features(model.classifier)
-        model.classifier = _head(in_features, num_classes, dropout)
+        model.classifier = _mark(_head(in_features, num_classes, dropout))
     elif name.startswith("densenet"):
-        model.classifier = _head(model.classifier.in_features, num_classes, dropout)
+        model.classifier = _mark(_head(model.classifier.in_features, num_classes, dropout))
     else:
         raise RuntimeError(f"no head-attachment rule for {name}")
 

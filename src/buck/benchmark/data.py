@@ -7,8 +7,10 @@ Four rules are enforced structurally here, not by convention:
 2. Evaluation sets are never oversampled or class-rebalanced. One tensor per
    real image, in a fixed order, so the reported score is an estimate of
    accuracy on the true class mix.
-3. Near-duplicate images are clustered and the cluster, not the image, is the
-   unit of splitting. A duplicate pair can never straddle the train/test wall.
+3. Images of the same animal are clustered and the cluster, not the image, is
+   the unit of splitting. The corpus is drawn partly from video, so one buck
+   can appear as several frames of one clip; a perceptual hash does not catch
+   those, so clustering is done in feature space. See :func:`build_groups`.
 4. The held-out test set is written to a manifest on first creation and reused
    verbatim forever after. New weekly images join the development pool; they
    never silently enter the test set, and the test set never drifts to flatter
@@ -52,6 +54,15 @@ MAX_AGE = 5.5
 # genuinely different deer that happen to share a pose.
 PHASH_MERGE_DISTANCE = 2
 
+# Cosine similarity above which two same-age images are treated as the same
+# animal. A perceptual hash only catches near-identical *pixels*; frames from
+# one video clip differ enough in pixels to score Hamming 10-12 while being
+# obviously the same buck, so the real duplicate test is done in feature space.
+# 0.90 was chosen by inspecting the ranked pair list: every pair above it on
+# this corpus is visibly one animal, and the merged-image count is not
+# knife-edge around it (19 images at 0.92, 58 at 0.90, 85 at 0.88).
+EMBEDDING_MERGE_SIMILARITY = 0.90
+
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(3, 1, 1)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(3, 1, 1)
 
@@ -89,6 +100,9 @@ def _parse_yymmdd(token: str):
 
 
 DEFAULT_METADATA = Path(__file__).resolve().parents[3] / "trail cam" / "image_metadata.csv"
+DEFAULT_EMBEDDING_CACHE = (
+    Path(__file__).resolve().parents[3] / "trail cam" / "splits" / "duplicate_embeddings.npz"
+)
 
 
 def load_vote_targets(records, class_ages, csv_path=None):
@@ -240,18 +254,114 @@ def phash(path, hash_size=8):
     return dct > np.median(dct[1:])
 
 
-def build_groups(records, merge_distance=PHASH_MERGE_DISTANCE, verbose=True):
-    """Assign a group id to each record, merging near-duplicate images.
+def _embed(records, cache_path=None, verbose=True):
+    """L2-normalised ImageNet features for each record, one row per image.
 
-    Each weekly datapoint is a distinct animal, so the default group is the
-    image itself. This step exists to catch the case where the same photo was
-    entered twice under different filenames -- splitting such a pair across the
-    train/test wall would leak an exact answer.
+    Used only to decide which images show the same animal. ResNet-50 is enough
+    for that -- the pairs being separated here are near-identical frames, not
+    subtle distinctions -- and torchvision is already a dependency, so this
+    adds one weight file and no new package.
+
+    Runs on CPU in float32 on purpose. Group ids feed ``StratifiedGroupKFold``,
+    and ``ensemble.py`` reconstructs a finished sweep's fold assignment by
+    recomputing them, so a borderline pair flipping between a GPU run and a CPU
+    run would silently re-partition the data. Results are cached by content
+    digest, so the cost is paid once and new weekly images embed incrementally.
+    """
+    import torchvision.models as tvm
+
+    digests = [_content_digest(r.path) for r in records]
+    cached = {}
+    if cache_path is not None and Path(cache_path).exists():
+        with np.load(cache_path, allow_pickle=False) as blob:
+            cached = dict(zip(blob["digests"].tolist(), blob["vectors"]))
+
+    todo = [i for i, d in enumerate(digests) if d not in cached]
+    if todo:
+        if verbose:
+            print(f"[data] embedding {len(todo)} image(s) for duplicate detection "
+                  f"({len(digests) - len(todo)} cached)")
+        try:
+            model = tvm.resnet50(weights="IMAGENET1K_V2")
+        except Exception as exc:  # weights absent from disk and no network
+            raise RuntimeError(
+                "could not load ResNet-50 weights, which are required to group "
+                "images of the same animal. The perceptual-hash pass alone "
+                "merged 1 pair out of 288 and let same-deer video frames "
+                "straddle the train/test wall, so running without this is not "
+                f"offered. Original error: {exc}"
+            ) from exc
+        model.fc = torch.nn.Identity()
+        model.eval()
+
+        computed = []
+        with torch.no_grad():
+            for chunk in range(0, len(todo), 32):
+                tensors = []
+                for i in todo[chunk:chunk + 32]:
+                    image = cv2.imread(records[i].path, cv2.IMREAD_COLOR)
+                    if image is None:
+                        raise RuntimeError(f"failed to decode {records[i].path}")
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_AREA)
+                    tensors.append(_to_tensor(image))
+                computed.append(model(torch.stack(tensors)).numpy())
+        for i, vector in zip(todo, np.concatenate(computed)):
+            cached[digests[i]] = vector.astype(np.float32)
+
+        if cache_path is not None:
+            Path(cache_path).parent.mkdir(parents=True, exist_ok=True)
+            keys = sorted(cached)
+            np.savez_compressed(
+                cache_path,
+                digests=np.array(keys),
+                vectors=np.stack([cached[k] for k in keys]),
+            )
+
+    features = np.stack([cached[d] for d in digests]).astype(np.float32)
+    return features / np.maximum(np.linalg.norm(features, axis=1, keepdims=True), 1e-12)
+
+
+def build_groups(
+    records,
+    merge_distance=PHASH_MERGE_DISTANCE,
+    similarity=EMBEDDING_MERGE_SIMILARITY,
+    cache_path=DEFAULT_EMBEDDING_CACHE,
+    verbose=True,
+):
+    """Assign a group id to each record, merging images of the same animal.
+
+    The unit of splitting must be the *animal*, not the file. The corpus is
+    built partly from video, so one buck can appear as several frames of a
+    single clip: same pose, same background, same second. Splitting those
+    across the train/test wall hands the model an answer it has already seen.
+
+    Two passes, unioned:
+
+    ``perceptual hash``
+        Hamming distance <= ``merge_distance`` over a 64-bit DCT hash. Catches
+        byte-level copies and re-encodes.
+    ``embedding similarity``
+        Cosine similarity > ``similarity`` between ImageNet features, further
+        required to agree on age class -- two images of one deer always carry
+        the same label, so the constraint costs nothing and stops genuinely
+        different bucks that share a pose from being merged.
+
+    The hash pass alone was previously the only one, and it is not sufficient.
+    On the 288-image NDA corpus it merges a single pair, while the embedding
+    pass finds 24 multi-image clusters covering 58 images (20%); inspecting the
+    closest pairs confirms they are consecutive frames of one animal, and the
+    hash rates several of them at Hamming 10-12. Eleven of those clusters
+    straddled the ``holdout_test_v1`` wall, so held-out numbers reported
+    against that manifest were measured with roughly a fifth of the test set
+    having a sibling in training.
 
     Returns:
         ``np.ndarray`` of integer group ids, parallel to ``records``.
     """
     hashes = [phash(r.path) for r in records]
+    features = _embed(records, cache_path, verbose)
+    ages = np.array([r.age for r in records])
 
     parent = list(range(len(records)))
 
@@ -266,32 +376,38 @@ def build_groups(records, merge_distance=PHASH_MERGE_DISTANCE, verbose=True):
         if ri != rj:
             parent[max(ri, rj)] = min(ri, rj)
 
+    cosine = features @ features.T
+
     merged = []
     for i in range(len(records)):
-        if hashes[i] is None:
-            continue
         for j in range(i + 1, len(records)):
-            if hashes[j] is None:
-                continue
-            distance = int(np.count_nonzero(hashes[i] != hashes[j]))
-            if distance <= merge_distance:
+            reason = None
+            if hashes[i] is not None and hashes[j] is not None:
+                distance = int(np.count_nonzero(hashes[i] != hashes[j]))
+                if distance <= merge_distance:
+                    reason = f"hamming={distance}"
+            if reason is None and ages[i] == ages[j] and cosine[i, j] > similarity:
+                reason = f"cos={cosine[i, j]:.3f}"
+            if reason is not None:
                 union(i, j)
-                merged.append((distance, records[i].filename, records[j].filename))
+                merged.append((reason, records[i].filename, records[j].filename))
 
     roots = {}
     groups = np.empty(len(records), dtype=int)
     for i in range(len(records)):
-        root = find(i)
-        groups[i] = roots.setdefault(root, len(roots))
+        groups[i] = roots.setdefault(find(i), len(roots))
 
     if verbose:
         if merged:
-            print(f"[data] merged {len(merged)} near-duplicate pair(s) into groups:")
-            for distance, a, b in merged:
-                print(f"        hamming={distance}  {a}  <->  {b}")
+            print(f"[data] merged {len(merged)} same-animal pair(s):")
+            for reason, a, b in merged:
+                print(f"        {reason:12s} {a}  <->  {b}")
         else:
             print("[data] no near-duplicate images found")
-        print(f"[data] {len(records)} images in {len(roots)} groups")
+        sizes = np.bincount(groups)
+        print(f"[data] {len(records)} images in {len(roots)} groups "
+              f"({int((sizes > 1).sum())} group(s) hold more than one image, "
+              f"covering {int(sizes[sizes > 1].sum())} images)")
 
     return groups
 

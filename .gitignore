@@ -118,3 +118,7 @@ dmypy.json
 # Database files
 db.sqlite3
 db.sqlite3-journal
+# Duplicate-detection embeddings: derived data, rebuilt on demand and cached
+# by content digest. The grouping it produces is deterministic, so this file
+# is a speed-up, not a record.
+trail cam/splits/duplicate_embeddings.npz

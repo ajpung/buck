@@ -20,19 +20,66 @@ overlapping random splits rather than a partition, and 20 of the 33 declared
 architectures never ran because a fixed-224 input error was swallowed by a bare
 `except Exception: continue`.
 
+Two more were found later, in this package rather than the notebook, and are
+fixed as of the `holdout_test_v2` manifest:
+
+| Defect | Where | Effect |
+|---|---|---|
+| Grouping by perceptual hash only | `build_groups` | Merged 1 pair in 288. Video frames of one buck scored Hamming 10-12 and were split across the wall; 11 clusters straddled `holdout_test_v1` |
+| Parameter groups split by name substring | `train_fold` | `"fc" in name` matched every squeeze-excitation `fc1`/`fc2`, training 64 of EfficientNet-B0's 70 head-group tensors -- and 108 of RegNet-Y's 114 -- at 5x the intended backbone rate |
+
+The second one matters most for `--models efficient`: `EFFICIENT_SUITE` is
+almost entirely SE-based, so the table used to choose a model to ship was the
+one most affected. Leaderboards produced before this fix cannot be compared
+across families.
+
 ## The four rules
 
 1. **Augmentation is train-only.** `EvalDataset` contains no stochastic code
    path at all — not a disabled flag, an absent one.
 2. **Evaluation sets are never oversampled or rebalanced.** One tensor per real
    image, fixed order, true class mix.
-3. **Near-duplicate images are grouped**, and the group is the unit of
-   splitting, so an image cannot appear on both sides of the wall.
+3. **Images of the same animal are grouped**, and the group is the unit of
+   splitting, so a deer cannot appear on both sides of the wall. Grouping is
+   done in feature space, not by perceptual hash -- see below.
 4. **The test set is locked to a manifest.** Created once, reused verbatim
    forever. New weekly images join the development pool automatically.
 
 `assert_no_leakage()` re-checks 1–3 before every single fold, and raises rather
 than warns.
+
+### Why grouping is not a perceptual hash
+
+Part of the corpus comes from video, so one buck can appear as several frames
+of a single clip -- same pose, same background, same second. A DCT perceptual
+hash does not see those as duplicates: on the 288-image NDA corpus a Hamming
+threshold of 2 merged exactly **one** pair, while pairs that are visibly the
+same animal score Hamming 10-12.
+
+`build_groups` therefore unions two passes: the hash (for byte-level copies and
+re-encodes) and cosine similarity above 0.90 between ResNet-50 features,
+additionally required to agree on age class. That finds 25 multi-image clusters
+covering 60 of 288 images. Every merge is printed, with its reason, so the
+decisions are auditable rather than implicit.
+
+Embeddings are computed on CPU in float32 and cached by content digest in
+`trail cam/splits/duplicate_embeddings.npz`. CPU is deliberate: group ids feed
+`StratifiedGroupKFold`, and `ensemble.py` reconstructs a finished sweep's fold
+assignment by recomputing them, so a borderline pair flipping between a GPU and
+a CPU run would silently re-partition the data. The cache is derived data and
+is gitignored; deleting it costs a minute, not a result.
+
+Measured cost of getting this wrong, via a frozen-feature linear probe scored
+under both groupings:
+
+| backbone (frozen + logistic head) | per-image groups | same-animal groups |
+|---|---|---|
+| convnext_tiny.fb_in1k | 0.597 | 0.521 |
+| convnext_tiny.fb_in22k | 0.653 | 0.583 |
+| vit_base_patch14_dinov2 | 0.660 | 0.635 |
+
+That gap is the leak. The ImageNet backbones lose the most, which is what you
+would expect if part of what they were matching on was the background.
 
 ## Usage
 
@@ -190,10 +237,17 @@ within the temporal protocol, but do not mix numbers between the two.
 
 ## The manifest
 
-`trail cam/splits/holdout_test_v1.json` records the held-out filenames plus a
+`trail cam/splits/holdout_test_v2.json` records the held-out filenames plus a
 content digest of each. It is deliberately exempted from the repo's `*.json`
 ignore rule and **must stay in version control**. The script refuses to run if a
 listed image is missing or its bytes changed.
+
+`holdout_test_v1.json` is kept alongside it as the record of what earlier
+reported numbers were measured against. **Do not use it for new runs.** Under
+the corrected grouping, 11 of its clusters straddle the wall: roughly a fifth of
+its 57 test images have a sibling frame in the development pool, so every
+held-out number ever reported against v1 is optimistic by an unknown amount.
+v2 holds 58 images and straddles zero groups.
 
 Deleting it silently re-randomises the test set and makes every previously
 reported held-out number incomparable. If you ever need to refresh it — say the
