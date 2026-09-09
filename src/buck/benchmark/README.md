@@ -113,14 +113,25 @@ configuration (`convnext_tiny`, 224px, defaults):
 
 | metric | mean | across-run SD | observed range |
 |---|---|---|---|
-| accuracy | 0.675 | ±0.023 | 0.656 – 0.701 |
-| qwk | 0.823 | ±0.021 | 0.799 – 0.837 |
+| accuracy | 0.677 | ±0.015 | 0.661 – 0.691 |
+| within 1yr | 0.888 | ±0.007 | 0.883 – 0.896 |
+| qwk | 0.770 | ±0.018 | 0.758 – 0.791 |
+| macro F1 | 0.669 | ±0.011 | 0.658 – 0.681 |
 
-So an unmodified baseline can hand you anything from 0.799 to 0.837 qwk while
-nothing has changed. **A single-run difference smaller than about 0.04 qwk is
+So an unmodified baseline can hand you anything from 0.758 to 0.791 qwk while
+nothing has changed. **A single-run difference smaller than about 0.036 qwk is
 not evidence of anything.** This has already produced two false positives: a
 "+0.034 qwk" for `--loss ordinal` and a "+0.010" for `--soft-labels`, both of
 which vanished under repetition.
+
+The figures above were re-measured on 2026-09-03 under the corrected pipeline
+(same-animal grouping, `holdout_test_v2`, the SE parameter-group fix, and
+`--checkpoint-policy final`). The previous ones — accuracy 0.675 ±0.023, qwk
+0.823 ±0.021 — were measured under best-epoch checkpoint selection. Accuracy is
+unchanged; qwk fell 0.053, and the mean selection gap on the new runs is +0.070
+qwk, so essentially all of the old qwk inflation came from selecting the
+best-scoring epoch rather than from the frame leakage. Both defects were real;
+only one of them was moving this number.
 
 Note this is a *different* quantity from the `+/-` printed in the leaderboard,
 which is the spread across CV folds within one run. That column says nothing
@@ -129,9 +140,120 @@ about whether the run would reproduce.
 Use `sweep.py rep <preset> <n>` in the repo root to run a configuration under
 several seeds and get the across-run SD. Judge changes against that.
 
-The one effect that has survived repetition so far is `--loss ordinal` on
-within-one-year accuracy: 0.925 -> 0.946, perfectly separated across three
-seeds. It does **not** move exact accuracy (t = -0.01).
+### `--loss ordinal`, re-measured
+
+This used to read: *"the one effect that has survived repetition is `--loss
+ordinal` on within-one-year accuracy: 0.925 -> 0.946, perfectly separated
+across three seeds. It does not move exact accuracy (t = -0.01)."* Both halves
+of that were measured under best-epoch selection and both are wrong under the
+corrected pipeline. Three seeds each, same split seed:
+
+| metric | base | ordinal | delta | vs SD | read |
+|---|---|---|---|---|---|
+| accuracy | 0.677 ±0.015 | 0.643 ±0.009 | **-0.033** | 2.8x | real, and a **cost** |
+| within 1yr | 0.888 ±0.007 | 0.920 ±0.029 | +0.032 | 1.8x | suggestive, not established |
+| qwk | 0.770 ±0.018 | 0.790 ±0.032 | +0.019 | 0.8x | noise |
+| macro F1 | 0.669 ±0.011 | 0.643 ±0.008 | **-0.026** | 2.6x | real, and a cost |
+| MAE years | 0.462 ±0.025 | 0.455 ±0.033 | -0.007 | 0.3x | noise |
+
+So ordinal loss **trades exact accuracy for near-misses**, which is what a
+distance-decayed target does mechanically: probability mass moves onto
+neighbouring classes, so fewer predictions land exactly and more land next
+door. The old claim that it costs nothing on exact accuracy was an artifact of
+picking the best epoch per fold.
+
+The within-one gain is also weaker than it looks. The runs are **not**
+separated -- base tops out at 0.896 and ordinal bottoms out at 0.896, touching
+exactly -- and ordinal's spread is four times the baseline's (±0.029 vs
+±0.007), driven by one seed at 0.952. At 1.8x the pooled SD this needs more
+seeds before it goes in a paper.
+
+Whether the trade is worth taking depends on which number the deployed tool is
+judged on. If within-one-year is the field-practical metric, ordinal is
+arguably the right default; if exact accuracy is quoted, it is not. Quote both
+or neither -- reporting ordinal's within-one gain without its accuracy cost
+would repeat exactly the error this section documents.
+
+## What actually moves the number: corpus size
+
+Measured 2026-09-08. `convnext_tiny`, 5 folds, 3 seeds per point. Only the
+**training** portion of each fold was subsampled (stratified by class); the
+validation fold was always full and unchanged, so every point is scored on
+identical images.
+
+| images/fold | accuracy | infrared (n=50) | colour (n=180) |
+|---|---|---|---|
+| 23 | 0.358 ±0.023 | 0.360 ±0.020 | 0.357 ±0.023 |
+| 46 | 0.471 ±0.013 | 0.413 ±0.061 | 0.487 ±0.017 |
+| 92 | 0.567 ±0.028 | 0.460 ±0.111 | 0.596 ±0.009 |
+| 138 | 0.600 ±0.012 | 0.520 ±0.000 | 0.622 ±0.015 |
+| **184 (current)** | **0.677 ±0.015** | 0.533 ±0.081 | 0.717 ±0.006 |
+
+Fit: **`accuracy = -0.092 + 0.100 * log2(n)`**, residual SD 0.014.
+
+**Roughly +0.10 accuracy per doubling of training data, with no sign of
+saturation anywhere in the measured range.** The corpus is the binding
+constraint; the model is not near the flat part of this curve.
+
+Extrapolating (with the caveats below): ~440 total images for ~0.72, ~536 for
+~0.75, ~731 for ~0.795 -- the last being human-crowd parity.
+
+Three things that make those projections soft:
+
+- Epochs and `train_multiplier` were held constant across fractions, so small
+  fractions overfit more than a tuned model would. That depresses the low end
+  and **steepens the fit**, so +0.10/doubling is likely an overestimate.
+- The projections run 2-4x past the measured range. Learning curves saturate
+  eventually; this one simply has not started to.
+- The label itself has a ceiling. The NDA panel's mean vote share on the
+  *correct* class is 0.544 and its plurality scores 0.795, so a hundred experts
+  are split on the average deer. Treat ~0.80 as the practical ceiling.
+
+Data must come from the NDA panel. The 184 non-NDA images in the corpus are not
+a substitute: they carry a different institution's judgement, which is a
+different target function rather than a noisy reading of this one. Training on
+them measurably pulls accuracy toward that other definition (0.618 -> 0.569).
+
+## The infrared deficit
+
+Part of the corpus is infrared -- the `grayscale` channel is IR, not a colour
+transform. It is 50 of 230 development images and it is much harder:
+
+| subset | n | accuracy |
+|---|---|---|
+| infrared | 50 | 0.533 ±0.081 |
+| colour | 180 | 0.717 ±0.006 |
+
+An 18-point gap, reproducible three independent ways (saturation quartiles, the
+channel flag, and two separate grayscale-input arms). Note the variances: the
+colour subset is remarkably stable across seeds while infrared swings twelve
+times as much, so **any infrared number needs more seeds than usual**.
+
+This is a data problem, not a perception problem. Two pieces of evidence:
+
+- Grad-CAM on out-of-fold checkpoints puts attention on the shoulder, neck and
+  chest for both the images the model gets right and the 26 that *every*
+  architecture misses. There is no background shortcut and no confusion about
+  where to look.
+- On the low-saturation development images the NDA panel scores 0.783 -- its
+  normal rate -- with the same plurality share it shows on bright images. The
+  information is in the photo; people extract it; the model does not.
+
+The gap also widens with corpus size (absent at 23 images/fold, 18 points at
+184), consistent with infrared simply being further back on the same curve.
+
+## Measured and rejected
+
+Recorded so they are not re-proposed. All measured under the corrected
+pipeline; see `HANDOFF.md` for the earlier set.
+
+| idea | result |
+|---|---|
+| **Cross-architecture ensembling** | Uniform blend of all 12: +0.009 accuracy over the best single. The greedy-selected blend's +0.069 qwk is **selection bias** -- it picks members on the same out-of-fold data it reports, the same defect class as best-epoch checkpointing. Models are too correlated: 18% mean pairwise disagreement on errors, and 26 dev images that all of them miss. |
+| **Architecture search** | 12 backbones across a 4x parameter range span 0.654-0.771 qwk, one cluster. `maxvit_t` placed 3rd at 2.3x the cost of `convnext_tiny`. |
+| **Flip TTA** | +1 correct image out of 230, scored on identical weights (exactly paired, so training noise cancels). Changes 4.6% of predictions; accuracy and macro-F1 up, within-one and qwk down. Doubles inference cost for nothing. |
+| **Grayscale input** (`--grayscale`) | Net loss of ~3.3 images out of 230. Lifts infrared (+0.067, up on all 3 seeds) but costs colour more (-0.037, down on all 3), and colour is 78% of the corpus. See `decode_images()`. |
+| **Hand-built body proportions** | Given the NDA panel's own stated justifications *as ground truth*, a bag-of-concepts encoding predicts age at 0.462 -- well below the 0.700 the pixels achieve. The published AOTH-style criteria are less informative than the image. |
 
 ## Loss and target options
 
@@ -217,6 +339,36 @@ rather than assuming the biggest backbone is required.
 Note that int8 savings vary sharply by family: ConvNeXt-Tiny drops 108 MB to 33
 MB because it is Linear-heavy, while convolution-dominated backbones like
 RegNet barely move. Quantise before concluding a model is too large.
+
+### `DEFAULT_SUITE`, complete
+
+All 12, `benchmark_runs/suite_v2`, 5 folds, seed 42, reconstructed from fold
+checkpoints by `benchmark_runs/peek_partial.py`. The `±` is across folds within
+one run -- much larger than the across-seed SD -- so **do not rank on it**.
+
+| model | px | accuracy | ±1yr | QWK | macroF1 | MAE | min |
+|---|---|---|---|---|---|---|---|
+| regnet_y_1_6gf | 224 | 0.665 | 0.874 | **0.771** | 0.657 | 0.483 | 15 |
+| convnext_tiny | 224 | **0.700** | 0.878 | 0.763 | **0.687** | **0.457** | 22 |
+| maxvit_t | 224 | 0.678 | 0.870 | 0.756 | 0.674 | 0.483 | 51 |
+| vit_b_16 | 224 | 0.661 | 0.874 | 0.734 | 0.654 | 0.509 | |
+| swin_t | 224 | 0.643 | 0.835 | 0.721 | 0.636 | 0.552 | |
+| efficientnet_b3 | 300 | 0.665 | 0.870 | 0.719 | 0.660 | 0.513 | |
+| densenet121 | 224 | 0.652 | 0.839 | 0.718 | 0.634 | 0.535 | |
+| resnet50 | 224 | 0.635 | 0.848 | 0.708 | 0.626 | 0.552 | |
+| efficientnet_v2_s | 384 | 0.643 | 0.852 | 0.699 | 0.634 | 0.552 | |
+| resnet18 | 224 | 0.648 | 0.835 | 0.692 | 0.644 | 0.565 | |
+| efficientnet_b0 | 224 | 0.643 | 0.830 | 0.674 | 0.633 | 0.583 | |
+| mobilenet_v3_large | 224 | 0.639 | 0.813 | 0.659 | 0.628 | 0.604 | |
+
+The whole field spans 0.117 qwk against a ~0.036 threshold for
+distinguishability, and **the top three are tied**. On the tiebreakers that
+need no significance test, `convnext_tiny` leads on accuracy, macro-F1 and MAE
+at less than half the cost of `maxvit_t`. It is the right default, and there is
+no longer an untested architecture that might displace it.
+
+Architecture is exhausted as a lever -- a 4x parameter range buys ~0.06
+accuracy. See *What actually moves the number* above.
 
 ## Protocols
 

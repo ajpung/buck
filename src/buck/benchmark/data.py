@@ -105,7 +105,7 @@ DEFAULT_EMBEDDING_CACHE = (
 )
 
 
-def load_vote_targets(records, class_ages, csv_path=None):
+def load_vote_targets(records, class_ages, csv_path=None, verbose=True):
     """Per-image target distribution from the NDA weekly poll.
 
     The poll records how many voters chose each age class for that week's deer.
@@ -113,11 +113,31 @@ def load_vote_targets(records, class_ages, csv_path=None):
     is, which a one-hot label throws away: an image where 82% of voters said
     1.5 and one where 32% said 3.5 carry very different amounts of evidence.
 
+    One CSV row describes exactly one deer, so it may be attached to exactly
+    one image. Rows are keyed on the collection date, which is the weekly
+    cadence and is unique per poll -- but four of the collection dates in the
+    corpus are bulk archival back-fills holding 23 to 65 images, and nothing
+    about the key prevents a row from being broadcast across all of them. No
+    such row is present today, so this has never corrupted a run; the guard
+    below closes the hole rather than fixing live damage.
+
+    A row is used only when it identifies its image unambiguously: exactly one
+    image in that collection batch carries the poll's answer as its label.
+    Where a batch offers several candidates the row is dropped and reported,
+    because guessing which deer the votes describe would put fabricated
+    training signal on the other candidates.
+
+    ``Year_taken``/``Month_taken``/``Day_taken`` and ``Location`` are checked
+    against the filename's photo date and state where both exist. Disagreements
+    are reported but do not drop the row: all eight in the corpus today are
+    transcription slips on a single field (``VA``/``VT``, the collection date
+    typed into the photo-date columns) rather than a different animal, so
+    keying on them strictly would discard real training signal.
+
     Returns:
         (targets, has_vote) where ``targets`` is (N, K) float64 -- vote shares
         for images the poll covered, zeros elsewhere -- and ``has_vote`` is an
-        (N,) bool mask. Rows are matched on the collection date that opens each
-        filename, which is unique per weekly deer.
+        (N,) bool mask.
     """
     csv_path = Path(csv_path or DEFAULT_METADATA)
     ages = list(class_ages)
@@ -128,6 +148,7 @@ def load_vote_targets(records, class_ages, csv_path=None):
         return targets, has_vote
 
     by_week = {}
+    duplicate_rows = 0
     with open(csv_path, newline="", encoding="utf-8-sig") as fh:
         for row in csv.DictReader(fh):
             try:
@@ -135,27 +156,77 @@ def load_vote_targets(records, class_ages, csv_path=None):
                 answer = float(row["Correct"])
             except (KeyError, TypeError, ValueError):
                 continue
-            if votes.sum() <= 0 or answer not in ages:
+            week = row["Collected"].strip()
+            if not week or votes.sum() <= 0 or answer not in ages:
                 continue
-            by_week[row["Collected"].strip()] = (votes / votes.sum(), answer)
+            # Photo date as YYMMDD and state, for the consistency check only.
+            try:
+                photo = "{:02d}{:02d}{:02d}".format(
+                    int(row["Year_taken"]) % 100,
+                    int(row["Month_taken"]),
+                    int(row["Day_taken"]),
+                )
+            except (KeyError, TypeError, ValueError):
+                photo = None
+            state = (row.get("Location") or "").strip().upper() or None
 
-    skipped = 0
+            if week in by_week:
+                duplicate_rows += 1
+                continue  # keep the first; a second row for one week is unusable
+            by_week[week] = (votes / votes.sum(), answer, photo, state)
+
+    # Group candidate images by collection batch before assigning anything, so
+    # an ambiguous batch can be recognised as ambiguous.
+    candidates = {}
     for i, rec in enumerate(records):
-        week = Path(rec.path).name.split("_")[0]
-        entry = by_week.get(week)
+        entry = by_week.get(rec.collected)
         if entry is None:
             continue
-        votes, answer = entry
-        # Guard against a week holding two different deer: only trust the vote
-        # row when its answer agrees with the label on the file itself.
-        if abs(min(answer, MAX_AGE) - rec.age) > 1e-6:
-            skipped += 1
+        if abs(min(entry[1], MAX_AGE) - rec.age) > 1e-6:
             continue
+        candidates.setdefault(rec.collected, []).append(i)
+
+    assigned, ambiguous, mismatched = 0, [], []
+    for week, idx in candidates.items():
+        votes, answer, photo, state = by_week[week]
+        if len(idx) > 1:
+            ambiguous.append((week, [records[i].filename for i in idx]))
+            continue
+        i = idx[0]
+        rec = records[i]
+        if photo is not None and rec.photo != photo and "U" not in rec.photo:
+            mismatched.append((rec.filename, f"photo date {rec.photo} vs CSV {photo}"))
+        elif state is not None and rec.state.upper() not in (state, "UU"):
+            mismatched.append((rec.filename, f"state {rec.state} vs CSV {state}"))
         targets[i] = votes
         has_vote[i] = True
+        assigned += 1
 
-    print(f"[votes] {has_vote.sum()} of {len(records)} images carry a poll "
-          f"distribution" + (f"; {skipped} skipped on answer mismatch" if skipped else ""))
+    if verbose:
+        skipped = sum(
+            1
+            for rec in records
+            if rec.collected in by_week
+            and abs(min(by_week[rec.collected][1], MAX_AGE) - rec.age) > 1e-6
+        )
+        print(f"[votes] {assigned} of {len(records)} images carry a poll distribution")
+        if skipped:
+            print(f"        {skipped} image(s) skipped: label disagrees with the "
+                  f"poll's recorded answer")
+        if duplicate_rows:
+            print(f"        {duplicate_rows} CSV row(s) ignored: a second row for a "
+                  f"collection date already seen")
+        if ambiguous:
+            print(f"        {len(ambiguous)} poll row(s) dropped as ambiguous -- the "
+                  f"collection batch holds several deer at the answer age:")
+            for week, names in ambiguous[:5]:
+                print(f"          {week}: {len(names)} candidates, e.g. {names[:2]}")
+        if mismatched:
+            print(f"        {len(mismatched)} row(s) attached despite disagreeing with "
+                  f"the filename (likely CSV transcription errors, worth fixing):")
+            for name, why in mismatched:
+                print(f"          {name}: {why}")
+
     return targets, has_vote
 
 
@@ -683,13 +754,50 @@ class EvalDataset(Dataset):
         return _to_tensor(self.images[idx]), int(self.labels[idx])
 
 
-def decode_images(records, size):
-    """Decode and resize records into one uint8 array of shape (N, H, W, 3)."""
+def decode_images(records, size, grayscale=False):
+    """Decode and resize records into one uint8 array of shape (N, H, W, 3).
+
+    ``grayscale`` collapses every image to BT.601 luma and replicates it across
+    all three channels. The array shape and the ImageNet normalisation that
+    follows are unchanged, so this is purely a decision to withhold chroma from
+    the model -- not a different input pipeline.
+
+    **This did not pay off. Left in place so the result stays measurable, but
+    do not turn it on expecting a win.** Measured over 3 seeds on
+    ``convnext_tiny`` (``sweep.py rep gray 3`` vs ``rep base 3``):
+
+    ==================  ===============  ===============
+    subset              colour input     grayscale input
+    ==================  ===============  ===============
+    infrared (n=50)     0.533 +/- 0.081  0.600 +/- 0.040
+    colour (n=180)      0.717 +/- 0.006  0.680 +/- 0.022
+    overall (n=230)     0.677 +/- 0.015  0.662 +/- 0.024
+    ==================  ===============  ===============
+
+    Infrared improves (+0.067, up on all three seeds) and colour images lose
+    more than infrared gains (-0.037, down on all three seeds). Because colour
+    is 78% of the corpus that is a **net loss of ~3.3 images out of 230**.
+    Neither subset effect clears p=0.05 on a paired per-image test (IR p=0.098,
+    colour p=0.051) and the overall change is null (p=0.331).
+
+    An earlier 3-seed arm measured the colour cost at only -0.002. It did not
+    replicate; two independent 3-seed grayscale arms disagree by 3.5 points on
+    the colour subset. Note the SDs above -- grayscale training is markedly
+    less stable than colour (colour subset +/-0.022 against +/-0.006), so it
+    needs more seeds than usual before any grayscale number means anything.
+
+    The infrared deficit itself is real and reproducible (0.533 against 0.717
+    on the same runs). Withholding chroma is simply not the fix for it; the
+    corpus has only 50 infrared development images and that is the constraint.
+    """
     out = np.empty((len(records), size, size, 3), dtype=np.uint8)
     for i, record in enumerate(records):
         image = cv2.imread(record.path, cv2.IMREAD_COLOR)
         if image is None:
             raise RuntimeError(f"failed to decode {record.path}")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if grayscale:
+            luma = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            image = cv2.cvtColor(luma, cv2.COLOR_GRAY2RGB)
         out[i] = cv2.resize(image, (size, size), interpolation=cv2.INTER_AREA)
     return out

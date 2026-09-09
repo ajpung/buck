@@ -19,6 +19,7 @@ BASE = ["--models", "convnext_tiny", "--folds", "5",
 
 PRESETS = {
     "base":   ([], "unchanged baseline -- run with 'rep' to measure the noise floor"),
+    "gray":   (["--grayscale"], "luma input; lifts infrared, costs colour more -- net loss"),
     "soft":   (["--soft-labels"], "poll vote distribution as training target"),
     "ord":    (["--loss", "ordinal"], "distance-decayed ordinal target"),
     "mix":    (["--mixup", "0.2"], "mixup on target distributions"),
@@ -47,14 +48,23 @@ def run(name):
     main(argv)
 
 
-# Measured over 3 seeds, not one run. The single-run figures this used to hold
-# (acc 0.678, qwk 0.798) were one draw from a distribution wide enough to
-# manufacture a convincing-looking improvement out of nothing: the same config
-# on seed 43 returns qwk 0.837. Judge a change against the SD, not the mean.
-BASELINE = dict(model="convnext_tiny (224px)", cv_accuracy=0.675,
-                cv_accuracy_sd=0.023, cv_qwk=0.823, cv_within_one=0.925,
-                cv_mae_years=0.411)
-RUN_TO_RUN_QWK_SD = 0.021   # across seeds, same config
+# Measured 2026-09-03 over 3 seeds (42/43/44) under the corrected pipeline:
+# same-animal grouping, holdout_test_v2, the SE parameter-group fix, and
+# --checkpoint-policy final (EMA weights, fixed schedule, no best-epoch pick).
+# The +/- values are ACROSS-RUN SD -- the same config on a different training
+# seed -- which is the only thing a change should be judged against. The
+# per-fold SD printed by the leaderboard is a different and larger quantity.
+#
+# For the record, the pre-fix figures were acc 0.675 +/- 0.023, qwk 0.823.
+# Accuracy is unchanged; qwk fell 0.053. The mean selection gap measured on
+# these same runs is +0.070 qwk, i.e. re-enabling best-epoch selection here
+# would report ~0.840 -- so essentially all of the old qwk inflation came from
+# checkpoint selection rather than from the frame leakage.
+BASELINE = dict(model="convnext_tiny (224px)", cv_accuracy=0.677,
+                cv_accuracy_sd=0.015, cv_qwk=0.770, cv_qwk_sd=0.018,
+                cv_within_one=0.888, cv_macro_f1=0.669, cv_mae_years=0.462,
+                selection_gap_qwk=0.070)
+RUN_TO_RUN_QWK_SD = 0.018   # across seeds, same config
 
 
 def compare():
@@ -75,17 +85,28 @@ def compare():
           f"{'+/-1yr':>7} {'MAE':>6} {'dQWK':>7}")
     print("-" * 80)
     b = BASELINE
-    print(f"{'(baseline)':14} {b['model']:17} "
-          f"{b['cv_accuracy']:7.3f}+/-{b['cv_accuracy_sd']:.3f} "
-          f"{b['cv_qwk']:7.3f} {b['cv_within_one']:7.3f} "
-          f"{b['cv_mae_years']:6.3f} {'--':>7}")
+    if b is None:
+        print("(baseline)     -- not re-measured since the grouping, "
+              "parameter-group and checkpoint-selection fixes.")
+        print("               Run: python sweep.py rep base 3")
+    else:
+        print(f"{'(baseline)':14} {b['model']:17} "
+              f"{b['cv_accuracy']:7.3f}+/-{b['cv_accuracy_sd']:.3f} "
+              f"{b['cv_qwk']:7.3f} {b['cv_within_one']:7.3f} "
+              f"{b['cv_mae_years']:6.3f} {'--':>7}")
     for name, e in sorted(rows, key=lambda r: -r[1]["cv_qwk"]):
+        delta = f"{e['cv_qwk'] - b['cv_qwk']:+7.3f}" if b else f"{'n/a':>7}"
         print(f"{name[:14]:14} {e['model'][:17]:17} "
               f"{e['cv_accuracy']:7.3f}+/-{e['cv_accuracy_sd']:.3f} "
               f"{e['cv_qwk']:7.3f} {e['cv_within_one']:7.3f} "
-              f"{e['cv_mae_years']:6.3f} {e['cv_qwk'] - b['cv_qwk']:+7.3f}")
-    print("\ndQWK is vs baseline. Per-fold SD is ~0.06, so treat anything "
-          "inside +/-0.06 as noise.")
+              f"{e['cv_mae_years']:6.3f} {delta}")
+    if b is None:
+        print("\nNo dQWK column: the stored baseline predates the leakage and "
+              "selection fixes and would make real changes look like "
+              "regressions. Re-measure it before judging anything.")
+    else:
+        print("\ndQWK is vs baseline. Judge a change against the across-run SD "
+              "from 'sweep.py rep', not against this mean.")
 
 
 def repeat(name, n=3):
@@ -123,8 +144,13 @@ def repeat(name, n=3):
           f"(runs: {', '.join(f'{a:.3f}' for a in accs)})")
     print(f"  QWK      {statistics.mean(qwks):.3f} +/- {sd(qwks):.3f}   "
           f"(runs: {', '.join(f'{q:.3f}' for q in qwks)})")
-    print(f"\nCompare against baseline QWK {BASELINE['cv_qwk']:.3f}. A difference "
-          f"smaller than ~2x this SD is not a result.")
+    if BASELINE is not None:
+        print(f"\nCompare against baseline QWK {BASELINE['cv_qwk']:.3f}. A "
+              f"difference smaller than ~2x this SD is not a result.")
+    else:
+        print(f"\nPaste these into BASELINE at the top of this file if this was "
+              f"the 'base' preset. A difference smaller than ~2x the SD above "
+              f"is not a result.")
 
 
 if __name__ == "__main__":
@@ -138,7 +164,14 @@ if __name__ == "__main__":
         compare()
         sys.exit(0)
     if args[0] == "list":
-        print("baseline: acc 0.678  qwk 0.795  (convnext_tiny, 224px)\n")
+        b = BASELINE
+        if b is None:
+            print("baseline: NOT MEASURED under the current pipeline -- "
+                  "run 'python sweep.py rep base 3' first\n")
+        else:
+            print(f"baseline: acc {b['cv_accuracy']:.3f}+/-{b['cv_accuracy_sd']:.3f}  "
+                  f"qwk {b['cv_qwk']:.3f}+/-{b['cv_qwk_sd']:.3f}  "
+                  f"({b['model']}, 3 seeds, corrected pipeline)\n")
         for k, (_, why) in PRESETS.items():
             print(f"  {k:9} {why}")
         sys.exit(0)

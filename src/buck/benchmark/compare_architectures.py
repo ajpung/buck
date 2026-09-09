@@ -122,6 +122,45 @@ def soft_ce(logits, targets):
     return -(targets * torch.log_softmax(logits.float(), dim=1)).sum(1).mean()
 
 
+class WeightEMA:
+    """Exponential moving average of the model weights.
+
+    Averaging the trajectory instead of picking a point on it is what lets the
+    fold be scored without selecting against its own validation set. It also
+    absorbs most of the step-to-step noise that made single runs on this corpus
+    swing by 0.04 qwk, because the reported model is an average over the tail
+    of training rather than whichever epoch happened to land well.
+
+    Non-floating buffers -- ``num_batches_tracked`` and friends -- are copied
+    rather than averaged; averaging an integer counter is meaningless and on
+    some torch versions raises.
+    """
+
+    def __init__(self, model, decay=0.999):
+        self.decay = decay
+        self.steps = 0
+        self.shadow = {
+            k: v.detach().clone()
+            for k, v in model.state_dict().items()
+        }
+
+    @torch.no_grad()
+    def update(self, model):
+        self.steps += 1
+        # Warm up the horizon, or the first few hundred steps stay pinned to
+        # the random initialisation on a short schedule.
+        decay = min(self.decay, (1.0 + self.steps) / (10.0 + self.steps))
+        for key, value in model.state_dict().items():
+            shadow = self.shadow[key]
+            if shadow.dtype.is_floating_point:
+                shadow.mul_(decay).add_(value.detach(), alpha=1.0 - decay)
+            else:
+                shadow.copy_(value.detach())
+
+    def state_dict(self):
+        return {k: v.detach().clone() for k, v in self.shadow.items()}
+
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -179,12 +218,30 @@ def train_fold(
     verbose=True,
     train_soft=None,
     train_soft_mask=None,
+    policy="final",
+    ema_decay=0.999,
 ):
-    """Train one fold. Returns (best_state_dict, best_val_metrics, epochs_run).
+    """Train one fold. Returns (state_dict, val_metrics, epochs_run, diagnostics).
 
-    The validation set is the only signal used for early stopping and
-    checkpoint selection. No test data is visible from inside this function --
-    it is not passed in, so it cannot leak.
+    No test data is visible from inside this function -- it is not passed in,
+    so it cannot leak.
+
+    ``policy`` decides what is returned and therefore what the fold's reported
+    score means:
+
+    ``final`` (default)
+        Fixed-length cosine schedule, no early stopping, weights averaged by
+        :class:`WeightEMA`, scored once at the end. The validation set is not
+        used to choose anything, so the number is an estimate of the recipe
+        rather than of the luckiest epoch.
+
+    ``best``
+        The previous behaviour: keep whichever epoch scored highest on
+        validation and report that score. This is a maximum over ~60 noisy
+        draws on a ~45-image fold, so it is biased upward by construction and
+        the bias is not constant across architectures. Kept only so the bias
+        can be measured -- ``diagnostics["selection_gap"]`` reports it on every
+        run regardless of policy.
     """
     set_seed(seed)
     num_classes = len(class_ages)
@@ -256,6 +313,7 @@ def train_fold(
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
+    ema = WeightEMA(model, ema_decay) if policy == "final" else None
     best_score, best_state, best_metrics, stale = -np.inf, None, None, 0
 
     for epoch in range(config["max_epochs"]):
@@ -286,7 +344,11 @@ def train_fold(
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
+            if ema is not None:
+                ema.update(model)
 
+        # Scored every epoch under both policies, but under ``final`` this is
+        # a diagnostic curve only -- nothing here selects the checkpoint.
         y_true, y_pred = predict(model, val_loader, device, use_amp, tta)
         metrics = ordinal_metrics(y_true, y_pred, class_ages)
         scheduler.step()
@@ -294,7 +356,8 @@ def train_fold(
         if metrics[select_metric] > best_score:
             best_score = metrics[select_metric]
             best_metrics = metrics
-            best_state = copy.deepcopy(model.state_dict())
+            if policy == "best":
+                best_state = copy.deepcopy(model.state_dict())
             stale = 0
         else:
             stale += 1
@@ -305,14 +368,34 @@ def train_fold(
                 f"qwk {metrics['qwk']:.3f}"
             )
 
-        if stale >= config["patience"]:
+        if policy == "best" and stale >= config["patience"]:
             if verbose:
                 print(f"      early stop at epoch {epoch}")
             break
 
+    if policy == "final":
+        # Score the averaged weights once. This is the returned checkpoint, so
+        # what gets reported is exactly what gets deployed.
+        model.load_state_dict(ema.state_dict())
+        y_true, y_pred = predict(model, val_loader, device, use_amp, tta)
+        final_metrics = ordinal_metrics(y_true, y_pred, class_ages)
+        state = ema.state_dict()
+    else:
+        final_metrics = best_metrics
+        state = best_state
+
+    diagnostics = {
+        "policy": policy,
+        "final_score": float(final_metrics[select_metric]),
+        "best_seen_score": float(best_score),
+        # How much the old max-over-epochs rule would have flattered this fold.
+        # Under ``best`` it is zero by definition, since that rule *is* the max.
+        "selection_gap": float(best_score - final_metrics[select_metric]),
+    }
+
     del model
     torch.cuda.empty_cache()
-    return best_state, best_metrics, epoch + 1
+    return state, final_metrics, epoch + 1, diagnostics
 
 
 # --------------------------------------------------------------------------
@@ -328,6 +411,27 @@ def run_holdout(args, records, groups, class_ages, device):
     )
     dev_idx = np.flatnonzero(~test_mask)
     test_idx = np.flatnonzero(test_mask)
+
+    # The manifest is frozen but grouping is recomputed every run, so the two
+    # can collide: an image added after the manifest was written may turn out
+    # to be another frame of a deer already held out. It cannot join the test
+    # set (that would unfreeze the manifest) and it cannot stay in development
+    # (its group would straddle the wall and assert_no_leakage would kill the
+    # run on fold 1), so it is dropped from this run and reported. No image is
+    # in that position today; this exists because weekly additions make it a
+    # matter of time.
+    test_groups = set(groups[test_idx].tolist())
+    collides = np.array([g in test_groups for g in groups[dev_idx]], dtype=bool)
+    if collides.any():
+        dropped = [records[i].filename for i in dev_idx[collides]]
+        print(
+            f"[split] dropping {len(dropped)} development image(s) that are other "
+            f"frames of a locked test deer: {dropped[:5]}"
+            + (" ..." if len(dropped) > 5 else "")
+        )
+        print("        They are excluded from training, not moved into the test "
+              "set; the manifest is unchanged.")
+        dev_idx = dev_idx[~collides]
 
     print(
         f"[split] development pool {len(dev_idx)} images | "
@@ -356,7 +460,7 @@ def run_holdout(args, records, groups, class_ages, device):
         print(f"\n{'=' * 70}\n{model_name}  ({size}px)\n{'=' * 70}")
 
         try:
-            images = decode_images(records, size)
+            images = decode_images(records, size, args.grayscale)
         except RuntimeError as exc:
             raise RuntimeError(f"decoding failed for {model_name}: {exc}") from exc
 
@@ -377,7 +481,7 @@ def run_holdout(args, records, groups, class_ages, device):
         if args.no_pretrained:
             print(f"   [scratch] random init, backbone lr {config['backbone_lr']:.0e}")
 
-        fold_metrics, fold_states = [], []
+        fold_metrics, fold_states, fold_diagnostics = [], [], []
         started = time.time()
 
         for fold, (tr, va) in enumerate(folds, start=1):
@@ -385,7 +489,7 @@ def run_holdout(args, records, groups, class_ages, device):
             assert_no_leakage(train_idx, val_idx, test_idx, groups, records)
 
             print(f"   fold {fold}/{args.folds}  train {len(train_idx)} / val {len(val_idx)}")
-            state, metrics, epochs = train_fold(
+            state, metrics, epochs, diag = train_fold(
                 model_name,
                 images[train_idx], labels[train_idx],
                 images[val_idx], labels[val_idx],
@@ -396,6 +500,8 @@ def run_holdout(args, records, groups, class_ages, device):
                 verbose=args.verbose,
                 train_soft=None if vote_targets is None else vote_targets[train_idx],
                 train_soft_mask=None if vote_mask is None else vote_mask[train_idx],
+                policy=args.checkpoint_policy,
+                ema_decay=args.ema_decay,
             )
             print(
                 f"      best val: acc {metrics['accuracy']:.3f}  "
@@ -404,6 +510,7 @@ def run_holdout(args, records, groups, class_ages, device):
             )
             fold_metrics.append(metrics)
             fold_states.append(state)
+            fold_diagnostics.append(diag)
 
         summary = {
             "model": model_name,
@@ -415,6 +522,10 @@ def run_holdout(args, records, groups, class_ages, device):
             values = [m[key] for m in fold_metrics]
             summary[f"cv_{key}"] = float(np.mean(values))
             summary[f"cv_{key}_sd"] = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0
+        summary["checkpoint_policy"] = args.checkpoint_policy
+        summary["selection_gap"] = float(
+            np.mean([d["selection_gap"] for d in fold_diagnostics])
+        )
 
         results.append(summary)
         print(
@@ -422,6 +533,12 @@ def run_holdout(args, records, groups, class_ages, device):
             f"+/- {summary['cv_accuracy_sd']:.3f} | qwk {summary['cv_qwk']:.3f} | "
             f"{summary['minutes']:.1f} min"
         )
+        if args.checkpoint_policy == "final":
+            print(
+                f"   selection gap: +{summary['selection_gap']:.3f} "
+                f"{args.select_metric} -- how much the old best-epoch rule would "
+                f"have added to this model without training changing"
+            )
 
         # Keep fold weights so the winner can be scored on test without
         # retraining. Written per-model to bound memory.
@@ -493,7 +610,7 @@ def _score_on_test(args, results, records, labels, test_idx, class_ages, device)
     for entry in to_score:
         model_name = entry["model"]
         size = entry["input_size"]
-        images = decode_images(records, size)
+        images = decode_images(records, size, args.grayscale)
         loader = DataLoader(
             EvalDataset(images[test_idx], labels[test_idx]),
             batch_size=_batch_size(model_name, args),
@@ -593,7 +710,7 @@ def run_temporal(args, records, groups, class_ages, device):
     payload_models = []
     for model_name in args.models:
         size = arch.input_size(model_name, args.image_size)
-        images = decode_images(records, size)
+        images = decode_images(records, size, args.grayscale)
 
         config = dict(TRAIN_DEFAULTS)
         config.update(
@@ -619,6 +736,18 @@ def run_temporal(args, records, groups, class_ages, device):
             eval_idx = np.array([i for d, i in dated if d == week])
             hist_idx = np.array([i for d, i in dated if d < week])
 
+            # Time ordering is *almost* the wall, but not quite: four
+            # same-animal groups span two collection dates, because the same
+            # buck was ingested twice months apart. For those, an earlier frame
+            # sitting in history is a sibling of a deer being predicted, so the
+            # date alone does not separate them. Drop the offending history.
+            eval_groups = set(groups[eval_idx].tolist())
+            sibling = np.array([g in eval_groups for g in groups[hist_idx]], dtype=bool)
+            if sibling.any():
+                print(f"   {week}: dropping {int(sibling.sum())} history image(s) "
+                      f"that are other frames of this week's deer")
+                hist_idx = hist_idx[~sibling]
+
             if len(hist_idx) < args.min_history:
                 print(f"   {week}: only {len(hist_idx)} prior images, skipped")
                 continue
@@ -627,14 +756,25 @@ def run_temporal(args, records, groups, class_ages, device):
                 continue
 
             # Carve a small validation slice from history for early stopping.
+            # By group, not by image: several frames of one deer must not
+            # straddle this split, or early stopping selects the checkpoint
+            # against an animal the model already trained on. A plain
+            # permutation here was safe only while grouping was a no-op.
             rng = np.random.default_rng(args.seed)
-            order = rng.permutation(len(hist_idx))
+            hist_groups = groups[hist_idx]
             n_val = max(len(class_ages), int(0.15 * len(hist_idx)))
-            val_idx, train_idx = hist_idx[order[:n_val]], hist_idx[order[n_val:]]
+            held, taken = [], 0
+            for group in rng.permutation(np.unique(hist_groups)):
+                if taken >= n_val:
+                    break
+                held.append(group)
+                taken += int((hist_groups == group).sum())
+            in_val = np.isin(hist_groups, held)
+            val_idx, train_idx = hist_idx[in_val], hist_idx[~in_val]
 
             assert_no_leakage(train_idx, val_idx, eval_idx, groups, records)
 
-            state, _, _ = train_fold(
+            state, _, _, _ = train_fold(
                 model_name,
                 images[train_idx], labels[train_idx],
                 images[val_idx], labels[val_idx],
@@ -643,6 +783,8 @@ def run_temporal(args, records, groups, class_ages, device):
                 select_metric=args.select_metric,
                 tta=args.tta,
                 verbose=False,
+                policy=args.checkpoint_policy,
+                ema_decay=args.ema_decay,
             )
 
             model = arch.build_model(
@@ -759,9 +901,12 @@ def _print_leaderboard(results, select_metric):
     print("CROSS-VALIDATED LEADERBOARD  (development pool only; test set untouched)")
     print(f"ranked by {select_metric}")
     print(f"{'=' * 96}")
+    # macro F1 was always computed and stored; it is shown because it is the
+    # per-class-balance signal, and unlike anything measured on the locked test
+    # set it may be consulted as often as you like without spending a read.
     header = (
         f"{'model':<22} {'px':>5} {'acc':>14} {'+/-1yr':>8} {'QWK':>8} "
-        f"{'MAE yr':>8} {'min':>7}"
+        f"{'macroF1':>8} {'MAE yr':>8} {'min':>7}"
     )
     print(header)
     print("-" * 96)
@@ -770,6 +915,7 @@ def _print_leaderboard(results, select_metric):
             f"{r['model']:<22} {r['input_size']:>5} "
             f"{r['cv_accuracy']:>7.3f}+/-{r['cv_accuracy_sd']:<5.3f} "
             f"{r['cv_within_one']:>8.3f} {r['cv_qwk']:>8.3f} "
+            f"{r['cv_macro_f1']:>8.3f} "
             f"{r['cv_mae_years']:>8.2f} {r['minutes']:>7.1f}"
         )
     print("-" * 96)
@@ -803,6 +949,13 @@ def parse_args(argv=None):
     p.add_argument("--sources", nargs="+", default=["NDA"],
                    help="labelling institutions to accept")
     p.add_argument("--channels", nargs="+", default=["color", "grayscale"])
+    p.add_argument("--grayscale", action="store_true",
+                   help="collapse every image to luma before training. "
+                        "MEASURED AND NOT RECOMMENDED: over 3 seeds it lifts "
+                        "infrared 0.533->0.600 but costs colour images "
+                        "0.717->0.680, a net loss since colour is 78%% of the "
+                        "corpus (overall 0.677->0.662). Kept so the result "
+                        "stays reproducible; see decode_images()")
     p.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST,
                    help="locked test-set manifest; created on first run, then frozen")
     p.add_argument("--output", type=Path,
@@ -850,6 +1003,14 @@ def parse_args(argv=None):
                         "dataset more gradient steps per epoch")
     p.add_argument("--train-multiplier", type=int, default=8,
                    help="augmented views drawn per training image per epoch")
+    p.add_argument("--checkpoint-policy", choices=["final", "best"], default="final",
+                   help="final: fixed schedule, EMA weights, scored once at the "
+                        "end -- validation selects nothing. best: keep the "
+                        "highest-scoring epoch and report that score, the old "
+                        "behaviour, biased upward. --patience applies only to "
+                        "'best'.")
+    p.add_argument("--ema-decay", type=float, default=0.999,
+                   help="weight-averaging horizon for --checkpoint-policy final")
     p.add_argument("--select-metric", choices=["qwk", "accuracy", "within_one", "macro_f1"],
                    default="qwk",
                    help="validation metric for early stopping and ranking")

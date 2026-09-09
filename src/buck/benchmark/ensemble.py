@@ -85,7 +85,7 @@ def _probabilities(model, images, labels, batch_size, device, tta):
 
 def collect_predictions(run_dir, model_name, records, labels, dev_idx, test_idx,
                         fold_list, class_ages, device, image_size=None,
-                        tta=False, batch_size=32):
+                        tta=False, batch_size=32, grayscale=False):
     """Return (oof_probs over dev, mean test probs) for one architecture.
 
     ``oof_probs[j]`` is produced by the only fold model that never saw
@@ -101,7 +101,7 @@ def collect_predictions(run_dir, model_name, records, labels, dev_idx, test_idx,
         )
 
     size = arch.input_size(model_name, image_size)
-    images = decode_images(records, size)
+    images = decode_images(records, size, grayscale)
 
     oof = np.zeros((len(dev_idx), len(class_ages)), dtype=np.float64)
     test_accum = np.zeros((len(test_idx), len(class_ages)), dtype=np.float64)
@@ -198,6 +198,12 @@ def main(argv=None):
     p.add_argument("--test-fraction", type=float, default=0.2)
     p.add_argument("--split-seed", type=int, default=1337)
     p.add_argument("--batch-size", type=int, default=32)
+    p.add_argument("--grayscale", dest="grayscale", action="store_true",
+                   default=None,
+                   help="override the run's stored grayscale setting (default: "
+                        "inherit it from results.json)")
+    p.add_argument("--no-grayscale", dest="grayscale", action="store_false",
+                   help="override the run's stored grayscale setting to colour")
     args = p.parse_args(argv)
 
     # Recover the sweep's configuration so the split is reproduced exactly.
@@ -209,6 +215,13 @@ def main(argv=None):
     image_root = args.image_root or Path(config["image_root"])
     manifest = args.manifest or Path(config["manifest"])
     image_size = config.get("image_size")
+    # Must match how the checkpoints were trained. Reconstructing out-of-fold
+    # predictions with the wrong input colour would not error -- it would
+    # silently score every model on images it never saw in that form -- so this
+    # is taken from the run's own config and reported, never guessed.
+    grayscale = bool(config.get("grayscale", False))
+    if args.grayscale is not None:
+        grayscale = args.grayscale
     split_seed = args.split_seed or int(config.get("split_seed", 1337))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -234,7 +247,7 @@ def main(argv=None):
         raise SystemExit(f"no checkpoints for {missing}; available: {available}")
 
     print(f"[ens] {len(models)} architectures, {len(dev_idx)} dev images, "
-          f"{folds} folds")
+          f"{folds} folds, input {'grayscale' if grayscale else 'colour'}")
     print("[ens] generating out-of-fold predictions (no test data touched)")
 
     oof_by_model, test_by_model, singles = {}, {}, []
@@ -242,6 +255,7 @@ def main(argv=None):
         oof, test_probs = collect_predictions(
             args.run, name, records, labels, dev_idx, test_idx, fold_list,
             class_ages, device, image_size, args.tta, args.batch_size,
+            grayscale,
         )
         oof_by_model[name] = oof
         test_by_model[name] = test_probs
