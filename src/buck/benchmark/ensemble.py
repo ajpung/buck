@@ -65,10 +65,19 @@ def rebuild_splits(records, groups, class_ages, manifest, folds, split_seed,
 
 
 @torch.no_grad()
-def _probabilities(model, images, labels, batch_size, device, tta):
+def _probabilities(model, images, labels, batch_size, device, tta,
+                   mean=None, std=None):
+    """Softmax probabilities for ``images``.
+
+    ``mean``/``std`` are the constants the backbone was pretrained under and
+    default to ImageNet. They are not optional in practice: timm's CLIP and
+    SigLIP weights, and the TF-ported Inception/Xception families, use
+    different values, and feeding them ImageNet constants does not raise --
+    it just makes a good backbone look like a poor one.
+    """
     loader = DataLoader(
-        EvalDataset(images, labels), batch_size=batch_size, shuffle=False,
-        num_workers=0,
+        EvalDataset(images, labels, mean, std), batch_size=batch_size,
+        shuffle=False, num_workers=0,
     )
     use_amp = device.type == "cuda"
     out = []
@@ -101,6 +110,7 @@ def collect_predictions(run_dir, model_name, records, labels, dev_idx, test_idx,
         )
 
     size = arch.input_size(model_name, image_size)
+    norm_mean, norm_std = arch.normalisation(model_name)
     images = decode_images(records, size, grayscale)
 
     oof = np.zeros((len(dev_idx), len(class_ages)), dtype=np.float64)
@@ -113,10 +123,12 @@ def collect_predictions(run_dir, model_name, records, labels, dev_idx, test_idx,
 
         val_global = dev_idx[va]
         oof[va] = _probabilities(
-            model, images[val_global], labels[val_global], batch_size, device, tta
+            model, images[val_global], labels[val_global], batch_size, device,
+            tta, norm_mean, norm_std
         )
         test_accum += _probabilities(
-            model, images[test_idx], labels[test_idx], batch_size, device, tta
+            model, images[test_idx], labels[test_idx], batch_size, device,
+            tta, norm_mean, norm_std
         )
 
         del model
