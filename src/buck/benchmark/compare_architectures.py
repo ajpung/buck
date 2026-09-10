@@ -31,6 +31,7 @@ Examples
 from __future__ import annotations
 
 import argparse
+from collections import OrderedDict
 import copy
 import json
 import os
@@ -139,10 +140,15 @@ class WeightEMA:
     def __init__(self, model, decay=0.999):
         self.decay = decay
         self.steps = 0
-        self.shadow = {
-            k: v.detach().clone()
-            for k, v in model.state_dict().items()
-        }
+        source = model.state_dict()
+        self.shadow = {k: v.detach().clone() for k, v in source.items()}
+        # ``state_dict()`` returns an OrderedDict carrying a ``_metadata``
+        # attribute that records each submodule's serialisation version. A
+        # plain dict comprehension drops it, and some modules validate it on
+        # load: torchvision's MNASNet raises "version shluld be set to 1 or 2
+        # instead of None" rather than falling back. Carried through so every
+        # architecture can round-trip its own EMA weights.
+        self._metadata = getattr(source, "_metadata", None)
 
     @torch.no_grad()
     def update(self, model):
@@ -158,7 +164,10 @@ class WeightEMA:
                 shadow.copy_(value.detach())
 
     def state_dict(self):
-        return {k: v.detach().clone() for k, v in self.shadow.items()}
+        out = OrderedDict((k, v.detach().clone()) for k, v in self.shadow.items())
+        if self._metadata is not None:
+            out._metadata = self._metadata
+        return out
 
 
 def set_seed(seed):
@@ -248,11 +257,14 @@ def train_fold(
 
     use_soft = train_soft is not None and train_soft_mask is not None \
         and bool(np.any(train_soft_mask))
+    # Read from the backbone's own pretrained config: CLIP/SigLIP and the
+    # TF-ported families were not trained under ImageNet constants.
+    norm_mean, norm_std = arch.normalisation(model_name)
     train_ds = TrainDataset(
         train_images, train_labels, config["augmentation"], seed=seed,
-        return_index=use_soft,
+        return_index=use_soft, mean=norm_mean, std=norm_std,
     )
-    val_ds = EvalDataset(val_images, val_labels)
+    val_ds = EvalDataset(val_images, val_labels, mean=norm_mean, std=norm_std)
 
     # Balance classes by sampling rather than by inflating the dataset, and
     # draw several augmented views of each image per epoch. With ~180 training
@@ -612,7 +624,8 @@ def _score_on_test(args, results, records, labels, test_idx, class_ages, device)
         size = entry["input_size"]
         images = decode_images(records, size, args.grayscale)
         loader = DataLoader(
-            EvalDataset(images[test_idx], labels[test_idx]),
+            EvalDataset(images[test_idx], labels[test_idx],
+                        *arch.normalisation(model_name)),
             batch_size=_batch_size(model_name, args),
             shuffle=False,
             num_workers=0,
@@ -793,7 +806,8 @@ def run_temporal(args, records, groups, class_ages, device):
             model.load_state_dict(state)
             model.to(device)
             loader = DataLoader(
-                EvalDataset(images[eval_idx], labels[eval_idx]),
+                EvalDataset(images[eval_idx], labels[eval_idx],
+                            *arch.normalisation(model_name)),
                 batch_size=config["batch_size"], shuffle=False, num_workers=0,
             )
             y_true, y_pred = predict(model, loader, device, device.type == "cuda", args.tta)

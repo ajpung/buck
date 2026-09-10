@@ -14,6 +14,7 @@ tables cannot be resized. Construction failures raise.
 
 from __future__ import annotations
 
+import torch
 import torch.nn as nn
 import torchvision.models as tvm
 
@@ -146,6 +147,76 @@ DINO_SUITE = [
     "convnext_tiny",
     "convnext_tiny_dinov3",
 ]
+
+
+# --- The wide field: modern architectures torchvision does not ship.
+#
+# torchvision's 42 entries are one vendor's slice of 2015-2022, all pretrained
+# the same way. These 41 add the families that came after, plus -- more
+# importantly -- pretraining regimes the torchvision set cannot express:
+# masked-autoencoder (MAE, FCMAE, BEiT-v2), image-text contrastive (CLIP,
+# SigLIP), self-distillation (DINOv3), 21k-class supervision, and SSLD/USI
+# distillation. Pretraining is the axis the original 12-model suite held
+# constant while varying capacity 4x, and capacity turned out not to matter.
+#
+# Several of these do NOT use ImageNet normalisation -- see normalisation().
+REGISTRY.update({
+    # -- modern convnets
+    "convnextv2_nano": dict(timm="convnextv2_nano.fcmae_ft_in22k_in1k", size=224, batch=48, freeze=2),
+    "convnextv2_tiny": dict(timm="convnextv2_tiny.fcmae_ft_in22k_in1k", size=224, batch=48, freeze=2),
+    "resnext50_32x4d": dict(timm="resnext50_32x4d.a1h_in1k", size=224, batch=48, freeze=2),
+    "seresnext50_32x4d": dict(timm="seresnext50_32x4d.racm_in1k", size=224, batch=48, freeze=2),
+    "res2net50_26w_4s": dict(timm="res2net50_26w_4s.in1k", size=224, batch=48, freeze=2),
+    "resnetrs50": dict(timm="resnetrs50.tf_in1k", size=160, batch=48, freeze=2),
+    "regnetz_d8": dict(timm="regnetz_d8.ra3_in1k", size=256, batch=38, freeze=2),
+    "dpn68b": dict(timm="dpn68b.ra_in1k", size=224, batch=48, freeze=2),
+    "hgnetv2_b4": dict(timm="hgnetv2_b4.ssld_stage2_ft_in1k", size=224, batch=48, freeze=2),
+    "mixnet_l": dict(timm="mixnet_l.ft_in1k", size=224, batch=48, freeze=2),
+    "ghostnetv2_130": dict(timm="ghostnetv2_130.in1k", size=224, batch=48, freeze=2),
+    "inception_v4": dict(timm="inception_v4.tf_in1k", size=299, batch=19, freeze=2),
+    "xception41": dict(timm="xception41.tf_in1k", size=299, batch=28, freeze=2),
+
+    # -- efficient / mobile-class, mostly distilled
+    "repvit_m1_5": dict(timm="repvit_m1_5.dist_300e_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "edgenext_small": dict(timm="edgenext_small.usi_in1k", size=256, batch=38, freeze=2, fixed_input=True),
+    "efficientformerv2_s2": dict(timm="efficientformerv2_s2.snap_dist_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "fastvit_sa24": dict(timm="fastvit_sa24.apple_in1k", size=256, batch=38, freeze=2, fixed_input=True),
+    "mobilevitv2_150": dict(timm="mobilevitv2_150.cvnets_in22k_ft_in1k", size=256, batch=38, freeze=2, fixed_input=True),
+    "levit_256": dict(timm="levit_256.fb_dist_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "tiny_vit_21m": dict(timm="tiny_vit_21m_224.dist_in22k_ft_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+
+    # -- transformers and hybrids
+    "deit3_small": dict(timm="deit3_small_patch16_224.fb_in22k_ft_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "pit_s": dict(timm="pit_s_224.in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "crossvit_15": dict(timm="crossvit_15_240.in1k", size=240, batch=38, freeze=2, fixed_input=True),
+    "twins_svt_small": dict(timm="twins_svt_small.in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "pvt_v2_b2": dict(timm="pvt_v2_b2.in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "visformer_small": dict(timm="visformer_small.in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "davit_tiny": dict(timm="davit_tiny.msft_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "gcvit_tiny": dict(timm="gcvit_tiny.in1k", size=224, batch=24, freeze=2, fixed_input=True),
+    "focalnet_tiny_srf": dict(timm="focalnet_tiny_srf.ms_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "mvitv2_tiny": dict(timm="mvitv2_tiny.fb_in1k", size=224, batch=24, freeze=2, fixed_input=True),
+    "nextvit_small": dict(timm="nextvit_small.bd_ssld_6m_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "swinv2_tiny_w8": dict(timm="swinv2_tiny_window8_256.ms_in1k", size=256, batch=38, freeze=2, fixed_input=True),
+    "maxvit_tiny_tf": dict(timm="maxvit_tiny_tf_224.in1k", size=224, batch=24, freeze=2, fixed_input=True),
+    "coatnet_0": dict(timm="coatnet_0_rw_224.sw_in1k", size=224, batch=24, freeze=2, fixed_input=True),
+    "caformer_s18": dict(timm="caformer_s18.sail_in22k_ft_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+    "poolformerv2_s24": dict(timm="poolformerv2_s24.sail_in1k", size=224, batch=48, freeze=2, fixed_input=True),
+
+    # -- alternative pretraining objectives on an identical ViT-B/16 body.
+    # These four differ from each other ONLY in how they were pretrained,
+    # which makes them the cleanest read on whether pretraining is the axis
+    # that matters.
+    "vit_b_16_mae": dict(timm="vit_base_patch16_224.mae", size=224, batch=32, freeze=6, fixed_input=True),
+    "beitv2_base": dict(timm="beitv2_base_patch16_224.in1k_ft_in22k_in1k", size=224, batch=32, freeze=6, fixed_input=True),
+    "vit_b_16_clip": dict(timm="vit_base_patch16_clip_224.laion2b_ft_in1k", size=224, batch=32, freeze=6, fixed_input=True),
+    "vit_b_16_siglip": dict(timm="vit_base_patch16_siglip_224.webli", size=224, batch=24, freeze=6, fixed_input=True),
+    "eva02_small": dict(timm="eva02_small_patch14_336.mim_in22k_ft_in1k", size=336, batch=21, freeze=6, fixed_input=True),
+})
+
+# Everything in the registry, alphabetical. Callers that care about coverage
+# under truncation should pass an explicit cost-ordered list instead.
+MEGA_SUITE = sorted(REGISTRY)
 
 
 def input_size(name, override=None):
@@ -353,13 +424,35 @@ _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def _check_normalisation(name, backbone):
-    """Warn loudly if a timm backbone disagrees with data.py's constants.
+def normalisation(name):
+    """The (mean, std) this backbone was pretrained under, as 3-tuples.
 
-    ``_to_tensor()`` hard-codes ImageNet mean/std. A backbone expecting
-    anything else still runs, still trains and still produces a leaderboard
-    row -- it is simply fed mis-normalised input for every epoch, which looks
-    exactly like the architecture not helping. Checked rather than assumed.
+    The benchmark feeds these to ``TrainDataset``/``EvalDataset`` instead of
+    assuming ImageNet everywhere. torchvision entries are all ImageNet, but
+    timm's CLIP and SigLIP weights, and the TF-ported Inception/Xception
+    families, use different constants. Feeding those ImageNet values does not
+    raise -- the model trains, converges and produces a leaderboard row that
+    understates it. Getting this wrong is invisible, so it is read from the
+    checkpoint's own config rather than hard-coded.
+    """
+    spec = REGISTRY[name]
+    if "timm" not in spec:
+        return _IMAGENET_MEAN, _IMAGENET_STD
+
+    import timm
+
+    cfg = timm.get_pretrained_cfg(spec["timm"]).to_dict()
+    mean = tuple(cfg.get("mean") or _IMAGENET_MEAN)
+    std = tuple(cfg.get("std") or _IMAGENET_STD)
+    return mean, std
+
+
+def _check_normalisation(name, backbone):
+    """Report when a backbone uses constants other than ImageNet's.
+
+    Informational, not a warning: :func:`normalisation` plumbs the correct
+    values through to the datasets. Printed so a non-ImageNet backbone is
+    visible in the run log rather than silently different.
     """
     cfg = getattr(backbone, "pretrained_cfg", None) or {}
     mean, std = cfg.get("mean"), cfg.get("std")
@@ -370,12 +463,8 @@ def _check_normalisation(name, backbone):
         )
 
     if differs(mean, _IMAGENET_MEAN) or differs(std, _IMAGENET_STD):
-        print(
-            f"[arch] WARNING: {name} declares mean={mean} std={std}, but "
-            f"data.py normalises with ImageNet constants. This backbone is "
-            f"being fed mis-normalised input; any result from it is invalid "
-            f"until _to_tensor() is made per-model."
-        )
+        print(f"[arch] {name}: non-ImageNet normalisation mean={mean} "
+              f"std={std} (plumbed through to the datasets)")
 
 
 class TimmClassifier(nn.Module):
@@ -394,16 +483,40 @@ class TimmClassifier(nn.Module):
     exactly as it does elsewhere.
     """
 
-    def __init__(self, backbone, num_classes, dropout):
+    def __init__(self, backbone, num_classes, dropout, width):
         super().__init__()
         self.backbone = backbone
         self.classifier = _mark(nn.Sequential(
-            nn.LayerNorm(backbone.num_features),
-            _head(backbone.num_features, num_classes, dropout),
+            nn.LayerNorm(width),
+            _head(width, num_classes, dropout),
         ))
 
     def forward(self, x):
         return self.classifier(self.backbone(x))
+
+
+# Head-side module names to exclude when walking a backbone for its trunk.
+_TIMM_HEAD_NAMES = {
+    "head", "classifier", "fc", "global_pool", "norm", "norm_pre",
+    "fc_norm", "head_drop", "head_dist", "pre_logits", "flatten",
+}
+
+
+def _feature_width(backbone, size):
+    """Width the backbone actually emits, measured rather than declared.
+
+    ``num_features`` is not always the pooled output width -- GhostNet-V2
+    declares 1248 and emits 1280 -- and a mismatch only surfaces as a shape
+    error on the first forward pass, i.e. hours into a sweep. One dummy
+    forward at build time costs nothing and removes the class of failure.
+    """
+    was_training = backbone.training
+    backbone.eval()
+    with torch.no_grad():
+        out = backbone(torch.zeros(1, 3, size, size))
+    if was_training:
+        backbone.train()
+    return int(out.shape[1])
 
 
 def _build_timm(name, spec, num_classes, dropout, pretrained, freeze):
@@ -421,7 +534,9 @@ def _build_timm(name, spec, num_classes, dropout, pretrained, freeze):
     )
     if pretrained:
         _check_normalisation(name, backbone)
-    model = TimmClassifier(backbone, num_classes, dropout)
+    model = TimmClassifier(
+        backbone, num_classes, dropout, _feature_width(backbone, spec["size"])
+    )
     if pretrained:
         _freeze_timm_stem(backbone, name, freeze)
     return model
@@ -442,8 +557,24 @@ def _freeze_timm_stem(backbone, name, freeze):
     elif hasattr(backbone, "patch_embed") and hasattr(backbone, "blocks"):
         blocks = [backbone.patch_embed] + list(backbone.blocks.children())
     else:
-        print(f"[arch] {name}: no timm freeze rule, training all layers")
-        return
+        # Generic fallback: walk the trunk in definition order. Without this,
+        # a dozen timm families trained every layer while every torchvision
+        # entry froze two blocks -- different optimisation regimes across the
+        # same leaderboard, which is the defect HEAD_MARKER exists to prevent.
+        trunk = [
+            module
+            for child_name, module in backbone.named_children()
+            if child_name not in _TIMM_HEAD_NAMES
+            and any(True for _ in module.parameters())
+        ]
+        if not trunk:
+            print(f"[arch] {name}: no freezable trunk found, training all layers")
+            return
+        # A single Sequential trunk (``features``) is a stack of blocks, not
+        # one block; expand it so ``freeze`` means the same thing everywhere.
+        if len(trunk) == 1 and isinstance(trunk[0], nn.Sequential):
+            trunk = list(trunk[0].children())
+        blocks = trunk
 
     for block in blocks[:freeze]:
         for param in block.parameters():

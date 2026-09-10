@@ -684,13 +684,33 @@ def augment(image, strength="medium", rng=random):
     return image
 
 
-def _to_tensor(image):
-    """uint8 HWC -> normalised float32 CHW tensor."""
+def normalisation_arrays(mean=None, std=None):
+    """Coerce (mean, std) 3-tuples into (3,1,1) arrays, defaulting to ImageNet.
+
+    Precomputed once per dataset rather than per sample: ``_to_tensor`` runs
+    on every image of every epoch.
+    """
+    mean = IMAGENET_MEAN if mean is None else np.asarray(
+        mean, dtype=np.float32).reshape(3, 1, 1)
+    std = IMAGENET_STD if std is None else np.asarray(
+        std, dtype=np.float32).reshape(3, 1, 1)
+    return mean, std
+
+
+def _to_tensor(image, mean=IMAGENET_MEAN, std=IMAGENET_STD):
+    """uint8 HWC -> normalised float32 CHW tensor.
+
+    ``mean``/``std`` default to ImageNet, which every torchvision backbone
+    wants. They are parameters because timm's CLIP, SigLIP and TF-ported
+    Inception/Xception weights were trained under different constants; feeding
+    those ImageNet values does not fail, it just quietly costs accuracy and
+    looks like the architecture underperforming.
+    """
     array = image.astype(np.float32) / 255.0
     if array.ndim == 2:
         array = np.stack([array] * 3, axis=-1)
     array = array.transpose(2, 0, 1)
-    array = (array - IMAGENET_MEAN) / IMAGENET_STD
+    array = (array - mean) / std
     return torch.from_numpy(np.ascontiguousarray(array, dtype=np.float32))
 
 
@@ -704,7 +724,7 @@ class TrainDataset(Dataset):
     """
 
     def __init__(self, images, labels, strength="medium", seed=0,
-                 return_index=False):
+                 return_index=False, mean=None, std=None):
         if len(images) != len(labels):
             raise ValueError("images and labels differ in length")
         self.images = images
@@ -712,13 +732,14 @@ class TrainDataset(Dataset):
         self.strength = strength
         self.return_index = return_index
         self._rng = random.Random(seed)
+        self.mean, self.std = normalisation_arrays(mean, std)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, idx):
         image = augment(self.images[idx].copy(), self.strength, self._rng)
-        tensor = _to_tensor(image)
+        tensor = _to_tensor(image, self.mean, self.std)
         # The index lets the caller attach a per-sample training target without
         # this class needing to know anything about the loss.
         if self.return_index:
@@ -741,17 +762,19 @@ class EvalDataset(Dataset):
     absent by construction rather than by a disabled flag.
     """
 
-    def __init__(self, images, labels):
+    def __init__(self, images, labels, mean=None, std=None):
         if len(images) != len(labels):
             raise ValueError("images and labels differ in length")
         self.images = images
         self.labels = np.asarray(labels, dtype=np.int64)
+        self.mean, self.std = normalisation_arrays(mean, std)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, idx):
-        return _to_tensor(self.images[idx]), int(self.labels[idx])
+        return (_to_tensor(self.images[idx], self.mean, self.std),
+                int(self.labels[idx]))
 
 
 def decode_images(records, size, grayscale=False):
