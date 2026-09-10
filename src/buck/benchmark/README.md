@@ -354,7 +354,7 @@ RegNet barely move. Quantise before concluding a model is too large.
 ### `DEFAULT_SUITE`, complete
 
 All 12, `benchmark_runs/suite_v2`, 5 folds, seed 42, reconstructed from fold
-checkpoints by `benchmark_runs/peek_partial.py`. The `±` is across folds within
+checkpoints by `python -m buck.benchmark.peek`. The `±` is across folds within
 one run -- much larger than the across-seed SD -- so **do not rank on it**.
 
 | model | px | accuracy | ±1yr | QWK | macroF1 | MAE | min |

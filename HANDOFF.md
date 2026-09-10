@@ -24,9 +24,22 @@ model as each one completes, so the finished models are still scoreable without
 retraining. `StratifiedGroupKFold` is deterministic given the same records,
 groups and seed, so the exact validation fold each checkpoint was scored on can
 be rebuilt. A script that does exactly this is saved at
-**`benchmark_runs/peek_partial.py`** — run it from the repo root and it prints a
-leaderboard for whichever models are complete. If that file is gone, the recipe
-is:
+**`buck.benchmark.peek`** (it used to live at `benchmark_runs/peek_partial.py`,
+which is gitignored, so it was never under version control):
+
+```
+python -m buck.benchmark.peek --run <sweep dir> --log <that run's stdout log>
+```
+
+**Pass `--log`.** A sweep that runs for days outlives the corpus it started on:
+the weekly add gives last week's `xpx` deer its age, the development pool goes
+230 → 231, and `StratifiedGroupKFold` over 231 images bears no resemblance to
+the folds over 230. Every checkpoint then gets scored on a fold holding its own
+training data and the leaderboard comes back around 0.96 with nothing raised.
+File mtime cannot catch this — renaming preserves it — so the pin is read from
+the run's own log of skipped `xpx` files and verified against its record count.
+Without `--log` there is no pin; only a crude "top accuracy above 0.90" check
+fires. If that file is gone, the recipe is:
 
 ```python
 from buck.benchmark.ensemble import rebuild_splits   # gives labels, dev_idx, test_idx, folds
