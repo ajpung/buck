@@ -242,6 +242,16 @@ This is a data problem, not a perception problem. Two pieces of evidence:
 The gap also widens with corpus size (absent at 23 images/fold, 18 points at
 184), consistent with infrared simply being further back on the same curve.
 
+**One confound to control for.** The two subsets are not framed alike. Detector
+boxes (`trail cam/detector_boxes.json`) put the infrared images at 0.928 ±0.060
+of the frame against colour's 0.754 ±0.156 -- 65 vs 218 of the confidently
+detected NDA images, a 0.174 difference at roughly t = 13. **This is
+unintentional**, an artifact of how those originals were cropped rather than a
+property of the capture mode. So the 18-point gap is not a clean colour-vs-IR
+contrast; it also contrasts tight framing against loose. The evidence above
+still points at data rather than perception, but an IR experiment should
+control for framing instead of assuming the channel is the only difference.
+
 ## Measured and rejected
 
 Recorded so they are not re-proposed. All measured under the corrected
@@ -251,6 +261,7 @@ pipeline; see `HANDOFF.md` for the earlier set.
 |---|---|
 | **Cross-architecture ensembling** | Uniform blend of all 12: +0.009 accuracy over the best single. The greedy-selected blend's +0.069 qwk is **selection bias** -- it picks members on the same out-of-fold data it reports, the same defect class as best-epoch checkpointing. Models are too correlated: 18% mean pairwise disagreement on errors, and 26 dev images that all of them miss. |
 | **Architecture search** | 12 backbones across a 4x parameter range span 0.654-0.771 qwk, one cluster. `maxvit_t` placed 3rd at 2.3x the cost of `convnext_tiny`. |
+| **Detector-normalised crops** | Measured 2026-09-09 as a pre-check, before building anything. MegaDetector v6 boxes on all 289 NDA images (99.7% found, median conf 0.945) show the framing is *already* normalised: the deer is centred at 0.497 ±0.027 / 0.522 ±0.057 and spans >=94% of the image width in three quarters of the corpus. Equalising every deer's area to the median needs a 0.95-1.12x rescale across the IQR (0.92-1.29x at p5-p95) -- a +/-10-15% zoom, against a +12deg rotation the augmentation already applies. Framing is also not a shortcut: corr(age, area) = -0.045, corr(age, aspect) = +0.055. This is structural, not luck -- squaring a tightly-zoomed rectangular original yields a square necessarily smaller than the rectangle, so the animal fills the frame by construction. See `trail cam/detector_boxes.json`. |
 | **Flip TTA** | +1 correct image out of 230, scored on identical weights (exactly paired, so training noise cancels). Changes 4.6% of predictions; accuracy and macro-F1 up, within-one and qwk down. Doubles inference cost for nothing. |
 | **Grayscale input** (`--grayscale`) | Net loss of ~3.3 images out of 230. Lifts infrared (+0.067, up on all 3 seeds) but costs colour more (-0.037, down on all 3), and colour is 78% of the corpus. See `decode_images()`. |
 | **Hand-built body proportions** | Given the NDA panel's own stated justifications *as ground truth*, a bag-of-concepts encoding predicts age at 0.462 -- well below the 0.700 the pixels achieve. The published AOTH-style criteria are less informative than the image. |

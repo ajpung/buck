@@ -114,6 +114,40 @@ EFFICIENT_SUITE = [
 ]
 
 
+# --- Self-supervised backbones, built through timm rather than torchvision.
+#
+# Every entry above is ImageNet *supervised*, so the 12-model suite spanned a
+# 4x parameter range but only one pretraining regime. DINOv3 is a different
+# regime rather than another point on the same axis: self-supervised on
+# LVD-1689M. ``convnext_tiny_dinov3`` is deliberately the same architecture,
+# parameter count and 224px input as the torchvision ``convnext_tiny`` entry,
+# so running the two against each other isolates pretraining as the only
+# variable -- and it ships the same browser artefact either way.
+#
+# Their pretrained configs declare ImageNet mean/std at 224px, identical to
+# IMAGENET_MEAN/IMAGENET_STD in data.py, so no preprocessing change is needed.
+# That is checked at build time rather than assumed: a backbone wanting
+# different normalisation would be silently degraded by the fixed constants in
+# ``_to_tensor()`` and would look like a failed experiment. See
+# ``_check_normalisation``.
+#
+# The DINOv2 ViTs are deliberately absent. They are patch-14 at a native 518px
+# and would need position-embedding interpolation to run at 224, which is a
+# real change to the model rather than a registry entry.
+REGISTRY.update({
+    "convnext_tiny_dinov3": dict(timm="convnext_tiny.dinov3_lvd1689m",
+                                 size=224, batch=48, freeze=2),
+    "convnext_small_dinov3": dict(timm="convnext_small.dinov3_lvd1689m",
+                                  size=224, batch=40, freeze=2),
+})
+
+# The controlled pair: identical architecture and cost, different pretraining.
+DINO_SUITE = [
+    "convnext_tiny",
+    "convnext_tiny_dinov3",
+]
+
+
 def input_size(name, override=None):
     """Resolution to feed ``name``, honouring an override only when legal."""
     spec = REGISTRY[name]
@@ -229,8 +263,15 @@ def build_model(name, num_classes, dropout=0.3, pretrained=True):
         )
 
     spec = REGISTRY[name]
-    model = spec["fn"](weights="DEFAULT" if pretrained else None)
     freeze = spec.get("freeze", 2)
+
+    # Self-supervised entries carry no classifier to replace and their module
+    # layout does not match the name-prefix rules below, so they take their
+    # own construction path.
+    if "timm" in spec:
+        return _build_timm(name, spec, num_classes, dropout, pretrained, freeze)
+
+    model = spec["fn"](weights="DEFAULT" if pretrained else None)
 
     # --- Attach the head, dispatching on the actual module layout.
     if name.startswith(("vit_",)):
@@ -299,6 +340,109 @@ def _freeze_stem(model, name, freeze):
         # Unknown layout: leave everything trainable rather than freeze the
         # wrong thing silently.
         print(f"[arch] {name}: no freeze rule, training all layers")
+        return
+
+    for block in blocks[:freeze]:
+        for param in block.parameters():
+            param.requires_grad = False
+
+
+# data.py normalises every image with these fixed constants, so a backbone
+# trained under different ones cannot be fed correctly by this pipeline.
+_IMAGENET_MEAN = (0.485, 0.456, 0.406)
+_IMAGENET_STD = (0.229, 0.224, 0.225)
+
+
+def _check_normalisation(name, backbone):
+    """Warn loudly if a timm backbone disagrees with data.py's constants.
+
+    ``_to_tensor()`` hard-codes ImageNet mean/std. A backbone expecting
+    anything else still runs, still trains and still produces a leaderboard
+    row -- it is simply fed mis-normalised input for every epoch, which looks
+    exactly like the architecture not helping. Checked rather than assumed.
+    """
+    cfg = getattr(backbone, "pretrained_cfg", None) or {}
+    mean, std = cfg.get("mean"), cfg.get("std")
+
+    def differs(actual, expected):
+        return actual is not None and any(
+            abs(a - e) > 1e-3 for a, e in zip(actual, expected)
+        )
+
+    if differs(mean, _IMAGENET_MEAN) or differs(std, _IMAGENET_STD):
+        print(
+            f"[arch] WARNING: {name} declares mean={mean} std={std}, but "
+            f"data.py normalises with ImageNet constants. This backbone is "
+            f"being fed mis-normalised input; any result from it is invalid "
+            f"until _to_tensor() is made per-model."
+        )
+
+
+class TimmClassifier(nn.Module):
+    """A timm feature extractor plus the benchmark's shared head.
+
+    The DINO checkpoints ship with ``num_classes=0``: they are backbones with
+    no classifier at all, so there is nothing for the name-prefix dispatch in
+    :func:`build_model` to replace. The backbone is therefore built pooled
+    (output ``(N, C)``) and the same :func:`_head` every torchvision entry
+    uses is attached on top, behind a fresh LayerNorm mirroring what the
+    ``convnext`` branch does -- so the two arms differ in backbone weights and
+    nothing else.
+
+    Only ``classifier`` carries the head marker, so
+    :func:`split_parameters` puts the backbone on the backbone learning rate
+    exactly as it does elsewhere.
+    """
+
+    def __init__(self, backbone, num_classes, dropout):
+        super().__init__()
+        self.backbone = backbone
+        self.classifier = _mark(nn.Sequential(
+            nn.LayerNorm(backbone.num_features),
+            _head(backbone.num_features, num_classes, dropout),
+        ))
+
+    def forward(self, x):
+        return self.classifier(self.backbone(x))
+
+
+def _build_timm(name, spec, num_classes, dropout, pretrained, freeze):
+    """Construct a timm-backed entry with the shared head attached."""
+    try:
+        import timm
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise RuntimeError(
+            f"{name} is a timm-backed entry and timm is not installed "
+            f"(pip install timm). The torchvision entries do not need it."
+        ) from exc
+
+    backbone = timm.create_model(
+        spec["timm"], pretrained=pretrained, num_classes=0
+    )
+    if pretrained:
+        _check_normalisation(name, backbone)
+    model = TimmClassifier(backbone, num_classes, dropout)
+    if pretrained:
+        _freeze_timm_stem(backbone, name, freeze)
+    return model
+
+
+def _freeze_timm_stem(backbone, name, freeze):
+    """Freeze the earliest ``freeze`` blocks of a timm backbone.
+
+    timm's ConvNeXt exposes ``stem`` plus a four-stage ``stages``, so
+    ``freeze=2`` freezes the stem and the first stage -- the same two blocks
+    torchvision's ``features[:2]`` covers, keeping the arms comparable.
+    """
+    if freeze <= 0:
+        return
+
+    if hasattr(backbone, "stem") and hasattr(backbone, "stages"):
+        blocks = [backbone.stem] + list(backbone.stages.children())
+    elif hasattr(backbone, "patch_embed") and hasattr(backbone, "blocks"):
+        blocks = [backbone.patch_embed] + list(backbone.blocks.children())
+    else:
+        print(f"[arch] {name}: no timm freeze rule, training all layers")
         return
 
     for block in blocks[:freeze]:

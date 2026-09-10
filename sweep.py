@@ -34,6 +34,12 @@ PRESETS = {
     "tta":    (["--image-size", "320", "--tta"], "320px + flip TTA"),
     "big":    (["--models", "convnext_small"], "larger backbone"),
     "unfroze": (["--backbone-lr", "3e-4"], "hotter backbone, no stem freeze effect"),
+    # Same architecture, parameter count, input size and browser artefact as
+    # 'base' -- only the pretraining differs (DINOv3 self-supervised on
+    # LVD-1689M vs ImageNet supervised). Compare it against 'base' run in the
+    # SAME session: the arms must share a code version to be comparable.
+    "dino":   (["--models", "convnext_tiny_dinov3"],
+               "DINOv3 self-supervised backbone; controlled against 'base'"),
 }
 
 
@@ -109,13 +115,18 @@ def compare():
               "from 'sweep.py rep', not against this mean.")
 
 
-def repeat(name, n=3):
+def repeat(name, n=3, start=42):
     """Run one preset n times under different seeds and report across-run SD.
 
     Training is nondeterministic even at a fixed seed -- cudnn.benchmark, TF32
     and AMP all admit run-to-run variation -- so a single number cannot tell a
     real effect from luck. The split is held fixed (--split-seed is untouched);
     only the training seed moves, which isolates optimisation variance.
+
+    ``start`` is the first training seed. Pass it to ADD seeds to an existing
+    set rather than overwrite one -- ``rep ord 3 45`` writes ord_s45..s47 and
+    leaves ord_s42..s44 alone. Output dirs are keyed by seed, so re-running
+    with the default start silently replaces the runs already there.
     """
     import json
     import statistics
@@ -125,7 +136,7 @@ def repeat(name, n=3):
     print(f"\n{'#' * 70}\n# {name} x{n}: {why}\n{'#' * 70}", flush=True)
     got = []
     for i in range(n):
-        seed = 42 + i
+        seed = start + i
         out = f"benchmark_runs/{name}_s{seed}"
         argv = list(BASE) + flags + ["--seed", str(seed), "--output", out]
         if "--models" in flags:
@@ -157,8 +168,9 @@ if __name__ == "__main__":
     args = sys.argv[1:] or ["list"]
     if args[0] == "rep":
         if len(args) < 2 or args[1] not in PRESETS:
-            sys.exit("usage: python sweep.py rep <preset> [n]")
-        repeat(args[1], int(args[2]) if len(args) > 2 else 3)
+            sys.exit("usage: python sweep.py rep <preset> [n] [start_seed]")
+        repeat(args[1], int(args[2]) if len(args) > 2 else 3,
+               int(args[3]) if len(args) > 3 else 42)
         sys.exit(0)
     if args[0] == "compare":
         compare()

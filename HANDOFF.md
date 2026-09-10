@@ -253,10 +253,15 @@ comparable to anything current.
   contains photos from 2005–2019. It is leak-free but does not reproduce the
   weekly workflow the docstring claims.
 
-**Still untried, and probably the largest remaining lever:** normalising the
-crop with an animal detector (e.g. MegaDetector). AOTH is a claim about body
-*proportions*, but the deer occupies a different fraction of every frame, so the
-model must learn scale invariance from ~230 images instead of being handed it.
+**~~Still untried, and probably the largest remaining lever:~~ MEASURED AND
+REJECTED, 2026-09-09.** The idea was to normalise the crop with an animal
+detector (e.g. MegaDetector), on the reasoning that AOTH is a claim about body
+*proportions* while the deer occupies a different fraction of every frame. The
+premise is false: MegaDetector boxes on all 289 NDA images show the deer already
+centred to ±0.03 and spanning >=94% of the width in three quarters of the
+corpus, leaving a ±10-15% residual zoom and no correlation with age. Squaring a
+tightly-zoomed rectangular original produces that framing by construction. See
+*Measured and rejected* in `src/buck/benchmark/README.md` for the numbers.
 
 ---
 
