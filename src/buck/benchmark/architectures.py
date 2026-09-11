@@ -135,11 +135,37 @@ EFFICIENT_SUITE = [
 # The DINOv2 ViTs are deliberately absent. They are patch-14 at a native 518px
 # and would need position-embedding interpolation to run at 224, which is a
 # real change to the model rather than a registry entry.
+#
+# ``backbone_lr`` below is a per-entry override of TRAIN_DEFAULTS. The DINOv3
+# weights do not survive the 1e-4 the ImageNet-supervised backbones are fine
+# tuned at: the run collapses to predicting one constant class, scoring 0.135
+# accuracy with qwk exactly 0.000 on fold 1 against 0.731 for the identical
+# architecture with ImageNet weights. Measured on fold 1, 30 epochs, one
+# variable at a time:
+#
+#     backbone_lr 1e-4 (default) 0.135 acc  qwk 0.000   <- collapsed
+#     backbone_lr 3e-5           0.692 acc  qwk 0.730
+#     backbone_lr 1e-5           0.673 acc  qwk 0.674
+#     backbone frozen            0.673 acc  qwk 0.747
+#     weight_decay 0.0           0.346 acc  qwk 0.000   <- still collapsed
+#     ImageNet reference         0.731 acc  qwk 0.780   <- harness is fine
+#
+# So it is the learning rate, not weight decay, and not the harness. These
+# checkpoints carry norm gains averaging 2.80 against ImageNet's 0.88 and emit
+# pooled features ~9x larger, so a step size chosen for supervised weights
+# destroys them in the first epochs.
+#
+# Note this makes the sweep no longer single-hyperparameter across every
+# entry. The alternative is reporting a number that measures nothing but a
+# broken optimisation, so the override is the lesser evil -- but any writeup
+# comparing DINOv3 to the rest must say that its backbone LR differs.
 REGISTRY.update({
     "convnext_tiny_dinov3": dict(timm="convnext_tiny.dinov3_lvd1689m",
-                                 size=224, batch=48, freeze=2),
+                                 size=224, batch=48, freeze=2,
+                                 backbone_lr=3e-5),
     "convnext_small_dinov3": dict(timm="convnext_small.dinov3_lvd1689m",
-                                  size=224, batch=40, freeze=2),
+                                  size=224, batch=40, freeze=2,
+                                  backbone_lr=3e-5),
 })
 
 # The controlled pair: identical architecture and cost, different pretraining.

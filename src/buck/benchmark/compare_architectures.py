@@ -490,6 +490,14 @@ def run_holdout(args, records, groups, class_ages, device):
             config["backbone_lr"] = args.backbone_lr
         elif args.no_pretrained:
             config["backbone_lr"] = SCRATCH_BACKBONE_LR
+        elif "backbone_lr" in arch.REGISTRY[model_name]:
+            # A few checkpoints do not survive the default rate -- see the
+            # DINOv3 note in architectures.py. An explicit --backbone-lr still
+            # wins, so a sweep can override this deliberately.
+            config["backbone_lr"] = arch.REGISTRY[model_name]["backbone_lr"]
+            print(f"   [lr] {model_name} uses its registry backbone lr "
+                  f"{config['backbone_lr']:.0e} (default "
+                  f"{TRAIN_DEFAULTS['backbone_lr']:.0e})")
         if args.no_pretrained:
             print(f"   [scratch] random init, backbone lr {config['backbone_lr']:.0e}")
 
@@ -741,6 +749,14 @@ def run_temporal(args, records, groups, class_ages, device):
             config["backbone_lr"] = args.backbone_lr
         elif args.no_pretrained:
             config["backbone_lr"] = SCRATCH_BACKBONE_LR
+        elif "backbone_lr" in arch.REGISTRY[model_name]:
+            # A few checkpoints do not survive the default rate -- see the
+            # DINOv3 note in architectures.py. An explicit --backbone-lr still
+            # wins, so a sweep can override this deliberately.
+            config["backbone_lr"] = arch.REGISTRY[model_name]["backbone_lr"]
+            print(f"   [lr] {model_name} uses its registry backbone lr "
+                  f"{config['backbone_lr']:.0e} (default "
+                  f"{TRAIN_DEFAULTS['backbone_lr']:.0e})")
 
         print(f"\n{'=' * 70}\n{model_name} rolling backtest over {len(targets)} weeks\n{'=' * 70}")
         rows = []
