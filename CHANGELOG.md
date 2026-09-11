@@ -2,6 +2,465 @@
 
 
 
+## v0.8.0 (2026-09-11)
+
+### Chore
+
+* chore: adding data, architecture comparison ([`d5b5b14`](https://github.com/ajpung/buck/commit/d5b5b14a025dbde60573655504b5c42ce902e72a))
+
+* chore: saving current files for the inevitable fuckup ([`3a2ce32`](https://github.com/ajpung/buck/commit/3a2ce32c6357bf7dc6f46480987ed0af291309f0))
+
+* chore: correcting architecture ([`02ecfcf`](https://github.com/ajpung/buck/commit/02ecfcffb05cad4ba8802ebbf42f56c237246332))
+
+* chore: Weekly data add ([`97e1c42`](https://github.com/ajpung/buck/commit/97e1c42eda5d1585be2dc2ee2463f7fa5ba66076))
+
+* chore: updating models ([`9c7ab1c`](https://github.com/ajpung/buck/commit/9c7ab1c356e23863555b4715ac281039792df4c8))
+
+* chore: Trying to improve model accuracy ([`b0e62ee`](https://github.com/ajpung/buck/commit/b0e62eeaa9883105fd344f3cb8c12b3a52c109c5))
+
+* chore: adding data ([`598655e`](https://github.com/ajpung/buck/commit/598655e0808c416348bb2c7b944ca09a738a0d89))
+
+* chore: adding data ([`2247ba7`](https://github.com/ajpung/buck/commit/2247ba7b8acb2ac05b27b205a6438e8a0f22991c))
+
+* chore: data add ([`c898a11`](https://github.com/ajpung/buck/commit/c898a1169eb1f9beadcdd0c0c31be8f4104d3334))
+
+* chore: added usage video and more data ([`d8c01ac`](https://github.com/ajpung/buck/commit/d8c01acf326ac9bddecbe00ed3f66f898d21e279))
+
+* chore: updating names, deer data ([`dd46bdf`](https://github.com/ajpung/buck/commit/dd46bdf10eeaf82f7dada61aeef31d908341e029))
+
+* chore: updating second draft of paper ([`3daed7a`](https://github.com/ajpung/buck/commit/3daed7a3878e5799ad0a9e830d6e91ac938ddf89))
+
+* chore: correcting enhanced version of writeup ([`7c644fa`](https://github.com/ajpung/buck/commit/7c644fa1e1e87e3630958252a44ecfa3ac870167))
+
+* chore: adding metadata file ([`161c614`](https://github.com/ajpung/buck/commit/161c614dff4bbb9084af9939c60f0bc2af5e6446))
+
+* chore: continuing paper ([`d44f80b`](https://github.com/ajpung/buck/commit/d44f80b017322c7e76848ddb156757a14b7a8e8e))
+
+* chore: paper work ([`04c3156`](https://github.com/ajpung/buck/commit/04c315686c40d53cfef232d1f3fbb60a8c547983))
+
+* chore: updating figures, working on paper ([`38ab4a2`](https://github.com/ajpung/buck/commit/38ab4a2ff6acfc80a8cb8c41b2ed02935f318fda))
+
+* chore: updating paper ([`bc300c3`](https://github.com/ajpung/buck/commit/bc300c377abc5515e546e9ad081c15eddb6f5a99))
+
+* chore: updating paper ([`ba092ce`](https://github.com/ajpung/buck/commit/ba092cedbef819a78617d991d6c498201747162d))
+
+* chore: continuing write-up ([`c512ce2`](https://github.com/ajpung/buck/commit/c512ce284caa20741c007d5d528c209168cc9788))
+
+* chore: updating documentation to run in TexStudio ([`5e7fd3f`](https://github.com/ajpung/buck/commit/5e7fd3f7e2f03ac93a42a67b7b1cb9262385b02a))
+
+* chore: updating paper ([`7e7c0b4`](https://github.com/ajpung/buck/commit/7e7c0b410c889bc605160b154ddfc402cb1ef2b7))
+
+* chore: enhancing paper ([`0691732`](https://github.com/ajpung/buck/commit/06917327dc1690426c04e9e26737d248a70f1915))
+
+* chore: adding to publication ([`cc88dea`](https://github.com/ajpung/buck/commit/cc88dea11cfa71176a2064706c406d9fd41edd53))
+
+* chore: updating ML:E paper ([`e6faaff`](https://github.com/ajpung/buck/commit/e6faaff35d4c1e7231b9bed3026ae7fe9e42ad7f))
+
+* chore: updating LaTeX paper ([`4673711`](https://github.com/ajpung/buck/commit/4673711ecd1ab07b5a3e6513341115f7e1fcf4f6))
+
+* chore: updating slides ([`042e063`](https://github.com/ajpung/buck/commit/042e063d24b19195e8e7a3d9afa46ec9910bbc30))
+
+* chore: building slides, enhancing single-model jawbone prediction ([`9f76f6a`](https://github.com/ajpung/buck/commit/9f76f6ab30e510144b9053ac1cccc8aae0eeb372))
+
+* chore: uploading start of Machine Learning--Earth article ([`b895ff0`](https://github.com/ajpung/buck/commit/b895ff0dab7b6889fca57e0e5ca3bc1cbe83ed85))
+
+* chore: updating slides and dataset ([`c5a3296`](https://github.com/ajpung/buck/commit/c5a32962f15196a696b49b28562a7ac2dffdb849))
+
+* chore: updating slide deck ([`3ce5150`](https://github.com/ajpung/buck/commit/3ce5150de7322375b9343c63c2a1ab6d192e67b8))
+
+* chore: cleaning up / separating datasets ([`4768b11`](https://github.com/ajpung/buck/commit/4768b11f1c87a6add2660b7f09d90ec75db16da2))
+
+* chore: adding data ([`b7e7d4f`](https://github.com/ajpung/buck/commit/b7e7d4ff01f2179dd3a01c973eac16099aaa20fd))
+
+* chore: trying to improve all-image models with location (state) and datetime ([`dc55143`](https://github.com/ajpung/buck/commit/dc55143c628b36b1bb588b388e9d63b113a227d0))
+
+* chore: data add, slides update ([`43fffa5`](https://github.com/ajpung/buck/commit/43fffa520b4f207ebddc0129841f48b8425cd248))
+
+* chore: building all-image model again ([`fb81c75`](https://github.com/ajpung/buck/commit/fb81c758fc2cec8866e2f50410bbb2d14eaf571b))
+
+* chore: updating documentation ([`7e512f1`](https://github.com/ajpung/buck/commit/7e512f158346ff4ae6bb6f8ff635d6560c5097b5))
+
+* chore: updating data ([`998a01d`](https://github.com/ajpung/buck/commit/998a01d1c39db4ebc3cf9a9fb75220dc1c688e1b))
+
+* chore: standing up notebook to use additional features ([`4fec06c`](https://github.com/ajpung/buck/commit/4fec06c4d4de81595d72b30ba74ede8654afed9a))
+
+* chore: updating docs ([`f43c190`](https://github.com/ajpung/buck/commit/f43c1907d79b6976a1817a44c56af0e148e06771))
+
+* chore: updating slide deck ([`b8fcd48`](https://github.com/ajpung/buck/commit/b8fcd482d9266a3de04d93afde06e946adee0963))
+
+* chore: building summary ([`17e3442`](https://github.com/ajpung/buck/commit/17e3442bed12bb70ec31f950ffb5d45981b23d75))
+
+* chore: uploading templates / explanatory presentations ([`759cfca`](https://github.com/ajpung/buck/commit/759cfca99135ae4785dcb2770d8aa340afd75a91))
+
+* chore: adding data, updating dataset ([`7f1a2dc`](https://github.com/ajpung/buck/commit/7f1a2dccf5ae790a360d63f1fc8a30da6c4a301f))
+
+* chore: updating code for RTX 5090 ([`c6b03dd`](https://github.com/ajpung/buck/commit/c6b03dd88f28c421d018b55b33f1ba9a960eda3a))
+
+* chore: cleaning up ([`e277087`](https://github.com/ajpung/buck/commit/e277087bb6a8f485858e598b2390e7625f5bc9b6))
+
+* chore: updating README and code to handle new GPU ([`bd27079`](https://github.com/ajpung/buck/commit/bd27079a3f85a91f8a02c3ccf2bb41a5ebc92a69))
+
+* chore: standing up new computer! ([`642e240`](https://github.com/ajpung/buck/commit/642e2405bd2b7f42c9f1792e62027ef2bcad2045))
+
+* chore: updating file to contain deer aging across *all* images. ([`67e361d`](https://github.com/ajpung/buck/commit/67e361da3d82ae1300e42255fedb6e810568d3c0))
+
+* chore: updating code to run for all images, not just grayscale ([`73c013f`](https://github.com/ajpung/buck/commit/73c013fbc51af9fb1187db6d4d2a701f77d41ae0))
+
+* chore: more data, trying again for 80% model ([`38f8027`](https://github.com/ajpung/buck/commit/38f8027471718b3a7de1c5afc0b2de43d49bd5be))
+
+* chore: hunting better model ([`94c2884`](https://github.com/ajpung/buck/commit/94c2884aee79028d9fbf6f5ab433aaa379a90e37))
+
+### Feature
+
+* feat: nested-CV hyperparameter tuning harness
+
+Tuning on the folds you report is how this project has produced three separate
+phantom gains: best-epoch checkpointing (+0.070 qwk), greedy ensemble selection
+(+0.065 accuracy), and the original notebook&#39;s best-of-130 rule that turned 62%
+test into 80% &#34;validation&#34;. A validation fold here holds ~46 images, so one
+image is 2.2% accuracy and an 8-config grid will hand back a winner well above
+its own true mean.
+
+tune.py chooses the configuration on inner folds carved out of each outer
+training set and scores it on the outer fold the selection never touched, so
+the reported number estimates &#34;tune, then deploy&#34; rather than &#34;tune and peek&#34;.
+
+The grid is a module constant, not a CLI argument, so it is pre-registered and
+cannot be widened after seeing which way results went. It covers the three
+knobs with a reason to matter and never measured under the corrected pipeline
+(HANDOFF.md section 8): input resolution, augmentation strength, backbone LR.
+
+--also-naive runs a plain grid search on the outer folds for contrast. It is
+optional because it must train on the same data as the outer scores to mean
+anything: an earlier draft compared against the inner scores, which see only
+(inner-1)/inner of each training set and therefore score lower for reasons
+unrelated to selection bias -- that version reported a nonsensical -0.197
+&#34;optimism&#34;. Verified on a 2-config, 2-epoch smoke run: nested 0.558, naive
+winner 0.584, optimism +0.026, and the naive search picked a different
+configuration than either outer fold did.
+
+Fixed-input backbones silently ignore --image-size, which would make several
+grid points identical and any winner among them pure noise; the grid is
+collapsed with a warning for those.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
+Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`4a24510`](https://github.com/ajpung/buck/commit/4a24510e939e68d21b2e5bf50cf97af57e95e069))
+
+### Fix
+
+* fix: pin the corpus in the peek script, and move it under version control
+
+The script reconstructed folds from whatever is on disk now, not from what the
+run saw. A sweep that runs for days outlives its corpus: the weekly add gives
+last week&#39;s xpx deer an age, the development pool goes 230 -&gt; 231, and
+StratifiedGroupKFold over 231 images bears no resemblance to the folds over
+230. Every checkpoint is then scored on a fold holding its own training data.
+Nothing raises; the leaderboard simply comes back at ~0.96. This bit during
+this session: a mega_a reconstruction reported edgenext_small at 0.962
+accuracy against 0.697 in its own training log.
+
+File mtime cannot detect the drift, because renaming an xpx file to its aged
+name preserves it. The pin therefore comes from the run&#39;s own log of skipped
+unaged files, and is verified against the run&#39;s record count before proceeding
+(diversity.pin_records). The old no-argument invocation is gone, so the script
+can no longer silently reconstruct against a moved corpus. Without --log there
+is no pin, so a backstop fires instead: any top accuracy above 0.90 is flagged
+as almost certainly misaligned, a number this corpus does not support (the NDA
+panel itself scores 0.795, and no honest run here has passed 0.71).
+
+Also fixes the normalisation bug just fixed in ensemble.py: EvalDataset was
+built with hard-coded ImageNet constants, understating the CLIP, SigLIP,
+Inception, Xception, EVA-02, CoAtNet, RegNetZ and MobileViT entries.
+
+Moved from benchmark_runs/peek_partial.py to src/buck/benchmark/peek.py.
+benchmark_runs/ is gitignored, so the script was never tracked -- HANDOFF.md
+already hedged with &#34;if that file is gone, the recipe is&#34;, and any fix to it
+was one rm away from being lost. Now invoked as `python -m buck.benchmark.peek`.
+HANDOFF.md and the benchmark README are updated to match.
+
+Verified both paths on mega_a at 29-30 models: with --log, edgenext_small
+reconstructs to 0.697 accuracy / 0.673 macro-F1, matching the training log;
+without --log it reports 0.962 and trips the warning.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
+Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`136892a`](https://github.com/ajpung/buck/commit/136892a52793e6baa2dcfb9e37860e0cfba008bc))
+
+* fix: per-model normalisation in ensemble.py; add diversity analysis
+
+ensemble.py scored every checkpoint with ImageNet mean/std. timm&#39;s CLIP and
+SigLIP weights, and the TF-ported Inception/Xception families, were trained
+under different constants -- 8 of the 43 timm entries in the registry. Feeding
+them ImageNet values does not raise; the model still runs and still produces a
+row, just an understated one. Since ensemble.py is what spends the locked test
+read, that would have mis-scored the final number.
+
+_probabilities() now takes mean/std (defaulting to ImageNet, so torchvision
+entries are unchanged) and collect_predictions() supplies them from
+arch.normalisation(). Verified against diversity.py: edgenext_small returns
+acc 0.700 / macro-F1 0.701 through both paths.
+
+diversity.py answers whether a cross-architecture blend can help before one is
+built. It reconstructs out-of-fold predictions from saved fold checkpoints (no
+retraining), measures pairwise error disagreement, and scores three blends --
+uniform, a pre-specified one-per-pretraining-family rule, and greedy forward
+selection. The greedy row exists only to quantify its own optimism: on 24
+models it reports +0.065 accuracy over the uniform blend purely from choosing
+members on the data it then scores, the same defect class as best-epoch
+checkpointing. Only the uniform and rule-based rows are quotable.
+
+It also pins the corpus. The weekly data add gives last week&#39;s xpx deer an age
+mid-sweep, taking the development pool from 230 to 231; StratifiedGroupKFold
+over 231 bears no relation to the folds over 230, so every checkpoint gets
+scored on a fold holding its own training data and the leaderboard comes back
+at ~0.96. File mtime cannot detect this because renaming preserves it, so the
+pin is read from the run&#39;s own log and then verified against its record count,
+refusing to continue on a mismatch. benchmark_runs/peek_partial.py still has
+this bug.
+
+Measured so far (24 models, one seed): mean pairwise disagreement 21.4%, 17 of
+230 images missed by every model, and every honest blend scores below the best
+single model.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
+Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`e78d2e2`](https://github.com/ajpung/buck/commit/e78d2e2442f934027896b4a3275a2491cf29a488))
+
+### Unknown
+
+* . ([`86a419c`](https://github.com/ajpung/buck/commit/86a419c0acfc02c57e598403b0ac79958b12476a))
+
+* . ([`891a7d3`](https://github.com/ajpung/buck/commit/891a7d3f5abaa320c850fdaad6b5d3d69ac75c29))
+
+* . ([`c763f23`](https://github.com/ajpung/buck/commit/c763f2348c8adb2badfcf3397861cdd8146925b8))
+
+* . ([`627d330`](https://github.com/ajpung/buck/commit/627d330aa6d4bb2de2f613b1f26f7784ee3e2a26))
+
+* . ([`d7fcbf7`](https://github.com/ajpung/buck/commit/d7fcbf77b1a761bf3b199f2371ffd4585702f0b4))
+
+* . ([`44a79cf`](https://github.com/ajpung/buck/commit/44a79cf6479757c3d3f9968a76b601e8b1c29712))
+
+* . ([`1970e7d`](https://github.com/ajpung/buck/commit/1970e7d4ef018a84ed2c453bd8cd6be4c2a1cbb7))
+
+* . ([`2e680ba`](https://github.com/ajpung/buck/commit/2e680ba43d8ad8852a5fe581d24efda24e3d5049))
+
+* . ([`2ad1669`](https://github.com/ajpung/buck/commit/2ad1669b0bca1beb150577c7371d1788628078d8))
+
+* . ([`40aeaa6`](https://github.com/ajpung/buck/commit/40aeaa67939ee2a97a7050b6716141bfb739f385))
+
+* . ([`2712df1`](https://github.com/ajpung/buck/commit/2712df17eda47e8cfc1ebfd1811e45e4472582ac))
+
+* . ([`66f96f0`](https://github.com/ajpung/buck/commit/66f96f0491ddd991ffe3abdb62c6445e8b0a7097))
+
+* . ([`118752b`](https://github.com/ajpung/buck/commit/118752b767cbc09731b05b00f4e9d0a5911b861c))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`d6286f8`](https://github.com/ajpung/buck/commit/d6286f87570d32551773e769315f896349700e1f))
+
+* . ([`a746abf`](https://github.com/ajpung/buck/commit/a746abf9de8804dd9cfbd9e6f61f7f03529add5e))
+
+* Update README.md ([`c7426fd`](https://github.com/ajpung/buck/commit/c7426fddccce2433f8ae27342868a0575d744a22))
+
+* Update README.md ([`e4c80c6`](https://github.com/ajpung/buck/commit/e4c80c635246bfef991344483e7cd50cc58b84be))
+
+* . ([`b098265`](https://github.com/ajpung/buck/commit/b0982658630cbde8a614276bf0124940d380a5af))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`3eeaa22`](https://github.com/ajpung/buck/commit/3eeaa22119fd46eb46a05043db2bb41ee77fc5cd))
+
+* . ([`85f9a6a`](https://github.com/ajpung/buck/commit/85f9a6afba884ea599dab87a736b80c056b3deb3))
+
+* Update README.md ([`95c7b1a`](https://github.com/ajpung/buck/commit/95c7b1a9bd809b90b14df83fcb1bddc7a662c46e))
+
+* . ([`aec4b1a`](https://github.com/ajpung/buck/commit/aec4b1acf6dbcea0d34d0e372643237c8489daad))
+
+* Update README.md ([`2b6ac49`](https://github.com/ajpung/buck/commit/2b6ac49ea5a7dd398efcdda1f95ef7207e7c4cbf))
+
+* Update README.md ([`8b14a53`](https://github.com/ajpung/buck/commit/8b14a53f40cca91c26ec3f963df2af233ef8a7ad))
+
+* Update README.md ([`143d7e6`](https://github.com/ajpung/buck/commit/143d7e64a6446885e40c8cefede3c0438fe3e12c))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`0819199`](https://github.com/ajpung/buck/commit/0819199500ade038c09760c48ba7344b7fa297e8))
+
+* . ([`993dcf7`](https://github.com/ajpung/buck/commit/993dcf740a34ae1e4612227646c9a90f359c3758))
+
+* Update README.md ([`7d984e8`](https://github.com/ajpung/buck/commit/7d984e83693093183690ae8d705532d09229fc44))
+
+* Update README.md ([`05d41f9`](https://github.com/ajpung/buck/commit/05d41f92807f0cc44a097195667255a4eb5ebf45))
+
+* Update README.md ([`6746255`](https://github.com/ajpung/buck/commit/6746255aba4a6b4379c2d2e193ad34b06658a9e3))
+
+* Update README.md ([`b79282c`](https://github.com/ajpung/buck/commit/b79282cb82bf80f2a85f73e50805e7d8c4d7ffb5))
+
+* Update README.md ([`9fc7800`](https://github.com/ajpung/buck/commit/9fc7800f917c23ce4ddb8660e0b0ccf919a845f0))
+
+* Update README.md ([`563f6ec`](https://github.com/ajpung/buck/commit/563f6ec2cce8dd0797c26f230ca18891cd61f18a))
+
+* Update README.md ([`6f9751b`](https://github.com/ajpung/buck/commit/6f9751b89b67d1365f3a4ca668e32950e873fa52))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`3f08a2b`](https://github.com/ajpung/buck/commit/3f08a2b33a708dc1e36a2e8977017935e7b1f139))
+
+* . ([`e1b4ed3`](https://github.com/ajpung/buck/commit/e1b4ed3bf8e15c1f6f19e86f3f7ae8c4ce862e35))
+
+* Update README.md ([`5819b22`](https://github.com/ajpung/buck/commit/5819b22ac47d9dbee613e7cb41c2d81801ba34c0))
+
+* Update README.md ([`a7b48a8`](https://github.com/ajpung/buck/commit/a7b48a8251afaf38057a2a70ddf246fd15158d20))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`b9c9443`](https://github.com/ajpung/buck/commit/b9c9443c5b624eef559fcdc8c74e501ef7237e94))
+
+* . ([`0b133ac`](https://github.com/ajpung/buck/commit/0b133ac48e2449996d7c8346959753f628623993))
+
+* Update README.md ([`f4ce50e`](https://github.com/ajpung/buck/commit/f4ce50e7e3ee9cafdf4622ddb8d969d3765508dc))
+
+* Update README.md ([`f43566d`](https://github.com/ajpung/buck/commit/f43566d9003dc79b80993aae89a6e464861a3369))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`edf4183`](https://github.com/ajpung/buck/commit/edf4183d00c0dc90e636af605c8848add72d88aa))
+
+* . ([`37706ae`](https://github.com/ajpung/buck/commit/37706ae6862cd2569d2e314e34c0c314b3e3aaf1))
+
+* Update README.md ([`04dcd1f`](https://github.com/ajpung/buck/commit/04dcd1f5b6009c82d058093053d6b49d327cbd8a))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`3402766`](https://github.com/ajpung/buck/commit/3402766258cde1ab96c4f9396c69f037ca9400f2))
+
+* . ([`3572279`](https://github.com/ajpung/buck/commit/3572279d3d239b81e54bdeab21bd03fcf509fd4f))
+
+* Update README.md ([`c4dc44e`](https://github.com/ajpung/buck/commit/c4dc44e53d146a5dc65b156a6aaf7ab639cdebd9))
+
+* . ([`f074e8f`](https://github.com/ajpung/buck/commit/f074e8f26efa8bfec63d35f785c1d00c72bca0ef))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`c30c54c`](https://github.com/ajpung/buck/commit/c30c54c14076e6e33185adcd674e74f28166c1a8))
+
+* . ([`4a22690`](https://github.com/ajpung/buck/commit/4a226905ca6dedae849a9dc75d3a2588d9bd7317))
+
+* Update README.md ([`b2ce5c3`](https://github.com/ajpung/buck/commit/b2ce5c3bafe17c005b7ca207be5be79780f1d0c6))
+
+* Update README.md ([`c39aaa4`](https://github.com/ajpung/buck/commit/c39aaa4e06262981df567a9fcb9a4094f6c1804d))
+
+* Update README.md ([`c328fea`](https://github.com/ajpung/buck/commit/c328fea39569ed867900c2e476bfec4c944a9d53))
+
+* Update README.md ([`d499d1f`](https://github.com/ajpung/buck/commit/d499d1f5fc8db17eedf0fd366109be93b03d5bf7))
+
+* Update README.md ([`a75313a`](https://github.com/ajpung/buck/commit/a75313ac2bd2690ea739281a44b91afc61bdfecb))
+
+* Update README.md ([`b89f1fa`](https://github.com/ajpung/buck/commit/b89f1fa51c2062082d0b2e9d40cb9f4f0cef4546))
+
+* Update README.md ([`8d9449e`](https://github.com/ajpung/buck/commit/8d9449ee11bd4ba541e0c95be98b6be19a844735))
+
+* Update README.md ([`3636db8`](https://github.com/ajpung/buck/commit/3636db8fcef45129bd07ccfbb964a992990ae4c6))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`eac914c`](https://github.com/ajpung/buck/commit/eac914c95e6e63ef2fe2903e478a1636ae77aafe))
+
+* . ([`1a49a5a`](https://github.com/ajpung/buck/commit/1a49a5ad940e01ead3a0bc3201f121cf94d2d582))
+
+* Update README.md ([`6bc8b84`](https://github.com/ajpung/buck/commit/6bc8b84268000c1d9c7b49028e40e97fd1858c98))
+
+* . ([`ddb2fbe`](https://github.com/ajpung/buck/commit/ddb2fbeb06fb7895d5d7160f434d4343eb2d28d9))
+
+* . ([`b6677b5`](https://github.com/ajpung/buck/commit/b6677b5cde1431d319a42e9540de83fb4fb32d4d))
+
+* . ([`122e95b`](https://github.com/ajpung/buck/commit/122e95b63d6fb9d064a67b6d49c5539eab2c1948))
+
+* . ([`928d70b`](https://github.com/ajpung/buck/commit/928d70b38a7984003b31bdcaaa5564ab9f06d282))
+
+* . ([`6d9f9a1`](https://github.com/ajpung/buck/commit/6d9f9a14bb13e7731fd8dc56c82ea6660ea627f7))
+
+* . ([`d62723d`](https://github.com/ajpung/buck/commit/d62723d9b34a5624b6b1f2690c50e83375238183))
+
+* . ([`422b9e6`](https://github.com/ajpung/buck/commit/422b9e668ec26092949657fffa8eed60e7d4d7a4))
+
+* . ([`ddcef3e`](https://github.com/ajpung/buck/commit/ddcef3ea7c7f311a79ab670afdd7d99c43851fd4))
+
+* . ([`c82e331`](https://github.com/ajpung/buck/commit/c82e331dfe86a93b4a3c2035d64dd87d5b55f2ef))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`3134394`](https://github.com/ajpung/buck/commit/31343948dccad80c3fa6b2757104607dc341e881))
+
+* Update README.md ([`013c2bf`](https://github.com/ajpung/buck/commit/013c2bf1012a301be59d9c9c34b269fdf3be531f))
+
+* Update README.md ([`43627d5`](https://github.com/ajpung/buck/commit/43627d5551c8d196900d385527ada3dd7895c2f8))
+
+* . ([`775bae8`](https://github.com/ajpung/buck/commit/775bae83be295ed011dd9ef87f1c0a85ca7d6a93))
+
+* . ([`d899ced`](https://github.com/ajpung/buck/commit/d899cedfcd9c2bab7faccb8e257e6fd199fcdd82))
+
+* . ([`521e418`](https://github.com/ajpung/buck/commit/521e4189f51a110df3ed129e4ed4542330400c5a))
+
+* Update README.md ([`e8eece6`](https://github.com/ajpung/buck/commit/e8eece624e3b34af825617590c02141e119beedc))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`4ac8f49`](https://github.com/ajpung/buck/commit/4ac8f494798cea09381f7aba95858003b1ef4803))
+
+* Update README.md ([`f1a3a91`](https://github.com/ajpung/buck/commit/f1a3a91760f2e489367d51c7ed0a6767bb1ba62f))
+
+* Update README.md ([`3851f26`](https://github.com/ajpung/buck/commit/3851f26ffcebb62061a5eda2b50bab1e2d515d9a))
+
+* Update README.md ([`132cc9c`](https://github.com/ajpung/buck/commit/132cc9cddf7c6e702906f86d79c585eb0a0a5b57))
+
+* . ([`40a7c8d`](https://github.com/ajpung/buck/commit/40a7c8dd124ca522e03e204d4b52ed20e6849042))
+
+* . ([`c50fe42`](https://github.com/ajpung/buck/commit/c50fe42a41f3f834ae25af4b9b968f7dc9ba3f5f))
+
+* . ([`5101cb4`](https://github.com/ajpung/buck/commit/5101cb401a4446942f1dd550f18ca4a1f70d93a8))
+
+* . ([`31d6da4`](https://github.com/ajpung/buck/commit/31d6da4a354660a65beaa44c50cfb537fa9f2c49))
+
+* . ([`69cccf4`](https://github.com/ajpung/buck/commit/69cccf4cca53e52eabcf2e283e1fda21b5466116))
+
+* . ([`ffc48eb`](https://github.com/ajpung/buck/commit/ffc48eb1c05a33cf4e56ac439457d8769ef208d5))
+
+* . ([`135106d`](https://github.com/ajpung/buck/commit/135106dbe1a4de53fd527bc51dc60ad640defb8e))
+
+* . ([`39045d4`](https://github.com/ajpung/buck/commit/39045d4182c2e4ce28e2ea981f250b044a7c5356))
+
+* . ([`44bd423`](https://github.com/ajpung/buck/commit/44bd423c4f447b5240f5b76df858767e0714d5f7))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`8a36bab`](https://github.com/ajpung/buck/commit/8a36bab59ab3d86e895d95c142cb028a48aec079))
+
+* Update README.md ([`71adbbc`](https://github.com/ajpung/buck/commit/71adbbcbf1a9f4716d4ac892a8c8494eb1520d73))
+
+* . ([`218ea2f`](https://github.com/ajpung/buck/commit/218ea2fc06fa23aba3bd304b9c79819fd1dc8a5b))
+
+* . ([`094ca2c`](https://github.com/ajpung/buck/commit/094ca2c4151778ba004650d502189d330ed9fc8d))
+
+* . ([`fd1a83e`](https://github.com/ajpung/buck/commit/fd1a83e3a7d17c605947f646c3d17e8b4165862c))
+
+* . ([`4e4d1db`](https://github.com/ajpung/buck/commit/4e4d1db50b519d3869f981636a1aa96924066b8e))
+
+* . ([`720c87d`](https://github.com/ajpung/buck/commit/720c87d1782fef952d5e4540dfe0f0dddba68d09))
+
+* . ([`a0fb045`](https://github.com/ajpung/buck/commit/a0fb04562e28f05ffcb46f0413b8b51625da544e))
+
+* . ([`ffd1bd1`](https://github.com/ajpung/buck/commit/ffd1bd1e9cbef294aa90f0bdbd2ab4d1016ab899))
+
+* . ([`6ed0aba`](https://github.com/ajpung/buck/commit/6ed0aba82f246491d05ad4e023bb96ddec5e2f43))
+
+* . ([`e3fd177`](https://github.com/ajpung/buck/commit/e3fd177a31c4091a88cdf74ab600dcf7c2d7510a))
+
+* . ([`0d9b750`](https://github.com/ajpung/buck/commit/0d9b750a21e59cce26c99d0f6d1e9da8746f898e))
+
+* . ([`33d1a68`](https://github.com/ajpung/buck/commit/33d1a68ed311f76052845948a3823e2c20a58010))
+
+* . ([`8fbf029`](https://github.com/ajpung/buck/commit/8fbf0299f775775beb923e8593acffdde9e3f704))
+
+* . ([`4e92384`](https://github.com/ajpung/buck/commit/4e92384a1dbb79e2e1e9500c41db50678745ca58))
+
+* . ([`ff71dab`](https://github.com/ajpung/buck/commit/ff71dab289aff79e81781309ac8fbd292d96b52e))
+
+* . ([`3396095`](https://github.com/ajpung/buck/commit/33960958b9564cb13b7488e0fc27164401929329))
+
+* . ([`a94498d`](https://github.com/ajpung/buck/commit/a94498d192caa79fc3c81718242dbd47162a5c34))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`9369afc`](https://github.com/ajpung/buck/commit/9369afc237233f5c77dddaa860535e5b9fd87bd3))
+
+* Update README.md ([`5bf9210`](https://github.com/ajpung/buck/commit/5bf9210f2816fa47e196ceb4e67375a2172caf3e))
+
+* . ([`b99d9b2`](https://github.com/ajpung/buck/commit/b99d9b2dce618107fb14ebca5d11394cb1c707f2))
+
+* . ([`2636b1d`](https://github.com/ajpung/buck/commit/2636b1d52316904215cb2823dee576f160c2eeee))
+
+* . ([`89f6b86`](https://github.com/ajpung/buck/commit/89f6b86c1181acb6599602f5ee2b8ad0d0f4b584))
+
+* . ([`7cf7867`](https://github.com/ajpung/buck/commit/7cf7867ded1631ba41ea1c0bde3bfa99c81e04fa))
+
+* . ([`d2783c2`](https://github.com/ajpung/buck/commit/d2783c2ebd2c7f63fa62bb6d523002e1846d3cca))
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`9c52956`](https://github.com/ajpung/buck/commit/9c529562a8993bf4d2c34e88677062c44f37304d))
+
+
 ## v0.7.0 (2025-08-21)
 
 ### Chore
