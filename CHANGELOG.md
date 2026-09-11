@@ -2,6 +2,55 @@
 
 
 
+## v0.8.1 (2026-09-11)
+
+### Fix
+
+* fix: per-entry backbone LR, so the DINOv3 checkpoints stop collapsing
+
+convnext_tiny_dinov3 scored 0.206 accuracy with qwk 0.014 in the 85-model
+sweep, against 0.654 for the identical architecture with ImageNet weights.
+That was not a result about self-supervised pretraining: qwk came out exactly
+0.000 on four of five folds, the signature of a model collapsing to one
+constant class, a different one per fold.
+
+Diagnosed on fold 1 at 30 epochs, one variable at a time:
+
+    backbone_lr 1e-4 (default) 0.135 acc  qwk 0.000   &lt;- reproduces collapse
+    backbone_lr 3e-5           0.692 acc  qwk 0.730
+    backbone_lr 1e-5           0.673 acc  qwk 0.674
+    backbone frozen            0.673 acc  qwk 0.747
+    weight_decay 0.0           0.346 acc  qwk 0.000   &lt;- still collapsed
+    ImageNet reference         0.731 acc  qwk 0.780   &lt;- harness is fine
+
+So it is the learning rate. Weight decay is not the cause, and the ImageNet
+control rules out a harness bug. These checkpoints carry LayerNorm gains
+averaging 2.80 against ImageNet&#39;s 0.88 and emit pooled features roughly 9x
+larger, so a step size chosen for supervised weights destroys them early.
+Corroborating evidence was already on hand: frozen DINOv3 features score 0.515
+with an SVM in the classical arm, so the representation was never the problem.
+
+REGISTRY entries may now carry a backbone_lr that overrides TRAIN_DEFAULTS,
+applied in both run_holdout and run_temporal, and announced in the run log. An
+explicit --backbone-lr still wins, so a sweep can override it deliberately.
+
+This does mean the sweep is no longer one learning rate across every entry.
+The alternative is publishing a number that measures a broken optimisation
+rather than a backbone, so the override is the lesser evil -- but any writeup
+comparing DINOv3 against the rest has to state that its backbone LR differs.
+
+The two DINOv3 rows in benchmark_runs/mega_a remain invalid and need rerunning
+once that sweep finishes; convnext_small_dinov3 is still queued there and will
+collapse the same way.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
+Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`48fed24`](https://github.com/ajpung/buck/commit/48fed24d7a33e80afd455114e7a81fb1422ccc55))
+
+### Unknown
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`73b967c`](https://github.com/ajpung/buck/commit/73b967c9f5e5088fbeee0f7a946a35a8af82ad58))
+
+
 ## v0.8.0 (2026-09-11)
 
 ### Chore
