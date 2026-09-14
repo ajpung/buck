@@ -260,8 +260,11 @@ pipeline; see `HANDOFF.md` for the earlier set.
 | idea | result |
 |---|---|
 | **Cross-architecture ensembling** | Uniform blend of all 12: +0.009 accuracy over the best single. The greedy-selected blend's +0.069 qwk is **selection bias** -- it picks members on the same out-of-fold data it reports, the same defect class as best-epoch checkpointing. Models are too correlated: 18% mean pairwise disagreement on errors, and 26 dev images that all of them miss. |
-| **Architecture search** | 12 backbones across a 4x parameter range span 0.654-0.771 qwk, one cluster. `maxvit_t` placed 3rd at 2.3x the cost of `convnext_tiny`. |
+| **Architecture search** | Settled at 85 models, not 12. 83 valid entries span 0.494-0.697 accuracy, and against a ~0.015 across-seed SD the top twenty are indistinguishable. Capacity actively hurts: ResNet and RegNet both peak at their smallest variant, and `resnet18` (17 min) beats `efficientnet_b7` (244 min). See *The 85-model sweep*. |
+| **Alternative pretraining** | Seven regimes, and plain ImageNet supervision wins all of them. On one ViT-B/16 body: supervised 0.610 > BEiT-v2 0.591 > CLIP 0.590 > MAE 0.569 > SigLIP 0.558. Elsewhere FCMAE 0.646-0.648, in22k 0.638-0.649, EVA-02 0.611, DINOv3 0.596 against an identical `convnext_tiny` at 0.654. The best model in the sweep is a distilled ImageNet model. |
+| **Ensembling, re-tested at 83 models** | Still a loss, now with seven pretraining families represented. Uniform blend of all 83: **-0.048** accuracy against the best single. A pre-specified best-per-family blend: **-0.013**. Greedy forward selection reports +0.052 -- which is **+0.100 over the uniform blend, and pure selection bias**, the same defect class as best-epoch checkpointing. Mean pairwise disagreement is 20.8%, and cross-family disagreement (19-23%) is indistinguishable from within-family (18-24%): different pretraining objectives do not make different mistakes. Only 9 of 230 images are missed by every model, so the ceiling is 96% -- unreachable because the members are too correlated. `buck.benchmark.diversity` measures this. |
 | **Detector-normalised crops** | Measured 2026-09-09 as a pre-check, before building anything. MegaDetector v6 boxes on all 289 NDA images (99.7% found, median conf 0.945) show the framing is *already* normalised: the deer is centred at 0.497 ±0.027 / 0.522 ±0.057 and spans >=94% of the image width in three quarters of the corpus. Equalising every deer's area to the median needs a 0.95-1.12x rescale across the IQR (0.92-1.29x at p5-p95) -- a +/-10-15% zoom, against a +12deg rotation the augmentation already applies. Framing is also not a shortcut: corr(age, area) = -0.045, corr(age, aspect) = +0.055. This is structural, not luck -- squaring a tightly-zoomed rectangular original yields a square necessarily smaller than the rectangle, so the animal fills the frame by construction. See `trail cam/detector_boxes.json`. |
+| **Detector-normalised crops, second look** | The pre-check below stands, but note the related *colour shortcut* finding: detector boxes revealed that background pixels alone predict age at 0.593. Crop normalisation does not fix that and may not even touch it. |
 | **Flip TTA** | +1 correct image out of 230, scored on identical weights (exactly paired, so training noise cancels). Changes 4.6% of predictions; accuracy and macro-F1 up, within-one and qwk down. Doubles inference cost for nothing. |
 | **Grayscale input** (`--grayscale`) | Net loss of ~3.3 images out of 230. Lifts infrared (+0.067, up on all 3 seeds) but costs colour more (-0.037, down on all 3), and colour is 78% of the corpus. See `decode_images()`. |
 | **Hand-built body proportions** | Given the NDA panel's own stated justifications *as ground truth*, a bag-of-concepts encoding predicts age at 0.462 -- well below the 0.700 the pixels achieve. The published AOTH-style criteria are less informative than the image. |
@@ -375,11 +378,157 @@ one run -- much larger than the across-seed SD -- so **do not rank on it**.
 The whole field spans 0.117 qwk against a ~0.036 threshold for
 distinguishability, and **the top three are tied**. On the tiebreakers that
 need no significance test, `convnext_tiny` leads on accuracy, macro-F1 and MAE
-at less than half the cost of `maxvit_t`. It is the right default, and there is
-no longer an untested architecture that might displace it.
+at less than half the cost of `maxvit_t`.
 
-Architecture is exhausted as a lever -- a 4x parameter range buys ~0.06
-accuracy. See *What actually moves the number* above.
+**Superseded by the 85-model sweep below.** This table is kept because earlier
+numbers were measured against it, but it covers 12 torchvision backbones at one
+seed and its ordering did not survive: `regnet_y_1_6gf`, first here, placed
+46th of 85.
+
+## The 85-model sweep
+
+Measured 2026-09-10 to 09-12, `benchmark_runs/mega_a`, 5 folds, seed 42, 55.7
+GPU-hours, zero failures. 85 entries: torchvision's 42 plus 43 from timm chosen
+to widen the *pretraining* axis rather than only capacity -- masked
+autoencoding (MAE, FCMAE, BEiT-v2), image-text contrastive (CLIP, SigLIP),
+self-distillation (DINOv3), 21k supervision, and USI/SSLD distillation.
+
+| model | px | accuracy | +/-1yr | QWK | macroF1 | MAE | pretraining |
+|---|---|---|---|---|---|---|---|
+| edgenext_small | 256 | **0.697** | 0.873 | **0.787** | **0.673** | 0.443 | distilled |
+| densenet201 | 224 | 0.683 | 0.847 | 0.719 | 0.654 | 0.507 | in1k |
+| resnet18 | 224 | 0.672 | 0.832 | 0.687 | 0.650 | 0.550 | in1k |
+| resnet34 | 224 | 0.656 | 0.855 | 0.702 | 0.642 | 0.531 | in1k |
+| regnet_y_400mf | 224 | 0.679 | 0.858 | 0.724 | 0.640 | 0.505 | in1k |
+| convnext_base | 224 | 0.670 | **0.876** | 0.771 | 0.640 | **0.476** | in1k |
+| convnext_tiny | 224 | 0.654 | 0.858 | 0.737 | 0.624 | 0.523 | in1k |
+
+Excluding two runs that collapsed (see below), 83 valid models span **0.494 to
+0.697 accuracy**. Against a ~0.015 across-seed SD the top twenty are mutually
+indistinguishable, so read the extremes, not the ordering.
+
+Three things the full field settles:
+
+- **Capacity is not the lever, and often hurts.** ResNet peaks at 18 (0.672,
+  0.656, 0.605, 0.614 for 18/34/50/101); RegNet peaks at 400mf. The four most
+  expensive entries -- `efficientnet_b7` (600px, 244 min), `b6` (166 min),
+  `v2_m` (161 min), `b5` (116 min) -- score 0.613, 0.617, 0.589, 0.639.
+  **`resnet18` beats `efficientnet_b7` at a fourteenth of the compute.**
+- **Pure transformers underperform.** Swin, SwinV2, CrossViT, Visformer, PiT,
+  PVT-v2, Twins, MViTv2 and TinyViT all land mid-table or below; only
+  conv-hybrids (`davit_tiny`, `maxvit`, `caformer`) reach the upper half. At
+  184 training images the convolutional prior still pays for itself.
+- **Recency does not predict performance.** A 2015 ResNet-18 places third;
+  several 2022-23 designs sit in the bottom twelve.
+
+### Pretraining regime is not the lever either
+
+`vit_b_16` appears five times with one architecture, 86M parameters and a
+224px input, differing only in how it was pretrained:
+
+| pretraining | accuracy | QWK |
+|---|---|---|
+| ImageNet supervised | **0.610** | 0.675 |
+| BEiT-v2 (masked image) | 0.591 | 0.686 |
+| CLIP (LAION-2B) | 0.590 | 0.648 |
+| MAE (masked autoencoder) | 0.569 | 0.613 |
+| SigLIP (WebLI) | 0.558 | 0.673 |
+
+Supervised wins. The same holds across families: FCMAE 0.646-0.648, in22k
+0.638-0.649, EVA-02 0.611, and DINOv3 0.596 against `convnext_tiny`'s 0.654 on
+an identical body. The best model in the whole sweep is a *distilled ImageNet*
+model. **No self-supervised or multimodal regime beats plain supervision here.**
+
+### The DINOv3 learning-rate trap
+
+`convnext_tiny_dinov3` first scored 0.206 accuracy at qwk **0.014** -- the
+signature of collapse onto one constant class, a different one per fold. That
+was not a result about pretraining. Measured on fold 1, one variable at a time:
+
+| trial | accuracy | QWK |
+|---|---|---|
+| `backbone_lr` 1e-4 (default) | 0.135 | 0.000 |
+| `backbone_lr` 3e-5 | **0.692** | 0.730 |
+| `backbone_lr` 1e-5 | 0.673 | 0.674 |
+| backbone frozen | 0.673 | 0.747 |
+| `weight_decay` 0.0 | 0.346 | 0.000 |
+| ImageNet reference | 0.731 | 0.780 |
+
+The learning rate, then -- not weight decay, and not the harness. These
+checkpoints carry LayerNorm gains averaging 2.80 against ImageNet's 0.88 and
+emit pooled features roughly 9x larger, so a step size chosen for supervised
+weights destroys them in the first epochs. `REGISTRY` entries may now carry a
+`backbone_lr` override; both DINOv3 entries use 3e-5 and rerun to 0.596 and
+0.619.
+
+**The general lesson: a backbone scoring near the majority-class floor with QWK
+near zero has not lost, it has failed to train.** Check for that signature
+before reporting any model as weak.
+
+### Without transfer learning
+
+`benchmark_runs/mega_b`, 10 architectures, `--no-pretrained`, same folds.
+`convnext_tiny` falls from 0.654 to 0.490; the best from-scratch model is
+`regnet_y_1_6gf` at 0.510 and the worst is `swin_t` at **0.191 with QWK
+-0.012** -- the majority-class floor with no ordinal signal at all.
+**Pretraining is worth about 0.15 accuracy, more than every architecture
+choice in the registry combined.**
+
+### Classical classifiers, re-measured
+
+`benchmark_runs/mega_c`, 8 feature sets times 24 classifiers = 192 rows under
+the benchmark's own splits. The project's original "20 canned classifiers"
+predate every leak fix and are not comparable to anything current.
+
+| feature set | best accuracy |
+|---|---|
+| colour histograms | 0.588 |
+| frozen ResNet-50 features | 0.569 |
+| frozen ConvNeXt-Tiny features | 0.522 |
+| frozen ConvNeXt DINOv3 features | 0.515 |
+| all hand-crafted concatenated | 0.458 |
+| raw 32x32 pixels | 0.364 |
+| HOG | 0.353 |
+| LBP | 0.338 |
+| majority-class floor | 0.185 |
+
+Fine-tuning buys 0.08 to 0.14 over any frozen representation. But see **The
+colour shortcut** below -- the histogram result does not mean what it looks
+like.
+
+## The colour shortcut
+
+A 384-bin colour histogram with an SVM scores 0.588 accuracy, within 0.065 of a
+fully fine-tuned CNN, using no spatial information whatsoever. The obvious
+confounds do not explain it:
+
+| shortcut-only baseline | accuracy |
+|---|---|
+| majority class | 0.185 |
+| channel flag alone (colour vs IR) | 0.250 |
+| collection-batch one-hot (98 batches) | 0.148 |
+| colorhist, colour images only | **0.643** (floor 0.175) |
+
+So the signal is real and large. But it is **not on the animal**. Splitting the
+histogram by MegaDetector box, colour images only:
+
+| region | accuracy | QWK |
+|---|---|---|
+| inside the animal box | 0.612 | 0.633 |
+| **outside -- background only** | **0.593** | 0.587 |
+
+A histogram of background pixels alone -- median 16.6% of the frame, containing
+no deer -- predicts the deer's age at 0.593 against a 0.188 floor. Nor is it
+trivial exposure: mean brightness lifts 0.032 over the floor, mean RGB 0.107,
+saturation 0.210, against the full histogram's 0.42.
+
+**Unresolved, and it matters.** Background cannot carry biological age
+information, so something about scene or provenance correlates with the label.
+Whether the CNNs exploit the same thing is untested. Grad-CAM puts attention on
+the shoulder and neck, but that is weak evidence against a measured 0.593. The
+decisive experiment is to retrain twice, once with the animal masked out and
+once with the background masked out. Until that runs, treat any claim that the
+model reads body proportions as unverified.
 
 ## Protocols
 

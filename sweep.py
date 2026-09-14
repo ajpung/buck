@@ -66,9 +66,19 @@ def run(name):
 # these same runs is +0.070 qwk, i.e. re-enabling best-epoch selection here
 # would report ~0.840 -- so essentially all of the old qwk inflation came from
 # checkpoint selection rather than from the frame leakage.
-BASELINE = dict(model="convnext_tiny (224px)", cv_accuracy=0.677,
-                cv_accuracy_sd=0.015, cv_qwk=0.770, cv_qwk_sd=0.018,
-                cv_within_one=0.888, cv_macro_f1=0.669, cv_mae_years=0.462,
+#
+# RE-MEASURED 2026-09-09 under the current code, same seeds (42/43/44):
+# 0.6592 / 0.6400 / 0.6604, mean 0.653. The 0.677 above was measured on
+# 2026-09-03 and does NOT reproduce -- at identical seeds the same config now
+# scores ~0.024 lower, so something in the 09-08 edits moved the pipeline. The
+# cause was never identified; the Sep 3 state was uncommitted and is
+# unrecoverable. Every pre-09-08 figure in README.md (the corpus-size curve,
+# the infrared tables, the grayscale rejection) was measured against a
+# reference that no longer reproduces, and should be re-measured before being
+# quoted.
+BASELINE = dict(model="convnext_tiny (224px)", cv_accuracy=0.653,
+                cv_accuracy_sd=0.011, cv_qwk=0.750, cv_qwk_sd=0.018,
+                cv_within_one=0.869, cv_macro_f1=0.640, cv_mae_years=0.500,
                 selection_gap_qwk=0.070)
 RUN_TO_RUN_QWK_SD = 0.018   # across seeds, same config
 
