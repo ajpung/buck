@@ -1,6 +1,52 @@
 # CHANGELOG
 
 
+## Unreleased
+
+### Documentation
+
+* docs: write up the 85-model campaign; correct the stale baseline
+
+The 12-model suite table is superseded but kept, since earlier numbers were
+measured against it. Its ordering did not survive: regnet_y_1_6gf, first there,
+placed 46th of 85.
+
+New sections record what the campaign settled:
+
+- The 85-model sweep (mega_a): 83 valid entries span 0.494-0.697 accuracy.
+  Capacity actively hurts -- ResNet and RegNet peak at their smallest variants,
+  and resnet18 at 17 minutes beats efficientnet_b7 at 244. Pure transformers
+  underperform; only conv-hybrids reach the upper half.
+- Pretraining regime is not the lever. Five pretrainings on one ViT-B/16 body:
+  supervised 0.610 beats BEiT-v2, CLIP, MAE and SigLIP. Same across families,
+  DINOv3 included. The sweep winner is a distilled ImageNet model.
+- The DINOv3 learning-rate trap, with the fold-1 ablation, and the general
+  lesson: a model near the majority floor with QWK near zero has not lost, it
+  has failed to train.
+- Without transfer learning (mega_b): pretraining is worth ~0.15 accuracy,
+  more than every architecture choice combined. From-scratch swin_t lands at
+  the majority floor with QWK -0.012.
+- Classical classifiers re-measured under leak-free splits (mega_c, 192 rows).
+- The colour shortcut: a background-only histogram predicts age at 0.593
+  against a 0.188 floor. Not the channel split, not collection batch, not
+  exposure. Whether the CNNs exploit the same thing is untested and the claim
+  that the model reads body proportions is unverified until it is.
+
+Ensembling re-tested at 83 models with seven pretraining families and is still
+a loss: uniform -0.048, best-per-family -0.013, while greedy selection reports
++0.100 over uniform as pure selection bias. Cross-family error disagreement
+(19-23%) is indistinguishable from within-family (18-24%).
+
+BASELINE in sweep.py moves 0.677 -&gt; 0.653. At identical seeds under current
+code the same configuration scores ~0.024 lower than it did on 2026-09-03. The
+cause was never found -- that state was uncommitted and is unrecoverable -- so
+the note warns that every pre-09-08 figure in the README was measured against
+a reference that no longer reproduces.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
+Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`ac54666`](https://github.com/ajpung/buck/commit/ac54666e1ae01a1e8df34a5d0d3509a87a649fae))
+
+
 
 ## v0.8.1 (2026-09-11)
 
