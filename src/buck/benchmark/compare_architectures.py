@@ -303,9 +303,17 @@ def train_fold(
         ],
         weight_decay=config["weight_decay"],
     )
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=config["max_epochs"], eta_min=1e-6
-    )
+    # Cosine by default. Exponential exists to reproduce the published recipe
+    # (gamma 0.95), which pairs it with early stopping -- i.e. best-epoch
+    # checkpoint selection, the bias --checkpoint-policy final removes.
+    if config.get("scheduler", "cosine") == "exponential":
+        scheduler = optim.lr_scheduler.ExponentialLR(
+            optimizer, gamma=config.get("lr_gamma", 0.95)
+        )
+    else:
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config["max_epochs"], eta_min=1e-6
+        )
     targets_by_class = target_matrix(
         num_classes, config.get("loss", "ce"),
         config["label_smoothing"], config.get("ordinal_sigma", 0.65),
@@ -484,6 +492,10 @@ def run_holdout(args, records, groups, class_ages, device):
         config["train_multiplier"] = args.train_multiplier
         config["pretrained"] = not args.no_pretrained
         config["loss"] = args.loss
+        config["scheduler"] = args.scheduler
+        config["lr_gamma"] = args.lr_gamma
+        if args.classifier_lr is not None:
+            config["classifier_lr"] = args.classifier_lr
         config["ordinal_sigma"] = args.ordinal_sigma
         config["mixup"] = args.mixup
         if args.backbone_lr is not None:
@@ -744,7 +756,11 @@ def run_temporal(args, records, groups, class_ages, device):
             loss=args.loss,
             ordinal_sigma=args.ordinal_sigma,
             mixup=args.mixup,
+            scheduler=args.scheduler,
+            lr_gamma=args.lr_gamma,
         )
+        if args.classifier_lr is not None:
+            config["classifier_lr"] = args.classifier_lr
         if args.backbone_lr is not None:
             config["backbone_lr"] = args.backbone_lr
         elif args.no_pretrained:
@@ -1020,6 +1036,14 @@ def parse_args(argv=None):
                         "whole backbone. Raises the backbone LR to "
                         f"{SCRATCH_BACKBONE_LR:.0e} unless --backbone-lr is given, "
                         "so the comparison is not rigged by a fine-tuning rate.")
+    p.add_argument("--classifier-lr", type=float, default=None,
+                   help="head learning rate; default "
+                        f"{TRAIN_DEFAULTS['classifier_lr']:.0e}")
+    p.add_argument("--scheduler", choices=["cosine", "exponential"],
+                   default="cosine",
+                   help="exponential reproduces the published recipe")
+    p.add_argument("--lr-gamma", type=float, default=0.95,
+                   help="decay for --scheduler exponential")
     p.add_argument("--backbone-lr", type=float, default=None,
                    help=f"override the backbone learning rate (default "
                         f"{TRAIN_DEFAULTS['backbone_lr']:.0e} pretrained, "
