@@ -1,9 +1,29 @@
 # CHANGELOG
 
 
-## Unreleased
+
+## v0.9.0 (2026-09-18)
 
 ### Chore
+
+* chore: regenerate CHANGELOG for the published-recipe isolation
+
+Generated with python-semantic-release 8.0.4 in a throwaway venv, the same tool
+auto-tag.yml and deploy.yaml use, rather than hand-written. 103 insertions, no
+deletions.
+
+Picks up three commits: the docs writeup (9672358), the flags that made the
+recipe expressible (da00c91), and two chores that had never reached the file --
+&#34;data add&#34; (6965216) and the previous regeneration (596c27c), the latter
+because a changelog regeneration cannot include itself.
+
+The two tagging schemes noted last time are still unreconciled: pyproject.toml
+sets tag_format = &#34;{version}&#34; so semantic-release writes and reads unprefixed
+tags, while auto-tag.yml writes v-prefixed ones, and every regeneration logs
+&#34;Couldn&#39;t parse tag v0.8.2 as as Version&#34; for each of the latter. Harmless for
+changelog text, but version detection still sees only half the tags.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`3bd6604`](https://github.com/ajpung/buck/commit/3bd6604e463e2e363cc749d685fc91248ea918a6))
 
 * chore: data add ([`6965216`](https://github.com/ajpung/buck/commit/6965216d90702fb912d32e3893d758c5a669db0b))
 
@@ -148,7 +168,6 @@ checkpoint selection, not the schedule. Accuracy moves +0.011, which means
 early stopping does not explain a published accuracy figure.
 
 Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`da00c91`](https://github.com/ajpung/buck/commit/da00c91ca53c080e48380101e9550aadedf1a198))
-
 
 
 ## v0.8.1 (2026-09-11)
