@@ -1,6 +1,58 @@
 # CHANGELOG
 
 
+## Unreleased
+
+### Documentation
+
+* docs: withdraw the augmentation accuracy claim -- it straddles a pool change
+
+The development pool grew 231 -&gt; 232 on 2026-09-17 08:13, between paper_geom
+seed 42 and seed 43. StratifiedGroupKFold repartitions completely when the
+record count changes, so runs either side are not comparable. Three of the nine
+runs sit on the old pool.
+
+Withdrawn: &#34;40x augmentation costs -0.028 accuracy&#34;. That compared ens10 (pool
+A) against aug40 (pool B). The only estimate of the pool shift is paper_geom
+seed 42 at 0.689 on A against 0.620 and 0.623 on B -- -0.068, two and a half
+times the effect it was being credited for. Its qwk figure (-0.001) is equally
+unsupported. The Measured-and-rejected row moves from &#34;rejected&#34; to &#34;open&#34;.
+
+Also withdrawn: &#34;the paper recipe is unstable across seeds&#34;. Its 0.069 spread
+was the pool change. On identical folds it is stable at 0.620 / 0.623.
+
+Corrected, and the reason the above went unnoticed: --seed does not vary the
+fold partition. It feeds set_seed() only. The partition comes from
+--split-seed, 1337 in every run here, so within a pool all seeds share
+identical folds. The three-seed design was rationalised as &#34;three independent
+splits, so each image is held out three times&#34;, which was never true.
+
+What survives, both configs wholly on pool B and seed-matched:
+
+    default LRs -&gt; paper LRs, tm 40 held    acc -0.019   qwk -0.036
+
+and, on identical folds, 40x augmentation destabilises training: seeds span
+0.040 against the default&#39;s 0.005.
+
+Adds seed ensembles, out-of-fold, no test data spent: aug40 -0.003 over its
+mean single, paper +0.022 on two members. No gain, consistent with every other
+ensembling result here. The default cannot be scored -- it is on pool A, and
+buck.benchmark.ensemble rebuilds folds from the corpus on disk, so it would
+silently report predictions on images the checkpoints trained on.
+
+The disagreement figures are the substantive part: 27.3% and 28.9% mean
+pairwise disagreement between seeds trained on identical data with identical
+folds, against 18-24% between different architectures. At tm 40, re-rolling the
+training seed changes more predictions than swapping the backbone.
+
+The missing tm 8 cell is left unrun on purpose. One image carries xpx as a
+deliberate age placeholder pending a label; when it lands the pool becomes 233
+and repartitions again, so the full 3x3 is worth re-measuring once on that pool
+rather than measuring one cell twice.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`9789d80`](https://github.com/ajpung/buck/commit/9789d8026fb989c81cefb535af9e565b2e81d243))
+
+
 
 ## v0.9.0 (2026-09-18)
 
