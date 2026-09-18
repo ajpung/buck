@@ -265,8 +265,8 @@ pipeline; see `HANDOFF.md` for the earlier set.
 | **Ensembling, re-tested at 83 models** | Still a loss, now with seven pretraining families represented. Uniform blend of all 83: **-0.048** accuracy against the best single. A pre-specified best-per-family blend: **-0.013**. Greedy forward selection reports +0.052 -- which is **+0.100 over the uniform blend, and pure selection bias**, the same defect class as best-epoch checkpointing. Mean pairwise disagreement is 20.8%, and cross-family disagreement (19-23%) is indistinguishable from within-family (18-24%): different pretraining objectives do not make different mistakes. Only 9 of 230 images are missed by every model, so the ceiling is 96% -- unreachable because the members are too correlated. `buck.benchmark.diversity` measures this. |
 | **Detector-normalised crops** | Measured 2026-09-09 as a pre-check, before building anything. MegaDetector v6 boxes on all 289 NDA images (99.7% found, median conf 0.945) show the framing is *already* normalised: the deer is centred at 0.497 ±0.027 / 0.522 ±0.057 and spans >=94% of the image width in three quarters of the corpus. Equalising every deer's area to the median needs a 0.95-1.12x rescale across the IQR (0.92-1.29x at p5-p95) -- a +/-10-15% zoom, against a +12deg rotation the augmentation already applies. Framing is also not a shortcut: corr(age, area) = -0.045, corr(age, aspect) = +0.055. This is structural, not luck -- squaring a tightly-zoomed rectangular original yields a square necessarily smaller than the rectangle, so the animal fills the frame by construction. See `trail cam/detector_boxes.json`. |
 | **Detector-normalised crops, second look** | The pre-check below stands, but note the related *colour shortcut* finding: detector boxes revealed that background pixels alone predict age at 0.593. Crop normalisation does not fix that and may not even touch it. |
-| **The published training recipe** | Three seeds on `convnextv2_tiny`: **-0.024** accuracy and **-0.028** qwk against the harness default, at 5.8x the runtime. Separated, the two components fail in different metrics -- 40x augmentation costs accuracy only (-0.028 acc, -0.001 qwk), the published learning rates cost qwk only (+0.004 acc, -0.027 qwk). Neutral on `resnet18` (0.606 vs 0.610), harmful on a better backbone: tuned around the smaller model. See *The published recipe, isolated*. |
-| **Augmentation volume** (`--train-multiplier 40`) | Harmful on its own, not merely expensive. -0.028 accuracy with qwk flat, 6.2x the runtime, on a 231-image pool. The default 8x stands. |
+| **The published training recipe** | Three seeds on `convnextv2_tiny`. What holds: the published learning rates cost **-0.036 qwk** against the same tm 40 config on a matched pool, while accuracy moves -0.019. Neutral on `resnet18` (0.606 vs 0.610), harmful on a better backbone -- tuned around the smaller model. The headline -0.024 accuracy against the harness default is **not** established: that comparison straddles a 231 -> 232 change in the development pool. See *The published recipe, isolated*. |
+| **Augmentation volume** (`--train-multiplier 40`) | **Open, not rejected.** Costs 6.2x the runtime and measurably destabilises training -- three seeds span 0.040 accuracy on identical folds against the default's 0.005, and seed-to-seed prediction disagreement reaches 27%, above the 18-24% between different architectures. Whether it costs *accuracy* is unmeasured: the only tm 8 comparison available sits on a different development pool. The default 8x stands on cost and stability grounds alone. |
 | **Flip TTA** | +1 correct image out of 230, scored on identical weights (exactly paired, so training noise cancels). Changes 4.6% of predictions; accuracy and macro-F1 up, within-one and qwk down. Doubles inference cost for nothing. |
 | **Grayscale input** (`--grayscale`) | Net loss of ~3.3 images out of 230. Lifts infrared (+0.067, up on all 3 seeds) but costs colour more (-0.037, down on all 3), and colour is 78% of the corpus. See `decode_images()`. |
 | **Hand-built body proportions** | Given the NDA panel's own stated justifications *as ground truth*, a bag-of-concepts encoding predicts age at 0.462 -- well below the 0.700 the pixels achieve. The published AOTH-style criteria are less informative than the image. |
@@ -500,72 +500,107 @@ like.
 
 ## The published recipe, isolated
 
-The paper's own training recipe, run against the harness default on the
-strongest backbone the campaign found (`convnextv2_tiny`), three seeds each,
-`--checkpoint-policy final` throughout. The question was whether the published
-learning rates and schedule help a better backbone or were tuned around
-`resnet18`.
+The paper's own training recipe against the harness default on
+`convnextv2_tiny`, `--checkpoint-policy final` throughout. The question was
+whether the published learning rates and exponential schedule help a better
+backbone, or were tuned around `resnet18`.
 
-They were tuned around `resnet18`, and they do not transfer. But the
-interesting result is that the recipe's two components fail in *different
-metrics*, which is invisible unless they are separated.
+**Read the pool column before the numbers.** The development pool grew from 231
+to 232 images partway through this campaign, on 2026-09-17 at 08:13, and
+`StratifiedGroupKFold` repartitions completely when the record count changes.
+Runs on different pools are not comparable, and one of the three comparisons
+below straddles the change.
 
-| config | acc | qwk | macro F1 | MAE | sel. gap | min |
-|---|---|---|---|---|---|---|
-| **default** -- tm 8, cosine, 1e-4/5e-4 | **0.668** | **0.726** | **0.649** | **0.509** | **+0.062** | **26** |
-| **aug40** -- tm 40, cosine, 1e-4/5e-4 | 0.640 | 0.725 | 0.633 | 0.533 | +0.084 | 160 |
-| **paper** -- tm 40, exponential, 3e-4/1e-3 | 0.644 | 0.698 | 0.632 | 0.540 | +0.094 | 149 |
+| config | pool | acc | qwk | macro F1 | MAE | sel. gap | min |
+|---|---|---|---|---|---|---|---|
+| **default** -- tm 8, cosine, 1e-4/5e-4 | A (231) | 0.668 | 0.726 | 0.649 | 0.509 | +0.062 | 26 |
+| **aug40** -- tm 40, cosine, 1e-4/5e-4 | B (232) | 0.640 | 0.725 | 0.633 | 0.533 | +0.084 | 160 |
+| **paper** -- tm 40, exponential, 3e-4/1e-3 | A + B | 0.644 | 0.698 | 0.632 | 0.540 | +0.094 | 149 |
 
-Per seed (42/43/44): default 0.669 / 0.670 / 0.665; aug40 0.640 / 0.620 /
-0.660; paper 0.689 / 0.620 / 0.623.
+Per seed (42/43/44): default 0.669 / 0.670 / 0.665, all pool A; aug40 0.640 /
+0.620 / 0.660, all pool B; paper **0.689 (pool A)** / 0.620 / 0.623 (pool B).
 
-Isolating one change at a time:
+### What the seeds actually vary
 
-    tm 8 -> tm 40, LRs held at default    acc -0.028   qwk -0.001   6.2x cost
-    default LRs -> paper LRs, tm held 40  acc +0.004   qwk -0.027
-    full paper recipe vs default          acc -0.024   qwk -0.028   5.8x cost
+Not the split. `--seed` feeds `set_seed()` only -- `random`, `numpy`, `torch`
+-- so it varies training stochasticity. The fold partition comes from
+`--split-seed` (`compare_architectures.py:463`), which was 1337 in every run
+here. **Within one pool, every seed shares identical folds.** Three seeds are
+three training runs on one partition, not three partitions.
 
-**The 40x augmentation multiplier costs accuracy and leaves qwk untouched. The
-published learning rates cost qwk and leave accuracy untouched.** The two
-effects are near-perfectly dissociated and happen to be almost equal in
-magnitude, so the combined recipe loses about 0.025 on both metrics at once --
-and reading only the combined number invites attributing the accuracy loss to
-the learning rates, which is wrong by construction: they contribute +0.004.
+That matters twice. It means a within-pool seed spread is a clean read on
+training noise, with the split held fixed. And it means the original rationale
+for three seeds -- "three independent splits, so each image is held out three
+times" -- was wrong: to vary the partition you must vary `--split-seed`.
 
-The default wins on every column in the table, at a sixth of the runtime.
-There is no metric on which either 40x configuration is preferable. On a
-231-image development pool, raising augmentation from 8x to 40x buys 6x the
-compute in order to lose accuracy.
+### What is established
 
-Two caveats on the numbers themselves:
+**The published learning rates cost qwk and not accuracy.** `paper` and
+`aug40` differ only in scheduler and learning rates, and both ran entirely on
+pool B, so this comparison is clean. Seed-matched (s43, s44):
 
-- The qwk effect is the weaker claim. It leans on `paper_geom` seed 43 (0.668);
-  excluding that seed narrows the gap from -0.027 to -0.015. Against a
-  within-config SD of 0.027 at three seeds, that is ~1.7 standard errors. The
-  accuracy effect is firmer: -0.028 against a default SD of 0.003, ~2.4 SE.
-- Seed spread grows monotonically with distance from the default -- 0.005
-  (default), 0.040 (aug40), 0.069 (paper). Suggestive that both changes
-  destabilise training, but three seeds per cell will not support the claim.
+    default LRs -> paper LRs, tm 40 held, pool B    acc -0.019   qwk -0.036
 
-`paper_geom` seed 42 is a cautionary case. It scored 0.689 and, read alone,
-looked like the published recipe beating the default by +0.021. Its two
-siblings came back 0.620 and 0.623 -- within 0.003 of each other -- so the
-typical value is ~0.62 and 0.689 was a lucky split. The median, 0.623, is the
-honest summary of that configuration; the mean of 0.644 is dragged up by one
-draw. This is the same trap as the 0.021 swing between `mega_a` and
-`ens10_s42`, which share a config and a seed and differ only in that one image
-had been added to the development pool.
+**40x augmentation destabilises training.** On identical folds, `aug40`'s three
+seeds span 0.040 (0.620-0.660) against the default's 0.005 -- eight times the
+noise, and the default's figure is on its own fixed partition too. Corroborated
+by seed disagreement below.
 
-One incidental cost note: of the paper recipe's 149 minutes, 130 are the
-augmentation multiplier, so the extra 10 epochs are nearly free and the entire
-5.8x is `--train-multiplier`. And `aug40` seed 44 took 206 minutes against 130
-and 144 for identical work -- almost certainly thermal, its result is the best
-of the three, but that cell is not usable for timing comparisons.
+**The selection gap rises with distance from the default**, 0.062 -> 0.084 ->
+0.094. The published configuration is both worse on the corrected metric and
+more inflated by the early stopping it pairs with: under its own best-epoch
+rule it would report roughly 0.62 + 0.10 qwk and look competitive.
+
+### What is not established
+
+**That 40x augmentation costs accuracy.** The -0.028 this table implies
+compares `ens10` on pool A against `aug40` on pool B. The only estimate of the
+pool A -> B shift comes from the `paper` row, whose seed 42 scored 0.689 on
+pool A against 0.620 and 0.623 on pool B -- a swing of **-0.068**, two and a
+half times the effect being attributed to augmentation. The augmentation
+accuracy claim is withdrawn pending a tm 8 run on a matched pool. Its qwk
+effect (-0.001) is equally unsupported.
+
+**That the paper recipe is unstable across seeds.** Its 0.069 spread is the
+pool change, not training noise. On identical folds it is stable: 0.620 and
+0.623, spread 0.003.
+
+`paper_geom` seed 42 remains the cautionary case, though for a different reason
+than first recorded. Read alone it looked like the recipe beating the default by
++0.021; it is the only seed of its config on pool A, and its siblings on pool B
+came back 0.620 and 0.623. Same trap as the 0.021 swing between `mega_a` and
+`ens10_s42`, and the same cause both times: one image joined the development
+pool between runs.
+
+### Seed ensembles
+
+Averaging out-of-fold probabilities across seeds. Each member is the one fold
+model that never saw the image, so this spends no test data. With the partition
+fixed by `--split-seed`, members differ only by training stochasticity.
+
+| config | seeds | best single | mean single | ensemble | vs mean single |
+|---|---|---|---|---|---|
+| aug40 | 3 | 0.664 | 0.645 | 0.642 | -0.003 |
+| paper | 2 | 0.625 | 0.625 | 0.647 | +0.022 |
+
+Consistent with every other ensembling result here: no gain. The default is
+absent because it sits on pool A and cannot be reconstructed against the
+current corpus -- `buck.benchmark.ensemble` rebuilds folds from the records on
+disk, so scoring it would silently produce "out-of-fold" predictions on images
+the checkpoints trained on.
+
+The disagreement figures are the substantive part. Mean pairwise disagreement
+between seeds is **27.3%** (aug40) and **28.9%** (paper), on models trained
+from identical data with identical folds. Cross-*architecture* disagreement is
+18-24% (see *Measured and rejected*). At `--train-multiplier 40`, re-rolling
+the training seed changes more predictions than swapping the backbone does.
+Images missed by every seed: 20.3% and 27.2%.
 
 ### Reproducing it
 
     # the published recipe
-    --scheduler exponential --lr-gamma 0.95 --backbone-lr 3e-4       --classifier-lr 1e-3 --epochs 70 --patience 20 --train-multiplier 40
+    --scheduler exponential --lr-gamma 0.95 --backbone-lr 3e-4 \
+      --classifier-lr 1e-3 --epochs 70 --patience 20 --train-multiplier 40
 
     # augmentation volume alone, everything else at harness defaults
     --epochs 60 --patience 15 --train-multiplier 40
@@ -577,11 +612,20 @@ stopping, i.e. best-epoch selection, so the two are kept separable rather than
 bundled into a preset -- `--checkpoint-policy` controls the second
 independently.
 
-Note the selection gap column above: it rises 0.062 -> 0.084 -> 0.094 across
-the three configs. The published configuration is both worse on the corrected
-metric *and* more inflated by the early stopping it pairs with. Under its own
-best-epoch rule it would report roughly 0.62 + 0.10 qwk and look competitive
-against a corrected 0.668.
+Cost note: of the paper recipe's 149 minutes, 130 are the augmentation
+multiplier, so the extra 10 epochs are nearly free and the entire 5.8x is
+`--train-multiplier`. `aug40` seed 44 took 206 minutes against 130 and 144 for
+identical work -- almost certainly thermal; its result is the best of the
+three, but that cell is not usable for timing comparisons.
+
+### Outstanding
+
+A tm 8 run on a pool matching `aug40` would settle the augmentation question
+and supply the missing default seed-ensemble; roughly 80 minutes for three
+seeds. Deliberately not run yet: one image in the corpus carries `xpx` as a
+deliberate age placeholder pending a label, and when that lands the pool
+becomes 233 and repartitions again. Re-measuring the full 3x3 on that pool
+costs the same as measuring the one missing cell twice.
 
 ## The colour shortcut
 
