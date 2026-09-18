@@ -3,7 +3,79 @@
 
 ## Unreleased
 
+### Chore
+
+* chore: data add ([`6965216`](https://github.com/ajpung/buck/commit/6965216d90702fb912d32e3893d758c5a669db0b))
+
+* chore: regenerate CHANGELOG for the 85-model campaign writeup
+
+Generated with python-semantic-release 8.0.4, the same tool auto-tag.yml and
+deploy.yaml use, rather than hand-written -- a hand-written entry would be
+overwritten or duplicated the next time the tooling runs. Adds an Unreleased /
+Documentation section for ac54666; 46 insertions, no deletions.
+
+Two things noticed while doing this, neither fixed here:
+
+- CI tagged v0.8.2 on ac54666 but no changelog commit ever landed on main,
+  which is why this had to be generated locally.
+- The repo carries two tagging schemes. pyproject.toml sets
+  tag_format = &#34;{version}&#34;, so semantic-release writes unprefixed tags (0.8.0,
+  0.8.1) while auto-tag.yml writes v-prefixed ones (v0.8.1, v0.8.2). Both
+  exist for the same releases, and semantic-release cannot parse its
+  counterpart: &#34;Couldn&#39;t parse tag v0.8.2 as as Version&#34;. Version detection is
+  therefore working off only half the tags.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
+Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`596c27c`](https://github.com/ajpung/buck/commit/596c27c1351d3e4f62a9f87522776c254b288337))
+
 ### Documentation
+
+* docs: the published recipe, isolated -- its two halves fail in different metrics
+
+Three seeds of convnextv2_tiny per configuration, checkpoint-policy final
+throughout, on the 231-image development pool. The question was whether the
+paper&#39;s learning rates and exponential schedule help the strongest backbone the
+campaign found, or were tuned around resnet18.
+
+    default  tm 8  cosine 1e-4/5e-4   acc 0.668  qwk 0.726   26 min
+    aug40    tm 40 cosine 1e-4/5e-4   acc 0.640  qwk 0.725  160 min
+    paper    tm 40 expo   3e-4/1e-3   acc 0.644  qwk 0.698  149 min
+
+Isolated:
+
+    tm 8 -&gt; tm 40, LRs held default    acc -0.028  qwk -0.001  6.2x cost
+    default LRs -&gt; paper LRs, tm 40    acc +0.004  qwk -0.027
+    full recipe vs default             acc -0.024  qwk -0.028  5.8x cost
+
+The 40x augmentation multiplier costs accuracy and leaves qwk untouched; the
+published learning rates cost qwk and leave accuracy untouched. Near-perfectly
+dissociated, and almost equal in magnitude -- so the combined recipe loses
+~0.025 on both metrics and the combined number invites blaming the learning
+rates for the accuracy loss, which is wrong: they contribute +0.004.
+
+So the recipe was tuned around resnet18, where it is neutral (0.606 vs 0.610),
+and does not transfer to a better backbone. The default wins every column at a
+sixth of the runtime, and augmentation volume is harmful on its own rather than
+merely expensive -- the default 8x stands.
+
+Two honest limits, recorded in the section:
+
+- the qwk effect leans on paper seed 43 (0.668); dropping it narrows -0.027 to
+  -0.015, ~1.7 SE at three seeds. The accuracy effect is ~2.4 SE.
+- seed spread grows with distance from the default (0.005 / 0.040 / 0.069),
+  suggesting both changes destabilise training, but three seeds will not carry
+  that claim.
+
+paper_geom seed 42 is kept as a cautionary case: 0.689 alone read as the recipe
+beating the default by +0.021, while its siblings landed 0.620 and 0.623. The
+median 0.623 is the honest summary. Same trap as the 0.021 swing between mega_a
+and ens10_s42, which differ only by one image added to the dev pool.
+
+Also notes that the selection gap rises 0.062 -&gt; 0.084 -&gt; 0.094 across the
+three configs: the published configuration is both worse on the corrected
+metric and more inflated by the early stopping it pairs with.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`9672358`](https://github.com/ajpung/buck/commit/9672358f6fc5ba9926bc9ba2a07584b54ce13111))
 
 * docs: write up the 85-model campaign; correct the stale baseline
 
@@ -45,6 +117,37 @@ a reference that no longer reproduces.
 
 Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt;
 Claude-Session: https://claude.ai/code/session_01Dfpo6CT8kwwJtzsGQ7zHxN ([`ac54666`](https://github.com/ajpung/buck/commit/ac54666e1ae01a1e8df34a5d0d3509a87a649fae))
+
+### Feature
+
+* feat: --scheduler, --lr-gamma and --classifier-lr, to reproduce the published recipe
+
+The paper trains AdamW at 3e-4 backbone / 1e-3 head under exponential decay
+(gamma 0.95); the harness only offered cosine and a fixed 5e-4 head. Without
+these three flags the published recipe cannot be expressed, so &#34;does the paper
+configuration beat the harness default&#34; was unanswerable.
+
+Cosine stays the default and nothing changes for existing runs: the
+exponential branch is reached only by explicit --scheduler exponential, and
+--classifier-lr defaults to None, leaving TRAIN_DEFAULTS in place. Wired
+through both run_holdout and run_temporal.
+
+Exponential decay is paired in the paper with early stopping -- best-epoch
+checkpoint selection -- which is the bias --checkpoint-policy final removes,
+so the two are kept separable here rather than bundled into one preset.
+
+Measured with this, on the locked v2 holdout manifest:
+
+    resnet18, paper recipe, best epoch   0.606 acc  qwk 0.698
+    resnet18, paper recipe, final        0.595 acc  qwk 0.581
+    resnet18, harness defaults           0.610 acc
+
+So the published hyperparameters are neither better nor worse than the harness
+defaults -- identical within noise -- and the +0.117 qwk they appear to gain is
+checkpoint selection, not the schedule. Accuracy moves +0.011, which means
+early stopping does not explain a published accuracy figure.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`da00c91`](https://github.com/ajpung/buck/commit/da00c91ca53c080e48380101e9550aadedf1a198))
 
 
 
