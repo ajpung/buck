@@ -265,6 +265,8 @@ pipeline; see `HANDOFF.md` for the earlier set.
 | **Ensembling, re-tested at 83 models** | Still a loss, now with seven pretraining families represented. Uniform blend of all 83: **-0.048** accuracy against the best single. A pre-specified best-per-family blend: **-0.013**. Greedy forward selection reports +0.052 -- which is **+0.100 over the uniform blend, and pure selection bias**, the same defect class as best-epoch checkpointing. Mean pairwise disagreement is 20.8%, and cross-family disagreement (19-23%) is indistinguishable from within-family (18-24%): different pretraining objectives do not make different mistakes. Only 9 of 230 images are missed by every model, so the ceiling is 96% -- unreachable because the members are too correlated. `buck.benchmark.diversity` measures this. |
 | **Detector-normalised crops** | Measured 2026-09-09 as a pre-check, before building anything. MegaDetector v6 boxes on all 289 NDA images (99.7% found, median conf 0.945) show the framing is *already* normalised: the deer is centred at 0.497 ±0.027 / 0.522 ±0.057 and spans >=94% of the image width in three quarters of the corpus. Equalising every deer's area to the median needs a 0.95-1.12x rescale across the IQR (0.92-1.29x at p5-p95) -- a +/-10-15% zoom, against a +12deg rotation the augmentation already applies. Framing is also not a shortcut: corr(age, area) = -0.045, corr(age, aspect) = +0.055. This is structural, not luck -- squaring a tightly-zoomed rectangular original yields a square necessarily smaller than the rectangle, so the animal fills the frame by construction. See `trail cam/detector_boxes.json`. |
 | **Detector-normalised crops, second look** | The pre-check below stands, but note the related *colour shortcut* finding: detector boxes revealed that background pixels alone predict age at 0.593. Crop normalisation does not fix that and may not even touch it. |
+| **The published training recipe** | Three seeds on `convnextv2_tiny`: **-0.024** accuracy and **-0.028** qwk against the harness default, at 5.8x the runtime. Separated, the two components fail in different metrics -- 40x augmentation costs accuracy only (-0.028 acc, -0.001 qwk), the published learning rates cost qwk only (+0.004 acc, -0.027 qwk). Neutral on `resnet18` (0.606 vs 0.610), harmful on a better backbone: tuned around the smaller model. See *The published recipe, isolated*. |
+| **Augmentation volume** (`--train-multiplier 40`) | Harmful on its own, not merely expensive. -0.028 accuracy with qwk flat, 6.2x the runtime, on a 231-image pool. The default 8x stands. |
 | **Flip TTA** | +1 correct image out of 230, scored on identical weights (exactly paired, so training noise cancels). Changes 4.6% of predictions; accuracy and macro-F1 up, within-one and qwk down. Doubles inference cost for nothing. |
 | **Grayscale input** (`--grayscale`) | Net loss of ~3.3 images out of 230. Lifts infrared (+0.067, up on all 3 seeds) but costs colour more (-0.037, down on all 3), and colour is 78% of the corpus. See `decode_images()`. |
 | **Hand-built body proportions** | Given the NDA panel's own stated justifications *as ground truth*, a bag-of-concepts encoding predicts age at 0.462 -- well below the 0.700 the pixels achieve. The published AOTH-style criteria are less informative than the image. |
@@ -495,6 +497,91 @@ predate every leak fix and are not comparable to anything current.
 Fine-tuning buys 0.08 to 0.14 over any frozen representation. But see **The
 colour shortcut** below -- the histogram result does not mean what it looks
 like.
+
+## The published recipe, isolated
+
+The paper's own training recipe, run against the harness default on the
+strongest backbone the campaign found (`convnextv2_tiny`), three seeds each,
+`--checkpoint-policy final` throughout. The question was whether the published
+learning rates and schedule help a better backbone or were tuned around
+`resnet18`.
+
+They were tuned around `resnet18`, and they do not transfer. But the
+interesting result is that the recipe's two components fail in *different
+metrics*, which is invisible unless they are separated.
+
+| config | acc | qwk | macro F1 | MAE | sel. gap | min |
+|---|---|---|---|---|---|---|
+| **default** -- tm 8, cosine, 1e-4/5e-4 | **0.668** | **0.726** | **0.649** | **0.509** | **+0.062** | **26** |
+| **aug40** -- tm 40, cosine, 1e-4/5e-4 | 0.640 | 0.725 | 0.633 | 0.533 | +0.084 | 160 |
+| **paper** -- tm 40, exponential, 3e-4/1e-3 | 0.644 | 0.698 | 0.632 | 0.540 | +0.094 | 149 |
+
+Per seed (42/43/44): default 0.669 / 0.670 / 0.665; aug40 0.640 / 0.620 /
+0.660; paper 0.689 / 0.620 / 0.623.
+
+Isolating one change at a time:
+
+    tm 8 -> tm 40, LRs held at default    acc -0.028   qwk -0.001   6.2x cost
+    default LRs -> paper LRs, tm held 40  acc +0.004   qwk -0.027
+    full paper recipe vs default          acc -0.024   qwk -0.028   5.8x cost
+
+**The 40x augmentation multiplier costs accuracy and leaves qwk untouched. The
+published learning rates cost qwk and leave accuracy untouched.** The two
+effects are near-perfectly dissociated and happen to be almost equal in
+magnitude, so the combined recipe loses about 0.025 on both metrics at once --
+and reading only the combined number invites attributing the accuracy loss to
+the learning rates, which is wrong by construction: they contribute +0.004.
+
+The default wins on every column in the table, at a sixth of the runtime.
+There is no metric on which either 40x configuration is preferable. On a
+231-image development pool, raising augmentation from 8x to 40x buys 6x the
+compute in order to lose accuracy.
+
+Two caveats on the numbers themselves:
+
+- The qwk effect is the weaker claim. It leans on `paper_geom` seed 43 (0.668);
+  excluding that seed narrows the gap from -0.027 to -0.015. Against a
+  within-config SD of 0.027 at three seeds, that is ~1.7 standard errors. The
+  accuracy effect is firmer: -0.028 against a default SD of 0.003, ~2.4 SE.
+- Seed spread grows monotonically with distance from the default -- 0.005
+  (default), 0.040 (aug40), 0.069 (paper). Suggestive that both changes
+  destabilise training, but three seeds per cell will not support the claim.
+
+`paper_geom` seed 42 is a cautionary case. It scored 0.689 and, read alone,
+looked like the published recipe beating the default by +0.021. Its two
+siblings came back 0.620 and 0.623 -- within 0.003 of each other -- so the
+typical value is ~0.62 and 0.689 was a lucky split. The median, 0.623, is the
+honest summary of that configuration; the mean of 0.644 is dragged up by one
+draw. This is the same trap as the 0.021 swing between `mega_a` and
+`ens10_s42`, which share a config and a seed and differ only in that one image
+had been added to the development pool.
+
+One incidental cost note: of the paper recipe's 149 minutes, 130 are the
+augmentation multiplier, so the extra 10 epochs are nearly free and the entire
+5.8x is `--train-multiplier`. And `aug40` seed 44 took 206 minutes against 130
+and 144 for identical work -- almost certainly thermal, its result is the best
+of the three, but that cell is not usable for timing comparisons.
+
+### Reproducing it
+
+    # the published recipe
+    --scheduler exponential --lr-gamma 0.95 --backbone-lr 3e-4       --classifier-lr 1e-3 --epochs 70 --patience 20 --train-multiplier 40
+
+    # augmentation volume alone, everything else at harness defaults
+    --epochs 60 --patience 15 --train-multiplier 40
+
+`--scheduler exponential`, `--lr-gamma` and `--classifier-lr` exist only to
+express this recipe; cosine and `TRAIN_DEFAULTS` remain the defaults and no
+existing run changes. Exponential decay is paired in the paper with early
+stopping, i.e. best-epoch selection, so the two are kept separable rather than
+bundled into a preset -- `--checkpoint-policy` controls the second
+independently.
+
+Note the selection gap column above: it rises 0.062 -> 0.084 -> 0.094 across
+the three configs. The published configuration is both worse on the corrected
+metric *and* more inflated by the early stopping it pairs with. Under its own
+best-epoch rule it would report roughly 0.62 + 0.10 qwk and look competitive
+against a corrected 0.668.
 
 ## The colour shortcut
 
