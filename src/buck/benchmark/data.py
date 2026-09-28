@@ -777,7 +777,7 @@ class EvalDataset(Dataset):
                 int(self.labels[idx]))
 
 
-def decode_images(records, size, grayscale=False):
+def decode_images(records, size, grayscale=False, mask=None):
     """Decode and resize records into one uint8 array of shape (N, H, W, 3).
 
     ``grayscale`` collapses every image to BT.601 luma and replicates it across
@@ -813,14 +813,75 @@ def decode_images(records, size, grayscale=False):
     on the same runs). Withholding chroma is simply not the fix for it; the
     corpus has only 50 infrared development images and that is the constraint.
     """
+    boxes = detector_boxes() if mask in ("animal", "background") else None
     out = np.empty((len(records), size, size, 3), dtype=np.uint8)
     for i, record in enumerate(records):
         image = cv2.imread(record.path, cv2.IMREAD_COLOR)
         if image is None:
             raise RuntimeError(f"failed to decode {record.path}")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if boxes is not None:
+            key = os.path.basename(record.path)
+            if key not in boxes:
+                # Never silently fall through to an unmasked image: that would
+                # put intact deer into a "background only" arm and quietly
+                # invalidate the experiment. Use require_boxes() to drop these
+                # from every arm instead.
+                raise RuntimeError(
+                    f"no detector box for {key}; run with require_boxes() so "
+                    f"every arm sees an identical record set"
+                )
+            x1, y1, x2, y2 = boxes[key]
+            h, w = image.shape[:2]
+            x1 = max(0, min(w, int(round(x1))))
+            x2 = max(0, min(w, int(round(x2))))
+            y1 = max(0, min(h, int(round(y1))))
+            y2 = max(0, min(h, int(round(y2))))
+            if mask == "animal":
+                image[y1:y2, x1:x2] = MASK_FILL
+            else:
+                keep = image[y1:y2, x1:x2].copy()
+                image[:] = MASK_FILL
+                image[y1:y2, x1:x2] = keep
         if grayscale:
             luma = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
             image = cv2.cvtColor(luma, cv2.COLOR_GRAY2RGB)
         out[i] = cv2.resize(image, (size, size), interpolation=cv2.INTER_AREA)
     return out
+
+
+# Neutral mid-grey, the same constant for both arms so the two are comparable.
+# A constant fill leaves the box rectangle visible, which is acceptable here
+# because box geometry is nearly uninformative on this corpus:
+# corr(age, area) = -0.045 and corr(age, aspect) = +0.055.
+MASK_FILL = 114
+
+_BOXES = None
+
+
+def detector_boxes(path=None):
+    """Map basename -> (x1, y1, x2, y2) from the MegaDetector run.
+
+    Cached; keyed by basename because the stored paths carry Windows
+    separators.
+    """
+    global _BOXES
+    if _BOXES is None:
+        path = path or Path("trail cam") / "detector_boxes.json"
+        with open(path, encoding="utf-8") as fh:
+            rows = json.load(fh)
+        _BOXES = {
+            os.path.basename(r["path"].replace("\\", "/")): tuple(r["box"])
+            for r in rows if r.get("box") and r.get("n_animal", 0) >= 1
+        }
+    return _BOXES
+
+
+def require_boxes(records, verbose=True):
+    """Drop records with no detector box, so masked and control arms match."""
+    boxes = detector_boxes()
+    kept = [r for r in records if os.path.basename(r.path) in boxes]
+    if verbose and len(kept) != len(records):
+        print(f"[mask] dropped {len(records) - len(kept)} record(s) with no "
+              f"detector box; {len(kept)} remain (applies to every arm)")
+    return kept

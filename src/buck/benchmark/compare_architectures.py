@@ -56,6 +56,7 @@ from buck.benchmark.data import (
     build_groups,
     decode_images,
     drop_rare_classes,
+    require_boxes,
     load_or_create_holdout,
     load_vote_targets,
     load_records,
@@ -480,7 +481,7 @@ def run_holdout(args, records, groups, class_ages, device):
         print(f"\n{'=' * 70}\n{model_name}  ({size}px)\n{'=' * 70}")
 
         try:
-            images = decode_images(records, size, args.grayscale)
+            images = decode_images(records, size, args.grayscale, args.mask)
         except RuntimeError as exc:
             raise RuntimeError(f"decoding failed for {model_name}: {exc}") from exc
 
@@ -642,7 +643,7 @@ def _score_on_test(args, results, records, labels, test_idx, class_ages, device)
     for entry in to_score:
         model_name = entry["model"]
         size = entry["input_size"]
-        images = decode_images(records, size, args.grayscale)
+        images = decode_images(records, size, args.grayscale, args.mask)
         loader = DataLoader(
             EvalDataset(images[test_idx], labels[test_idx],
                         *arch.normalisation(model_name)),
@@ -743,7 +744,7 @@ def run_temporal(args, records, groups, class_ages, device):
     payload_models = []
     for model_name in args.models:
         size = arch.input_size(model_name, args.image_size)
-        images = decode_images(records, size, args.grayscale)
+        images = decode_images(records, size, args.grayscale, args.mask)
 
         config = dict(TRAIN_DEFAULTS)
         config.update(
@@ -1044,6 +1045,18 @@ def parse_args(argv=None):
                    help="exponential reproduces the published recipe")
     p.add_argument("--lr-gamma", type=float, default=0.95,
                    help="decay for --scheduler exponential")
+    p.add_argument("--mask", choices=["none", "animal", "background"],
+                   default="none",
+                   help="ablate one region using the MegaDetector boxes. "
+                        "'animal' blanks the deer and leaves the background, "
+                        "so a score above the majority floor means the model "
+                        "is reading context rather than the animal. "
+                        "'background' does the reverse. Both drop images with "
+                        "no box; pass --require-boxes on the control arm so it "
+                        "sees the same records.")
+    p.add_argument("--require-boxes", action="store_true",
+                   help="drop records lacking a detector box even when "
+                        "--mask none, so a control arm matches the masked arms")
     p.add_argument("--backbone-lr", type=float, default=None,
                    help=f"override the backbone learning rate (default "
                         f"{TRAIN_DEFAULTS['backbone_lr']:.0e} pretrained, "
@@ -1125,6 +1138,10 @@ def main(argv=None):
     if not records:
         raise SystemExit(f"no images matched under {args.image_root}")
     records = drop_rare_classes(records, args.min_class_count)
+    if args.mask != "none" or args.require_boxes:
+        # Every arm of the masking experiment must see an identical record set,
+        # so the control drops the boxless images too -- pass --require-boxes.
+        records = require_boxes(records)
 
     class_ages = sorted({r.age for r in records})
     counts = Counter(r.age for r in records)
