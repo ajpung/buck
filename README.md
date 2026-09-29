@@ -23,6 +23,7 @@ the model must be trained on a specific region to be accurate, and this is not
 practical for the average hunter. Other characteristics include average beam length,
 circumference and tine length, but these suffer from the same issues as mass.
 
+
 ## Computer Vision
 
 ### BUCK
