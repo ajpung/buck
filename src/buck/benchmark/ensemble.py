@@ -101,7 +101,12 @@ def collect_predictions(run_dir, model_name, records, labels, dev_idx, test_idx,
     development image ``dev_idx[j]`` during training.
     """
     ckpt_dir = Path(run_dir) / "checkpoints" / model_name
-    checkpoints = sorted(ckpt_dir.glob("fold*.pth"))
+    # Sort numerically, not lexicographically: plain sorted() orders
+    # fold10 between fold1 and fold2, which silently pairs nine of ten
+    # checkpoints with a validation fold they trained on. That inflated
+    # a 10-fold out-of-fold score to 0.97 before it was caught.
+    checkpoints = sorted(ckpt_dir.glob("fold*.pth"),
+                         key=lambda q: int(q.stem[len("fold"):]))
     if len(checkpoints) != len(fold_list):
         raise RuntimeError(
             f"{model_name}: found {len(checkpoints)} checkpoints but the split "
