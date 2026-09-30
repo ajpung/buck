@@ -2,6 +2,34 @@
 
 
 
+## v0.10.1 (2026-09-30)
+
+### Fix
+
+* fix: sort fold checkpoints numerically, not lexicographically
+
+sorted(glob(&#34;fold*.pth&#34;)) orders fold10 between fold1 and fold2, so from ten
+folds onward the checkpoint list and the fold list are misaligned and nine of
+ten checkpoints are evaluated on a validation fold they trained on. The
+resulting &#34;out-of-fold&#34; score is contamination.
+
+Dormant until now because every previous run used five folds, where the
+lexicographic and numeric orders coincide. It surfaced on the first 10-fold
+run as an out-of-fold accuracy of 0.970 against a 0.240 majority floor -- only
+implausible enough to catch because the true figure is near 0.67.
+
+Corrected, the same three runs score 0.665 / 0.665 / 0.674.
+
+No previously reported number is affected: benchmark_runs holds no run with
+more than five folds prior to fold10_s42.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`80257b6`](https://github.com/ajpung/buck/commit/80257b69cffb7bdad1a49f2609309091d4e33248))
+
+### Unknown
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`af77ecb`](https://github.com/ajpung/buck/commit/af77ecbe78e519550087732ffffeb2d7534ea103))
+
+
 ## v0.10.0 (2026-09-29)
 
 ### Chore
