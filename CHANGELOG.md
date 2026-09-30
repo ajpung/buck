@@ -1,7 +1,17 @@
 # CHANGELOG
 
 
-## Unreleased
+
+## v0.10.0 (2026-09-29)
+
+### Chore
+
+* chore: regenerate CHANGELOG for the pool-change correction
+
+Generated with python-semantic-release 8.0.4 in a throwaway venv, as before.
+Picks up 9789d80.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`d9414e6`](https://github.com/ajpung/buck/commit/d9414e628520f31f24354b58a7650a71373062f4))
 
 ### Documentation
 
@@ -52,6 +62,44 @@ rather than measuring one cell twice.
 
 Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`9789d80`](https://github.com/ajpung/buck/commit/9789d8026fb989c81cefb535af9e565b2e81d243))
 
+### Feature
+
+* feat: --mask animal/background, to test whether the model reads the deer
+
+A background-only colour histogram predicts age at 0.593 against a majority
+floor near 0.19, and nothing has established whether the CNNs exploit the same
+signal. Until that is settled every accuracy number here is unanchored: if the
+model reads collection context rather than the animal, 0.690 overstates field
+performance by an unknown amount. The README has named this the decisive
+experiment since the colour shortcut was found; this is the machinery for it.
+
+decode_images() takes mask=None|&#34;animal&#34;|&#34;background&#34;, using the MegaDetector
+boxes already on disk. &#34;animal&#34; blanks the box and keeps the surround, so a
+score above the floor means the model is reading context. &#34;background&#34; does the
+reverse. Fill is a constant mid-grey for both arms; a constant leaves the box
+rectangle visible, which is acceptable because box geometry is nearly
+uninformative here -- corr(age, area) = -0.045, corr(age, aspect) = +0.055.
+
+A missing box raises rather than falling through to an unmasked image. Silently
+returning the original would put intact deer into a &#34;background only&#34; arm and
+invalidate the experiment with nothing in the log to show for it. --require-
+boxes drops those records instead, and the control arm passes it so all three
+arms see one identical record set (287 of 291; 229 dev).
+
+mask=None skips the box lookup entirely, so existing runs and the other callers
+-- ensemble, classical, tune, diversity -- are unaffected.
+
+Verified before spending GPU on it: the two masks are exact complements, zero
+pixel overlap between the arms and together covering the frame. Worth noting
+the animal box covers 83-96% of each image, so the background arm works from a
+thin border; that is the same region the histogram result used, and it means a
+high score there would be a strong result rather than a marginal one.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`a643474`](https://github.com/ajpung/buck/commit/a64347473db4895d01168fccd5bfa4dbbe01a56d))
+
+### Unknown
+
+* . ([`ea643f8`](https://github.com/ajpung/buck/commit/ea643f8b2fff16cf979f94f758eac8bbbeaf00c3))
 
 
 ## v0.9.0 (2026-09-18)
