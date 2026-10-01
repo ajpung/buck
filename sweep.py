@@ -76,6 +76,14 @@ def run(name):
 # the infrared tables, the grayscale rejection) was measured against a
 # reference that no longer reproduces, and should be re-measured before being
 # quoted.
+# STALE as of 2026-09-30, and not re-measured here rather than guessed at.
+# This was taken on a 231-image development pool. The pool has since moved
+# to 233, and StratifiedGroupKFold repartitions completely when the record
+# count changes -- one added image has been measured to move the same
+# configuration by up to 0.068 accuracy. Any `sweep.py` run today is scored
+# against a reference that no longer reproduces. Re-measure with
+# `python sweep.py rep base 3` before trusting a comparison, and see
+# *Record sets* in src/buck/benchmark/README.md.
 BASELINE = dict(model="convnext_tiny (224px)", cv_accuracy=0.653,
                 cv_accuracy_sd=0.011, cv_qwk=0.750, cv_qwk_sd=0.018,
                 cv_within_one=0.869, cv_macro_f1=0.640, cv_mae_years=0.500,

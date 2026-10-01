@@ -265,9 +265,13 @@ pipeline; see `HANDOFF.md` for the earlier set.
 | **Ensembling, re-tested at 83 models** | Still a loss, now with seven pretraining families represented. Uniform blend of all 83: **-0.048** accuracy against the best single. A pre-specified best-per-family blend: **-0.013**. Greedy forward selection reports +0.052 -- which is **+0.100 over the uniform blend, and pure selection bias**, the same defect class as best-epoch checkpointing. Mean pairwise disagreement is 20.8%, and cross-family disagreement (19-23%) is indistinguishable from within-family (18-24%): different pretraining objectives do not make different mistakes. Only 9 of 230 images are missed by every model, so the ceiling is 96% -- unreachable because the members are too correlated. `buck.benchmark.diversity` measures this. |
 | **Detector-normalised crops** | Measured 2026-09-09 as a pre-check, before building anything. MegaDetector v6 boxes on all 289 NDA images (99.7% found, median conf 0.945) show the framing is *already* normalised: the deer is centred at 0.497 ±0.027 / 0.522 ±0.057 and spans >=94% of the image width in three quarters of the corpus. Equalising every deer's area to the median needs a 0.95-1.12x rescale across the IQR (0.92-1.29x at p5-p95) -- a +/-10-15% zoom, against a +12deg rotation the augmentation already applies. Framing is also not a shortcut: corr(age, area) = -0.045, corr(age, aspect) = +0.055. This is structural, not luck -- squaring a tightly-zoomed rectangular original yields a square necessarily smaller than the rectangle, so the animal fills the frame by construction. See `trail cam/detector_boxes.json`. |
 | **Detector-normalised crops, second look** | The pre-check below stands, but note the related *colour shortcut* finding: detector boxes revealed that background pixels alone predict age at 0.593. Crop normalisation does not fix that and may not even touch it. |
-| **The published training recipe** | Three seeds on `convnextv2_tiny`. What holds: the published learning rates cost **-0.036 qwk** against the same tm 40 config on a matched pool, while accuracy moves -0.019. Neutral on `resnet18` (0.606 vs 0.610), harmful on a better backbone -- tuned around the smaller model. The headline -0.024 accuracy against the harness default is **not** established: that comparison straddles a 231 -> 232 change in the development pool. See *The published recipe, isolated*. |
-| **Augmentation volume** (`--train-multiplier 40`) | **Open, not rejected.** Costs 6.2x the runtime and measurably destabilises training -- three seeds span 0.040 accuracy on identical folds against the default's 0.005, and seed-to-seed prediction disagreement reaches 27%, above the 18-24% between different architectures. Whether it costs *accuracy* is unmeasured: the only tm 8 comparison available sits on a different development pool. The default 8x stands on cost and stability grounds alone. |
+| **The published training recipe** | Three seeds on `convnextv2_tiny`, matched folds: **-0.038 accuracy and -0.072 qwk** against the harness default, at 5.6x the runtime. Both halves hurt and they stack -- augmentation volume -0.020/-0.034, the published learning rates -0.019/-0.037. Neutral on `resnet18` (0.606 vs 0.610), harmful on a better backbone: tuned around the smaller model. See *The published recipe, isolated*. |
+| **Augmentation volume** (`--train-multiplier 40`) | **-0.020 accuracy, -0.034 qwk on matched folds**, at 6x the runtime. Also raises the selection gap (+0.044 -> +0.084) and seed-to-seed prediction disagreement (0.205 -> 0.273, above the 18-24% between different architectures). The default 8x stands. An earlier entry called this open; it compared across a change in the record set. |
 | **Flip TTA** | +1 correct image out of 230, scored on identical weights (exactly paired, so training noise cancels). Changes 4.6% of predictions; accuracy and macro-F1 up, within-one and qwk down. Doubles inference cost for nothing. |
+| **Seed ensembling** | The one ensembling result that pays, and it is small: **+0.011** accuracy at 5 folds, **+0.023** at 10, saturating at k=3. Averaged over k-subsets, not scored on one subset -- doing the latter is what produced an earlier **+0.026** claim. Its real value is variance reduction: subset-to-subset SD 0.019 -> 0.007. |
+| **More than 3 ensemble seeds** | Nothing. k=4 through k=8 are flat inside noise. Seeds 45-49 bought no accuracy. |
+| **20-fold cross-validation** | **-0.017 accuracy** against 10-fold at 2x the cost. 12 of 20 validation folds end up missing at least one age class (8-15 images across 5 classes), so stratification fails and the extra 11 training images per fold do not pay for it. 10 folds is a real optimum, not a plateau. |
+| **Single-seed model ranking** | Rejected as a method. Two sweep leaders have now failed replication: `regnet_y_1_6gf` (1st of 12, then 46th of 85) and `edgenext_small` (0.697 at 1 seed, 0.644 at 3, losing to `convnextv2_tiny` on every seed). The across-seed SD is of the same order as the spread across an entire top twenty. |
 | **Grayscale input** (`--grayscale`) | Net loss of ~3.3 images out of 230. Lifts infrared (+0.067, up on all 3 seeds) but costs colour more (-0.037, down on all 3), and colour is 78% of the corpus. See `decode_images()`. |
 | **Hand-built body proportions** | Given the NDA panel's own stated justifications *as ground truth*, a bag-of-concepts encoding predicts age at 0.462 -- well below the 0.700 the pixels achieve. The published AOTH-style criteria are less informative than the image. |
 
@@ -505,102 +509,114 @@ The paper's own training recipe against the harness default on
 whether the published learning rates and exponential schedule help a better
 backbone, or were tuned around `resnet18`.
 
-**Read the pool column before the numbers.** The development pool grew from 231
-to 232 images partway through this campaign, on 2026-09-17 at 08:13, and
-`StratifiedGroupKFold` repartitions completely when the record count changes.
-Runs on different pools are not comparable, and one of the three comparisons
-below straddles the change.
+They were tuned around `resnet18`. On that backbone they are neutral -- 0.606
+against the harness default's 0.610 -- and on a better one they cost accuracy
+and qwk together.
 
-| config | pool | acc | qwk | macro F1 | MAE | sel. gap | min |
-|---|---|---|---|---|---|---|---|
-| **default** -- tm 8, cosine, 1e-4/5e-4 | A (231) | 0.668 | 0.726 | 0.649 | 0.509 | +0.062 | 26 |
-| **aug40** -- tm 40, cosine, 1e-4/5e-4 | B (232) | 0.640 | 0.725 | 0.633 | 0.533 | +0.084 | 160 |
-| **paper** -- tm 40, exponential, 3e-4/1e-3 | A + B | 0.644 | 0.698 | 0.632 | 0.540 | +0.094 | 149 |
+All three rows below are on one record set (232 dev images) with identical
+folds, so the comparison is matched. An earlier version of this section
+compared across a change in the corpus and drew a different conclusion; see
+*Record sets* below, because that failure is the more useful lesson.
 
-Per seed (42/43/44): default 0.669 / 0.670 / 0.665, all pool A; aug40 0.640 /
-0.620 / 0.660, all pool B; paper **0.689 (pool A)** / 0.620 / 0.623 (pool B).
+| config | acc | qwk | macro F1 | MAE | sel. gap | min |
+|---|---|---|---|---|---|---|
+| **default** -- tm 8, cosine, 1e-4/5e-4 | **0.660** | **0.759** | **0.648** | **0.485** | **+0.044** | **27** |
+| **aug40** -- tm 40, cosine, 1e-4/5e-4 | 0.640 | 0.725 | 0.633 | 0.533 | +0.084 | 160 |
+| **paper** -- tm 40, exponential, 3e-4/1e-3 | 0.622 | 0.688 | 0.617 | 0.560 | +0.102 | 150 |
 
-### What the seeds actually vary
+Per seed (42/43/44): default 0.650 / 0.656 / 0.675; aug40 0.640 / 0.620 /
+0.660; paper 0.620 / 0.623 (two seeds -- the third is on the older record set).
 
-Not the split. `--seed` feeds `set_seed()` only -- `random`, `numpy`, `torch`
--- so it varies training stochasticity. The fold partition comes from
-`--split-seed` (`compare_architectures.py:463`), which was 1337 in every run
-here. **Within one pool, every seed shares identical folds.** Three seeds are
-three training runs on one partition, not three partitions.
+Isolating one change at a time:
 
-That matters twice. It means a within-pool seed spread is a clean read on
-training noise, with the split held fixed. And it means the original rationale
-for three seeds -- "three independent splits, so each image is held out three
-times" -- was wrong: to vary the partition you must vary `--split-seed`.
+    tm 8 -> tm 40 (augmentation volume)   acc -0.020   qwk -0.034   6.0x cost
+    default LRs -> paper LRs              acc -0.019   qwk -0.037
+    tm 8 default -> full paper recipe     acc -0.038   qwk -0.072   5.6x cost
 
-### What is established
+**Both halves of the recipe are harmful, in the same way, and they stack.**
+Each costs about 0.02 accuracy and about 0.035 qwk, and the full recipe loses
+roughly the sum of the two. The default wins every column at a sixth of the
+runtime.
 
-**The published learning rates cost qwk and not accuracy.** `paper` and
-`aug40` differ only in scheduler and learning rates, and both ran entirely on
-pool B, so this comparison is clean. Seed-matched (s43, s44):
+An earlier reading of these runs claimed the two components failed in
+*different* metrics -- augmentation costing accuracy only, learning rates
+costing qwk only. That dissociation was an artifact of comparing across record
+sets and does not survive matched folds. The real story is duller: both changes
+are simply bad.
 
-    default LRs -> paper LRs, tm 40 held, pool B    acc -0.019   qwk -0.036
-
-**40x augmentation destabilises training.** On identical folds, `aug40`'s three
-seeds span 0.040 (0.620-0.660) against the default's 0.005 -- eight times the
-noise, and the default's figure is on its own fixed partition too. Corroborated
-by seed disagreement below.
-
-**The selection gap rises with distance from the default**, 0.062 -> 0.084 ->
-0.094. The published configuration is both worse on the corrected metric and
+The selection gap rises with distance from the default, 0.044 -> 0.084 ->
+0.102. The published configuration is both worse on the corrected metric and
 more inflated by the early stopping it pairs with: under its own best-epoch
-rule it would report roughly 0.62 + 0.10 qwk and look competitive.
+rule it would report roughly 0.62 + 0.10 qwk and look competitive against a
+corrected 0.660.
 
-### What is not established
+### What the seeds vary, and what they do not
 
-**That 40x augmentation costs accuracy.** The -0.028 this table implies
-compares `ens10` on pool A against `aug40` on pool B. The only estimate of the
-pool A -> B shift comes from the `paper` row, whose seed 42 scored 0.689 on
-pool A against 0.620 and 0.623 on pool B -- a swing of **-0.068**, two and a
-half times the effect being attributed to augmentation. The augmentation
-accuracy claim is withdrawn pending a tm 8 run on a matched pool. Its qwk
-effect (-0.001) is equally unsupported.
+Not the split. `--seed` feeds `set_seed()` only -- `random`, `numpy`, `torch`.
+The fold partition comes from `--split-seed` (`compare_architectures.py:463`),
+which has been 1337 in every run in this repository. **Within one record set,
+every seed shares identical folds.** Three seeds are three training runs on one
+partition, not three partitions.
 
-**That the paper recipe is unstable across seeds.** Its 0.069 spread is the
-pool change, not training noise. On identical folds it is stable: 0.620 and
-0.623, spread 0.003.
+The original rationale for three seeds -- "three independent splits, so each
+image is held out three times" -- was therefore never true. To vary the
+partition, vary `--split-seed`.
 
-`paper_geom` seed 42 remains the cautionary case, though for a different reason
-than first recorded. Read alone it looked like the recipe beating the default by
-+0.021; it is the only seed of its config on pool A, and its siblings on pool B
-came back 0.620 and 0.623. Same trap as the 0.021 swing between `mega_a` and
-`ens10_s42`, and the same cause both times: one image joined the development
-pool between runs.
+### Record sets
 
-### Seed ensembles
+`StratifiedGroupKFold` repartitions completely when the record count changes,
+so a single added image invalidates every baseline measured before it. This has
+now caused two wrong conclusions in this project and is worth stating plainly:
+**a result is only comparable to another result on the same record count.**
 
-Averaging out-of-fold probabilities across seeds. Each member is the one fold
-model that never saw the image, so this spends no test data. With the partition
-fixed by `--split-seed`, members differ only by training stochasticity.
+| set | dev images | runs |
+|---|---|---|
+| 230 | 230 | `mega_a` (the 85-model sweep) |
+| 231 | 231 | `ens10_*`, `paper_geom_s42` |
+| 232 | 232 | `paper_geom_s43/s44`, `aug40_*`, `default_poolB_*`, `edgenext_poolB_*` |
+| 229 | 229 | the masking arms (`--require-boxes` drops 4 of 291) |
+| 233 | 233 | `fold5_*`, `fold10_*`, `fold20_*` |
 
-| config | seeds | best single | mean single | ensemble | vs mean single |
-|---|---|---|---|---|---|
-| aug40 | 3 | 0.664 | 0.645 | 0.642 | -0.003 |
-| paper | 2 | 0.625 | 0.625 | 0.647 | +0.022 |
+Two measured examples of what a change costs. Between the 231 and 232 sets, the
+same configuration at the same seed moved **-0.068** accuracy (`paper_geom`
+seed 42 at 0.689 against its siblings at 0.620 and 0.623) -- and for a
+different configuration the same change was **-0.008 accuracy but +0.033 qwk**,
+moving the two metrics in opposite directions. The shift is neither small nor a
+constant offset, so it cannot be corrected for after the fact.
 
-Consistent with every other ensembling result here: no gain. The default is
-absent because it sits on pool A and cannot be reconstructed against the
-current corpus -- `buck.benchmark.ensemble` rebuilds folds from the records on
-disk, so scoring it would silently produce "out-of-fold" predictions on images
-the checkpoints trained on.
+`mega_a` and `ens10_s42` differ only by one image joining the pool and score
+0.648 against 0.669. That 0.021 is the same size as effects this project has
+spent days chasing.
 
-The disagreement figures are the substantive part. Mean pairwise disagreement
-between seeds is **27.3%** (aug40) and **28.9%** (paper), on models trained
-from identical data with identical folds. Cross-*architecture* disagreement is
-18-24% (see *Measured and rejected*). At `--train-multiplier 40`, re-rolling
-the training seed changes more predictions than swapping the backbone does.
-Images missed by every seed: 20.3% and 27.2%.
+### Model choice, re-tested
+
+The 85-model sweep's leader was never seed-replicated, and when it was, it lost.
+
+| model | sweep (1 seed, 230) | 3 seeds, 232 set | 3-seed ensemble |
+|---|---|---|---|
+| `edgenext_small` | **0.697** / qwk 0.787 | 0.644 / qwk 0.705 | 0.647 (+0.000) |
+| `convnextv2_tiny` | 0.648 / qwk 0.750 | **0.660** / qwk 0.759 | **0.690** |
+
+Per seed, head to head: 0.629 / 0.632 / 0.672 against 0.650 / 0.656 / 0.675.
+`convnextv2_tiny` wins all three on accuracy and all three on qwk, by -0.055
+qwk on average -- which clears the 0.036 qwk threshold this README sets for a
+real difference. The accuracy margin, -0.016, is about one across-seed SD and
+is the weaker half of the claim.
+
+Note that `edgenext_small` gains **nothing** from seed-ensembling (+0.000)
+while `convnextv2_tiny` gains, despite near-identical seed disagreement (0.200
+against 0.205). Diversity is not what separates them; its members are simply
+individually weaker.
+
+**This is the second sweep ranking to fail replication.** `regnet_y_1_6gf` led
+the 12-model suite and placed 46th of 85. A single-seed leaderboard position on
+this corpus is not evidence; the across-seed SD is of the same order as the
+spread across the entire top twenty.
 
 ### Reproducing it
 
     # the published recipe
-    --scheduler exponential --lr-gamma 0.95 --backbone-lr 3e-4 \
-      --classifier-lr 1e-3 --epochs 70 --patience 20 --train-multiplier 40
+    --scheduler exponential --lr-gamma 0.95 --backbone-lr 3e-4       --classifier-lr 1e-3 --epochs 70 --patience 20 --train-multiplier 40
 
     # augmentation volume alone, everything else at harness defaults
     --epochs 60 --patience 15 --train-multiplier 40
@@ -613,19 +629,10 @@ bundled into a preset -- `--checkpoint-policy` controls the second
 independently.
 
 Cost note: of the paper recipe's 149 minutes, 130 are the augmentation
-multiplier, so the extra 10 epochs are nearly free and the entire 5.8x is
-`--train-multiplier`. `aug40` seed 44 took 206 minutes against 130 and 144 for
-identical work -- almost certainly thermal; its result is the best of the
-three, but that cell is not usable for timing comparisons.
-
-### Outstanding
-
-A tm 8 run on a pool matching `aug40` would settle the augmentation question
-and supply the missing default seed-ensemble; roughly 80 minutes for three
-seeds. Deliberately not run yet: one image in the corpus carries `xpx` as a
-deliberate age placeholder pending a label, and when that lands the pool
-becomes 233 and repartitions again. Re-measuring the full 3x3 on that pool
-costs the same as measuring the one missing cell twice.
+multiplier, so the extra 10 epochs are nearly free and the entire 5.6x is
+`--train-multiplier`. One `aug40` seed took 206 minutes against 130 and 144 for
+identical work -- almost certainly thermal; that cell is not usable for timing
+comparisons.
 
 ## The colour shortcut
 
@@ -653,13 +660,135 @@ no deer -- predicts the deer's age at 0.593 against a 0.188 floor. Nor is it
 trivial exposure: mean brightness lifts 0.032 over the floor, mean RGB 0.107,
 saturation 0.210, against the full histogram's 0.42.
 
-**Unresolved, and it matters.** Background cannot carry biological age
-information, so something about scene or provenance correlates with the label.
-Whether the CNNs exploit the same thing is untested. Grad-CAM puts attention on
-the shoulder and neck, but that is weak evidence against a measured 0.593. The
-decisive experiment is to retrain twice, once with the animal masked out and
-once with the background masked out. Until that runs, treat any claim that the
-model reads body proportions as unverified.
+### Resolved by masking, 2026-09-28
+
+The decisive experiment -- retrain with the animal masked out, and again with
+the background masked out -- has now run. Three seeds per arm, 229 dev images,
+`convnextv2_tiny` at harness defaults, `--mask` using the MegaDetector boxes.
+Majority floor on this record set is **0.240**.
+
+| arm | per seed | acc | qwk | macro F1 | MAE |
+|---|---|---|---|---|---|
+| **control** (untouched) | 0.625 / 0.669 / 0.695 | **0.663** | 0.746 | 0.641 | 0.491 |
+| **deer only** (background blanked) | 0.647 / 0.634 / 0.678 | **0.653** | 0.707 | 0.637 | 0.525 |
+| **background only** (deer blanked) | 0.498 / 0.481 / 0.490 | **0.489** | 0.348 | 0.477 | 0.951 |
+| majority floor | | 0.240 | 0.000 | | |
+
+    removing the background   acc -0.010   qwk -0.039
+    removing the deer         acc -0.174   qwk -0.398
+
+**The model reads the deer.** Blanking the background costs 0.010 accuracy,
+inside the control's own 0.070 seed spread. Blanking the deer costs 0.174 and
+collapses qwk from 0.746 to 0.348. The claim that the model reads body
+proportions is no longer unverified; the deer alone reproduces the full model.
+
+**And the shortcut is real.** Background alone reaches 0.489 against a 0.240
+floor -- **59% of the control's above-floor margin** -- from 4-17% of the
+pixels, since the deer fills most of the frame by construction. Its seed spread
+is 0.017, the tightest of any cell in this project. That is a working model,
+not degenerate guessing.
+
+Both being true is coherent: the signal is **duplicated**. The deer and its
+surround each predict age independently, so a model with both available leans
+on the deer, and masking either leaves the other to carry it. The arms do not
+decompose -- 0.653 + 0.489 has no reason to equal 0.663 -- because masking
+destroys information rather than redistributing it.
+
+**What still matters for field use.** The background signal is not age; it is
+whatever co-varies with age in the collection -- site, season, camera, batch.
+The threat is not that the current model uses it, but that
+`StratifiedGroupKFold` groups by animal and cannot detect it: a context cue
+shared across the split is leakage this protocol does not catch, and dev
+accuracy looks identical whether the model generalises or not. Folds grouped by
+site or collection batch would test this, and have not been run.
+
+Deer-only costs 0.010 accuracy -- nothing, against a 0.070 seed spread -- and
+is structurally immune. With boxes on 99.7% of images, masking at inference is
+already feasible, which makes **0.653 a better field estimate than 0.663**.
+
+## Fold count and ensemble size
+
+Two levers that cost only compute, measured together on 233 dev images because
+they share a baseline. `convnextv2_tiny` at harness defaults, unmasked.
+
+All numbers below are **pooled out-of-fold**: one metric computed over all 233
+development images, not a mean of per-fold metrics. That matters here, because
+comparing fold counts on `cv_accuracy` would compare a mean over five 46-image
+folds against a mean over twenty 12-image ones, which are different estimators.
+
+| folds | train/fold | 1 seed | 3-seed ensemble | qwk (k=3) | min/seed |
+|---|---|---|---|---|---|
+| 5 | 186 | 0.643 | 0.654 | 0.746 | 27 |
+| **10** | 210 | **0.668** | **0.691** | 0.764 | 59 |
+| 20 | 221 | 0.651 | 0.670 | 0.806 | 123 |
+
+**10 folds is the optimum, and it is a real optimum** -- performance rises to
+it and falls after, rather than plateauing. Against 5 folds it is worth +0.025
+as a single model and +0.037 ensembled, for 2x the compute. That is the largest
+non-data improvement this project has measured.
+
+**20 folds is worse**, by -0.017 single and -0.021 ensembled, at 2x the cost
+again. The learning-curve extrapolation predicted +0.007 and got the sign
+wrong. The reason is visible in the splits: at 20 folds the validation folds
+hold 8-15 images across 5 classes, and **12 of the 20 are missing at least one
+age class entirely**. Stratification cannot hold, and whatever the extra 11
+training images buy is lost to worse-conditioned folds. Each doubling of the
+fold count also adds less data than the last -- 5->10 gains 24 images per fold,
+10->20 gains 11, 20->40 would gain about 6 -- so the lever is nearly exhausted
+at this corpus size regardless.
+
+One oddity, recorded but not trusted: the 20-fold arm produced the highest qwk
+in the project (0.806) while its accuracy fell. It rests on a single 3-subset
+and on pooled predictions from many tiny folds. The accuracy drop is the
+reliable read.
+
+### How much seed-ensembling is worth
+
+Eight seeds at 5 folds, scoring every k-subset (up to 20 sampled per k) and
+averaging, so each row is what a k-seed ensemble is *expected* to be worth
+rather than what one lucky subset was worth.
+
+| k | acc | sd across subsets | qwk |
+|---|---|---|---|
+| 1 | 0.643 | 0.019 | 0.730 |
+| 2 | 0.652 | 0.017 | 0.742 |
+| **3** | **0.654** | 0.015 | 0.746 |
+| 4 | 0.655 | 0.009 | 0.747 |
+| 5 | 0.656 | 0.007 | 0.744 |
+| 6 | 0.650 | 0.008 | 0.746 |
+| 7 | 0.659 | 0.006 | 0.755 |
+| 8 | 0.648 | -- | 0.749 |
+
+**It saturates at k=3 and the gain is small**: +0.011 at 5 folds, +0.023 at 10.
+Everything past k=3 is flat inside noise; the k=8 dip is an artifact, since
+only one 8-subset exists and it gets no averaging. Seeds 45-49 bought nothing.
+
+An earlier note in this file put seed-ensembling at **+0.026**. That came from
+scoring the one 3-seed subset that happened to be on hand, whose members were
+the strong ones. Averaged across subsets the expectation is **+0.011**. Score
+subsets, not the subset you have.
+
+What ensembling does buy reliably is **stability**: subset-to-subset SD falls
+from 0.019 at k=1 to 0.007 at k=5. For a project that has been misled by
+single-seed results three times -- `regnet_y_1_6gf`, `edgenext_small`, and
+`paper_geom` seed 42 -- that is worth more than the accuracy.
+
+### Current best
+
+**`convnextv2_tiny`, 10 folds, 3-seed ensemble: 0.691** out-of-fold on 233 dev
+images. That is +0.048 over the 5-fold single model, for about three hours of
+compute.
+
+    --models convnextv2_tiny --folds 10 --epochs 60 --patience 15       --train-multiplier 8 --checkpoint-policy final --seed 42|43|44
+
+Ranked by what paid:
+
+    10 folds instead of 5          +0.025 single, +0.037 ensembled
+    3-seed ensembling (at 10)      +0.023
+    20 folds instead of 10         -0.017            <- rejected
+
+The locked test set has still never been read. Every number here, and
+everywhere else in this file, is development performance.
 
 ## Protocols
 
