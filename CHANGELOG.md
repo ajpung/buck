@@ -1,7 +1,36 @@
 # CHANGELOG
 
 
-## Unreleased
+
+## v0.10.1 (2026-09-30)
+
+### Fix
+
+* fix: sort fold checkpoints numerically, not lexicographically
+
+sorted(glob(&#34;fold*.pth&#34;)) orders fold10 between fold1 and fold2, so from ten
+folds onward the checkpoint list and the fold list are misaligned and nine of
+ten checkpoints are evaluated on a validation fold they trained on. The
+resulting &#34;out-of-fold&#34; score is contamination.
+
+Dormant until now because every previous run used five folds, where the
+lexicographic and numeric orders coincide. It surfaced on the first 10-fold
+run as an out-of-fold accuracy of 0.970 against a 0.240 majority floor -- only
+implausible enough to catch because the true figure is near 0.67.
+
+Corrected, the same three runs score 0.665 / 0.665 / 0.674.
+
+No previously reported number is affected: benchmark_runs holds no run with
+more than five folds prior to fold10_s42.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`80257b6`](https://github.com/ajpung/buck/commit/80257b69cffb7bdad1a49f2609309091d4e33248))
+
+### Unknown
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`af77ecb`](https://github.com/ajpung/buck/commit/af77ecbe78e519550087732ffffeb2d7534ea103))
+
+
+## v0.10.0 (2026-09-29)
 
 ### Chore
 
@@ -13,69 +42,6 @@ Picks up 9789d80.
 Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`d9414e6`](https://github.com/ajpung/buck/commit/d9414e628520f31f24354b58a7650a71373062f4))
 
 ### Documentation
-
-* docs: write up the fold-count, masking and replication results; correct two claims
-
-Six campaigns since the last writeup, on four different record sets. The
-headline is that 10-fold cross-validation is worth more than every
-architecture, pretraining and hyperparameter choice this project has tried.
-
-**Fold count and ensemble size.** Pooled out-of-fold on 233 dev images, so that
-fold counts are compared on one metric over all images rather than on means of
-per-fold metrics:
-
-    5 folds   186 train/fold   0.643 single   0.654 ensembled    27 min
-    10 folds  210 train/fold   0.668 single   0.691 ensembled    59 min
-    20 folds  221 train/fold   0.651 single   0.670 ensembled   123 min
-
-10 is a real optimum, not a plateau. 20 folds leaves 12 of 20 validation folds
-missing at least one age class, stratification fails, and the extra training
-images do not pay for it. Current best is convnextv2_tiny, 10 folds, 3-seed
-ensemble: 0.691, which is +0.048 over the 5-fold single model.
-
-**The colour shortcut is resolved.** The masking experiment the README has
-called decisive since the shortcut was found has now run, three seeds per arm:
-
-    control (untouched)           0.663 acc  0.746 qwk
-    deer only (bg blanked)        0.653 acc  0.707 qwk
-    background only (deer blank)  0.489 acc  0.348 qwk
-    majority floor                0.240
-
-Both halves are true. The model reads the deer -- removing the background costs
-0.010, inside the seed spread -- so the body-proportions claim is no longer
-unverified. And the shortcut is real: background alone reaches 59% of the
-control&#39;s above-floor margin from 4-17% of the pixels, with the tightest seed
-spread of any cell here. The signal is duplicated, not shared. Deer-only is the
-better field estimate and is structurally immune, at a cost of 0.010.
-
-**Two corrections.**
-
-Seed-ensembling is worth +0.011, not the +0.026 recorded earlier. That figure
-came from scoring the one 3-seed subset on hand, whose members happened to be
-the strong ones; averaged across subsets the expectation is less than half of
-it. It saturates at k=3 and its real value is variance reduction -- 0.019 -&gt;
-0.007 subset SD.
-
-The published recipe&#39;s two halves do not fail in different metrics. That
-dissociation was an artifact of comparing across record sets. Matched folds:
-augmentation -0.020 acc / -0.034 qwk, learning rates -0.019 / -0.037, stacking
-to -0.038 / -0.072. Both are simply bad.
-
-**Record sets now have their own section**, because this is the second wrong
-conclusion they have caused. One added image repartitions every fold and has
-been measured to move the same configuration by -0.068 accuracy -- and in
-another case by -0.008 accuracy while moving qwk +0.033. Five distinct record
-sets exist across benchmark_runs and only same-count runs are comparable.
-sweep.py&#39;s BASELINE is flagged stale for the same reason rather than guessed at.
-
-Also records that --seed never varied the fold partition (--split-seed does,
-1337 throughout), and that edgenext_small -- the 85-model sweep&#39;s leader at
-0.697 on one seed -- scores 0.644 on three and loses to convnextv2_tiny on
-every seed. Second sweep ranking to fail replication after regnet_y_1_6gf.
-
-The locked test set still has not been read.
-
-Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`79f630e`](https://github.com/ajpung/buck/commit/79f630e77d7e5fad9a47f5d86322168a28d8038e))
 
 * docs: withdraw the augmentation accuracy claim -- it straddles a pool change
 
@@ -159,33 +125,9 @@ high score there would be a strong result rather than a marginal one.
 
 Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`a643474`](https://github.com/ajpung/buck/commit/a64347473db4895d01168fccd5bfa4dbbe01a56d))
 
-### Fix
-
-* fix: sort fold checkpoints numerically, not lexicographically
-
-sorted(glob(&#34;fold*.pth&#34;)) orders fold10 between fold1 and fold2, so from ten
-folds onward the checkpoint list and the fold list are misaligned and nine of
-ten checkpoints are evaluated on a validation fold they trained on. The
-resulting &#34;out-of-fold&#34; score is contamination.
-
-Dormant until now because every previous run used five folds, where the
-lexicographic and numeric orders coincide. It surfaced on the first 10-fold
-run as an out-of-fold accuracy of 0.970 against a 0.240 majority floor -- only
-implausible enough to catch because the true figure is near 0.67.
-
-Corrected, the same three runs score 0.665 / 0.665 / 0.674.
-
-No previously reported number is affected: benchmark_runs holds no run with
-more than five folds prior to fold10_s42.
-
-Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`80257b6`](https://github.com/ajpung/buck/commit/80257b69cffb7bdad1a49f2609309091d4e33248))
-
 ### Unknown
 
-* Merge branch &#39;main&#39; of https://github.com/ajpung/buck ([`af77ecb`](https://github.com/ajpung/buck/commit/af77ecbe78e519550087732ffffeb2d7534ea103))
-
 * . ([`ea643f8`](https://github.com/ajpung/buck/commit/ea643f8b2fff16cf979f94f758eac8bbbeaf00c3))
-
 
 
 ## v0.9.0 (2026-09-18)
