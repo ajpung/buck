@@ -1,6 +1,92 @@
 # CHANGELOG
 
 
+## Unreleased
+
+### Chore
+
+* chore: adding data ([`175e6fe`](https://github.com/ajpung/buck/commit/175e6fe9cc394bea396ec112527e19b35f5178e4))
+
+* chore: regenerate CHANGELOG for the fold-count and masking writeup
+
+Generated with python-semantic-release 8.0.4 in a throwaway venv, as before.
+Picks up the masking feature, the fold-ordering fix, and the writeup.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`091aebe`](https://github.com/ajpung/buck/commit/091aebefcbdecc620becfaa03ff1ba0991268d8e))
+
+### Documentation
+
+* docs: write up the fold-count, masking and replication results; correct two claims
+
+Six campaigns since the last writeup, on four different record sets. The
+headline is that 10-fold cross-validation is worth more than every
+architecture, pretraining and hyperparameter choice this project has tried.
+
+**Fold count and ensemble size.** Pooled out-of-fold on 233 dev images, so that
+fold counts are compared on one metric over all images rather than on means of
+per-fold metrics:
+
+    5 folds   186 train/fold   0.643 single   0.654 ensembled    27 min
+    10 folds  210 train/fold   0.668 single   0.691 ensembled    59 min
+    20 folds  221 train/fold   0.651 single   0.670 ensembled   123 min
+
+10 is a real optimum, not a plateau. 20 folds leaves 12 of 20 validation folds
+missing at least one age class, stratification fails, and the extra training
+images do not pay for it. Current best is convnextv2_tiny, 10 folds, 3-seed
+ensemble: 0.691, which is +0.048 over the 5-fold single model.
+
+**The colour shortcut is resolved.** The masking experiment the README has
+called decisive since the shortcut was found has now run, three seeds per arm:
+
+    control (untouched)           0.663 acc  0.746 qwk
+    deer only (bg blanked)        0.653 acc  0.707 qwk
+    background only (deer blank)  0.489 acc  0.348 qwk
+    majority floor                0.240
+
+Both halves are true. The model reads the deer -- removing the background costs
+0.010, inside the seed spread -- so the body-proportions claim is no longer
+unverified. And the shortcut is real: background alone reaches 59% of the
+control&#39;s above-floor margin from 4-17% of the pixels, with the tightest seed
+spread of any cell here. The signal is duplicated, not shared. Deer-only is the
+better field estimate and is structurally immune, at a cost of 0.010.
+
+**Two corrections.**
+
+Seed-ensembling is worth +0.011, not the +0.026 recorded earlier. That figure
+came from scoring the one 3-seed subset on hand, whose members happened to be
+the strong ones; averaged across subsets the expectation is less than half of
+it. It saturates at k=3 and its real value is variance reduction -- 0.019 -&gt;
+0.007 subset SD.
+
+The published recipe&#39;s two halves do not fail in different metrics. That
+dissociation was an artifact of comparing across record sets. Matched folds:
+augmentation -0.020 acc / -0.034 qwk, learning rates -0.019 / -0.037, stacking
+to -0.038 / -0.072. Both are simply bad.
+
+**Record sets now have their own section**, because this is the second wrong
+conclusion they have caused. One added image repartitions every fold and has
+been measured to move the same configuration by -0.068 accuracy -- and in
+another case by -0.008 accuracy while moving qwk +0.033. Five distinct record
+sets exist across benchmark_runs and only same-count runs are comparable.
+sweep.py&#39;s BASELINE is flagged stale for the same reason rather than guessed at.
+
+Also records that --seed never varied the fold partition (--split-seed does,
+1337 throughout), and that edgenext_small -- the 85-model sweep&#39;s leader at
+0.697 on one seed -- scores 0.644 on three and loses to convnextv2_tiny on
+every seed. Second sweep ranking to fail replication after regnet_y_1_6gf.
+
+The locked test set still has not been read.
+
+Co-Authored-By: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`79f630e`](https://github.com/ajpung/buck/commit/79f630e77d7e5fad9a47f5d86322168a28d8038e))
+
+### Unknown
+
+* Merge branch &#39;main&#39; of https://github.com/ajpung/buck
+
+# Conflicts:
+#	CHANGELOG.md ([`aca1f5b`](https://github.com/ajpung/buck/commit/aca1f5bec062d6c4fc1b0cc1b59fe5ad2d7f0b3d))
+
+
 
 ## v0.10.1 (2026-09-30)
 
