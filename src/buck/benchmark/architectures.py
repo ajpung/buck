@@ -14,6 +14,11 @@ tables cannot be resized. Construction failures raise.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.models as tvm
@@ -240,6 +245,45 @@ REGISTRY.update({
     "eva02_small": dict(timm="eva02_small_patch14_336.mim_in22k_ft_in1k", size=336, batch=21, freeze=6, fixed_input=True),
 })
 
+# --- DINOv3 ViTs and YOLO-family backbones.
+#
+# The DINOv3 ViTs are the models DINOv3 is actually about; the ConvNeXt entries
+# above are distilled from them. Unlike the DINOv2 ViTs they use rotary position
+# embeddings, so 224 or 256 both run without interpolating anything. Native is
+# 256. They are not ``fixed_input`` for the same reason.
+#
+# ``backbone_lr`` 3e-5 is carried over from the DINOv3 ConvNeXt measurement
+# above; see "New backbones" in the benchmark README for what was and was not
+# measured on these bodies.
+#
+# Two different things are called YOLO here, and they should not be conflated:
+#
+# ``cspdarknet53``/``cs3darknet_l``/``darknet53``
+#     timm ImageNet classifiers built on the Darknet/CSP trunks the YOLOv3-v5
+#     detectors used. Same body family, but they are not YOLO weights.
+# ``yolo*_cls``
+#     Ultralytics' own YOLO classification checkpoints, built by
+#     :func:`_build_ultralytics`. Trained on ImageNet at 224px, and they want
+#     pixels in [0, 1] with no mean/std shift -- see :func:`normalisation`.
+#     Ultralytics is AGPL-3.0, which matters for anything served from these.
+REGISTRY.update({
+    "vit_small_dinov3": dict(timm="vit_small_patch16_dinov3.lvd1689m",
+                             size=256, batch=32, freeze=6, backbone_lr=3e-5),
+    "vit_base_dinov3": dict(timm="vit_base_patch16_dinov3.lvd1689m",
+                            size=256, batch=24, freeze=6, backbone_lr=3e-5),
+    "vit_large_dinov3": dict(timm="vit_large_patch16_dinov3.lvd1689m",
+                             size=256, batch=12, freeze=12, backbone_lr=3e-5),
+
+    "cspdarknet53": dict(timm="cspdarknet53.ra_in1k", size=256, batch=32, freeze=2),
+    "cs3darknet_l": dict(timm="cs3darknet_l.c2ns_in1k", size=256, batch=32, freeze=2),
+    "darknet53": dict(timm="darknet53.c2ns_in1k", size=256, batch=32, freeze=2),
+
+    "yolo11s_cls": dict(ultralytics="yolo11s-cls", size=224, batch=32, freeze=2),
+    "yolo11m_cls": dict(ultralytics="yolo11m-cls", size=224, batch=32, freeze=2),
+    "yolo26s_cls": dict(ultralytics="yolo26s-cls", size=224, batch=32, freeze=2),
+    "yolo26m_cls": dict(ultralytics="yolo26m-cls", size=224, batch=32, freeze=2),
+})
+
 # Everything in the registry, alphabetical. Callers that care about coverage
 # under truncation should pass an explicit cost-ordered list instead.
 MEGA_SUITE = sorted(REGISTRY)
@@ -367,6 +411,8 @@ def build_model(name, num_classes, dropout=0.3, pretrained=True):
     # own construction path.
     if "timm" in spec:
         return _build_timm(name, spec, num_classes, dropout, pretrained, freeze)
+    if "ultralytics" in spec:
+        return _build_ultralytics(name, spec, num_classes, dropout, pretrained, freeze)
 
     model = spec["fn"](weights="DEFAULT" if pretrained else None)
 
@@ -449,6 +495,12 @@ def _freeze_stem(model, name, freeze):
 _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)
 
+# ``ultralytics.data.augment.DEFAULT_MEAN``/``DEFAULT_STD`` as of 8.4.204. Written
+# out rather than imported so asking for a model's normalisation does not pull
+# in ultralytics and its process-wide side effects -- see _import_ultralytics.
+_ULTRALYTICS_MEAN = (0.0, 0.0, 0.0)
+_ULTRALYTICS_STD = (1.0, 1.0, 1.0)
+
 
 def normalisation(name):
     """The (mean, std) this backbone was pretrained under, as 3-tuples.
@@ -462,6 +514,8 @@ def normalisation(name):
     checkpoint's own config rather than hard-coded.
     """
     spec = REGISTRY[name]
+    if "ultralytics" in spec:
+        return _ULTRALYTICS_MEAN, _ULTRALYTICS_STD
     if "timm" not in spec:
         return _IMAGENET_MEAN, _IMAGENET_STD
 
@@ -560,6 +614,93 @@ def _build_timm(name, spec, num_classes, dropout, pretrained, freeze):
     )
     if pretrained:
         _check_normalisation(name, backbone)
+    model = TimmClassifier(
+        backbone, num_classes, dropout, _feature_width(backbone, spec["size"])
+    )
+    if pretrained:
+        _freeze_timm_stem(backbone, name, freeze)
+    return model
+
+
+# Outside the repo: ultralytics would otherwise drop .pt files into whatever the
+# working directory happens to be.
+ULTRALYTICS_WEIGHTS = Path.home() / ".cache" / "buck" / "ultralytics"
+
+
+def _import_ultralytics():
+    """Import what the builder needs, undoing ultralytics' import side effects.
+
+    Importing ultralytics reconfigures the whole process. Measured on Windows:
+    ``cv2.setNumThreads(0)`` drops OpenCV from 24 threads to 1, and ``cv2.imread``
+    and ``torch.save`` are replaced by its own versions. Pixels and perceptual
+    hashes are unchanged, but this harness is bound by cv2 augmentation on the
+    CPU, so leaving that in place would slow every model trained after the
+    first YOLO entry and make a mixed sweep's timings depend on model order.
+    """
+    threads = cv2.getNumThreads()
+    printing = np.get_printoptions()
+    patched = (cv2.imread, cv2.imwrite, cv2.imshow, torch.save)
+    omp = os.environ.get("OMP_NUM_THREADS")
+    try:
+        from ultralytics.nn.tasks import ClassificationModel, torch_safe_load
+        from ultralytics.utils.downloads import attempt_download_asset
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise RuntimeError(
+            "yolo*_cls entries need ultralytics (pip install ultralytics). The "
+            "timm cspdarknet53/cs3darknet_l/darknet53 entries do not."
+        ) from exc
+    finally:
+        cv2.setNumThreads(threads)
+        np.set_printoptions(**printing)
+        cv2.imread, cv2.imwrite, cv2.imshow, torch.save = patched
+        if omp is None:
+            os.environ.pop("OMP_NUM_THREADS", None)
+        else:
+            os.environ["OMP_NUM_THREADS"] = omp
+    return ClassificationModel, torch_safe_load, attempt_download_asset
+
+
+def _build_ultralytics(name, spec, num_classes, dropout, pretrained, freeze):
+    """Construct an Ultralytics YOLO classifier with the shared head attached.
+
+    Only the network is taken from ultralytics. Its trainer is not used: that
+    would bring its own augmentation, splits and checkpoint selection, and none
+    of the leakage rules in ``data.py`` would apply.
+
+    ``Classify`` cannot simply be kept. In eval mode it returns softmaxed
+    probabilities, and the benchmark softmaxes its logits again. So the trunk
+    and ``Classify``'s pretrained 1280-wide conv are flattened into a plain
+    ``nn.Sequential`` and its 1000-way Linear is dropped, leaving the same
+    (N, C) contract as a timm backbone. ``TimmClassifier`` then adds the same
+    head every other entry gets.
+
+    The architecture always comes from the YAML, so ``pretrained=False`` (used
+    when reloading fold checkpoints) yields identical state-dict keys without
+    touching the network.
+    """
+    ClassificationModel, torch_safe_load, attempt_download_asset = _import_ultralytics()
+
+    net = ClassificationModel(f"{spec['ultralytics']}.yaml", nc=1000, verbose=False)
+    if pretrained:
+        ULTRALYTICS_WEIGHTS.mkdir(parents=True, exist_ok=True)
+        path = attempt_download_asset(ULTRALYTICS_WEIGHTS / f"{spec['ultralytics']}.pt")
+        checkpoint, _ = torch_safe_load(path)
+        source = checkpoint.get("ema") or checkpoint["model"]
+        # Strict, not ``net.load()``: that transfers whatever intersects, so a
+        # layout change would quietly train a mostly random network and look
+        # like YOLO underperforming.
+        net.load_state_dict(source.float().state_dict(), strict=True)
+
+    layers = list(net.model)
+    classify = layers.pop()
+    routed = [i for i, layer in enumerate(layers) if layer.f != -1]
+    if routed:
+        raise RuntimeError(
+            f"{name}: layers {routed} take non-sequential inputs, so the trunk "
+            f"cannot be flattened into nn.Sequential"
+        )
+
+    backbone = nn.Sequential(*layers, classify.conv, classify.pool, nn.Flatten(1))
     model = TimmClassifier(
         backbone, num_classes, dropout, _feature_width(backbone, spec["size"])
     )

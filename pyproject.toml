@@ -39,6 +39,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# AGPL-3.0. Needed only for the yolo*_cls benchmark entries.
+yolo = [
+    "ultralytics",
+]
 dev = [
     "black",
     "jupyter_client",

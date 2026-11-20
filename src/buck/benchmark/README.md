@@ -790,6 +790,68 @@ Ranked by what paid:
 The locked test set has still never been read. Every number here, and
 everywhere else in this file, is development performance.
 
+## New backbones: DINOv3 ViTs and YOLO
+
+Added 2026-11-06. **None of these has a real result yet.** The table below is a
+training check, not a ranking.
+
+| entry | what it is |
+|---|---|
+| `vit_small_dinov3`, `vit_base_dinov3`, `vit_large_dinov3` | DINOv3 ViTs through timm, native 256px |
+| `cspdarknet53`, `cs3darknet_l`, `darknet53` | timm ImageNet classifiers on the Darknet/CSP trunks of YOLOv3-v5. **Not YOLO weights** |
+| `yolo11s_cls`, `yolo11m_cls`, `yolo26s_cls`, `yolo26m_cls` | Ultralytics' own YOLO classification checkpoints, 224px |
+
+`pip install -e .[yolo]` adds Ultralytics. It is **AGPL-3.0**, so check what that
+means before serving a `yolo*_cls` model from the website. The DINOv3 weights use
+a custom licence, which has not been reviewed either.
+
+Only the Ultralytics *network* is used. Its trainer would bring its own
+augmentation, splits and checkpoint selection, bypassing every rule in this
+package. The wrapper was checked against the original network: features and class
+probabilities match with a maximum difference of 0.0 on `yolo11s_cls` and
+`yolo26s_cls`. Two traps are handled in `architectures.py`:
+
+- `Classify` returns softmaxed probabilities in eval mode, which the benchmark
+  would softmax again, so its final Linear is dropped.
+- Importing Ultralytics drops OpenCV from 24 threads to 1 for the whole process.
+  Left alone, that slows every model trained afterwards, so
+  `_import_ultralytics` restores it. Pixels and perceptual hashes are unchanged.
+
+Ultralytics classification weights expect pixels in [0, 1] with no mean/std
+shift, which `normalisation()` supplies.
+
+### Training check
+
+239 dev images, `--quick` (3 folds, 20 epochs), seed 42, one run each. Fold
+spread reached 0.096 accuracy, and the budget is a third of a real run's epochs,
+so **compare nothing here with anything else**. All it establishes is that
+nothing collapsed.
+
+| model | accuracy | within 1yr | QWK | min |
+|---|---|---|---|---|
+| vit_base_dinov3 | 0.584 | 0.829 | 0.717 | 5.9 |
+| cs3darknet_l | 0.568 | 0.846 | 0.691 | 5.1 |
+| yolo11s_cls | 0.622 | 0.825 | 0.674 | 4.4 |
+| convnextv2_tiny (reference) | 0.576 | 0.825 | 0.668 | 5.5 |
+| vit_small_dinov3 | 0.563 | 0.795 | 0.645 | 5.1 |
+| yolo26s_cls | 0.585 | 0.795 | 0.602 | 4.0 |
+
+Not measured: learning rates for any new entry. `backbone_lr` 3e-5 on the ViTs is
+carried over from the DINOv3 ConvNeXt finding, and the YOLO entries use the
+default. Neither has been swept, and `vit_large_dinov3`, `cspdarknet53`,
+`darknet53`, `yolo11m_cls` and `yolo26m_cls` have only been built, not trained.
+
+### Running the comparison
+
+`trail cam/examples/261106 - NDA DINOv3 YOLO - train validate test.ipynb` runs the
+whole thing: selection across candidates, final training, validation, and one
+read of the locked test set behind `SCORE_LOCKED_TEST`. As configured, expect
+roughly 9-10 hours for selection (7 models, 3 seeds, 5 folds) and 3 for the final
+model (3 seeds, 10 folds), extrapolated from the runtimes in this file.
+
+Existing results sit on 230-233 dev images and the corpus now gives 239, so the
+reference model is retrained there rather than quoted. See *Record sets*.
+
 ## Protocols
 
 **`holdout`** ranks by `StratifiedGroupKFold` CV on the development pool, then
