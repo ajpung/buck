@@ -1,5 +1,13 @@
 # BUCK — work in progress, 2026-09-03
 
+> **2026-11-26: IR routing experiment.** See
+> `experiments/2026-11-26_ir_routing/` (PROTOCOL.md = pre-registered design,
+> RUN_LOG.md = what was run, RESULTS.md = outcome). Two lessons from it that
+> apply everywhere: rebuild folds only under `buck-env` (system Python's
+> sklearn 1.8 reshuffles `StratifiedGroupKFold`), and pin the record set
+> (weekly `xpx` renames keep their old mtime). The `grayscale` folder includes
+> blue-tinted IR video captures, so "grayscale" means capture mode, not pixels.
+
 Picking-up notes for the benchmark rebuild. Everything below is measured unless
 it says otherwise.
 
